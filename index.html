@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -2342,20 +2342,23 @@ async function _runDailyBackup() {
   }
 }
 
-// حذف نسخ احتياطية أقدم من 30 يوم لتوفير مساحة Firebase
+// حذف نسخ احتياطية أقدم من 7 أيام لتوفير مساحة Firebase
 async function _cleanOldBackups() {
   if (!firebaseDB) return;
   try {
     const snap = await firebaseDB.ref('backups').once('value');
     if (!snap || !snap.exists()) return;
-    const keys = Object.keys(snap.val() || {});
+    const keys = Object.keys(snap.val() || {}).sort();
     const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
+    cutoff.setDate(cutoff.getDate() - 7);
     const cutoffStr = cutoff.toISOString().slice(0, 10);
     const toDelete = keys.filter(k => k < cutoffStr);
     for (const k of toDelete) {
       await firebaseDB.ref('backups/' + k).remove();
       console.log('DailyBackup: removed old backup', k);
+    }
+    if (toDelete.length > 0) {
+      console.log('DailyBackup: ✅ cleaned', toDelete.length, 'old backups (kept last 7 days)');
     }
   } catch(e) {
     console.warn('DailyBackup: cleanup failed —', e.message);
@@ -2983,6 +2986,8 @@ async function loadSavedData() {
     setTimeout(() => _migrateAllMissingFbKeys(), 2000);
     // 🛡️ خطوة 7c: تشغيل نظام النسخ الاحتياطي التلقائي اليومي
     setTimeout(() => _runDailyBackup(), 3000);
+    // 🧹 خطوة 7e: تنظيف System_Logs القديمة (مرة شهرياً)
+    setTimeout(() => _maybeRunLogsPrune(), 5000);
     // 📶 خطوة 7d: بدء مراقبة حالة الاتصال بـ Firebase
     setTimeout(() => _startFirebaseConnectionMonitor(), 1000);
 
@@ -3342,6 +3347,49 @@ function _writeAuditLog(operationType, items) {
       console.warn('_writeAuditLog error (non-critical):', e);
     }
   });
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🧹 تنظيف System_Logs القديمة (أقدم من 90 يوم)
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * _pruneOldLogs — حذف سجلات المراجعة الأقدم من 90 يوماً
+ * تُستدعى مرة شهرياً عند تسجيل الدخول لمنع التضخم اللانهائي
+ */
+async function _pruneOldLogs() {
+  if (!firebaseDB || !initialSyncCompleted) return;
+  try {
+    const cutoff = Date.now() - (90 * 24 * 60 * 60 * 1000);
+    const snap = await firebaseDB.ref('System_Logs')
+      .orderByChild('timestampMs')
+      .endAt(cutoff)
+      .once('value');
+    if (!snap || !snap.exists()) return;
+    const updates = {};
+    snap.forEach(child => { updates['System_Logs/' + child.key] = null; });
+    const count = Object.keys(updates).length;
+    if (count > 0) {
+      await firebaseDB.ref().update(updates);
+      console.log('PruneOldLogs: ✅ حُذفت', count, 'سجل أقدم من 90 يوماً');
+    }
+  } catch(e) {
+    console.warn('PruneOldLogs: failed (non-critical) —', e.message);
+  }
+}
+
+/** استدعاء _pruneOldLogs مرة شهرياً فقط */
+function _maybeRunLogsPrune() {
+  try {
+    const lastPrune = localStorage.getItem('_last_log_prune_ts');
+    const oneMonth  = 30 * 24 * 60 * 60 * 1000;
+    if (!lastPrune || (Date.now() - parseInt(lastPrune, 10)) > oneMonth) {
+      _pruneOldLogs();
+      localStorage.setItem('_last_log_prune_ts', Date.now().toString());
+    }
+  } catch(e) {
+    console.warn('_maybeRunLogsPrune error:', e);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -5715,13 +5763,20 @@ function printDashboardPage() {
 }
 
 function printMovementsOnly(){
-  const dateF  = document.getElementById('mov-date-filter')?.value || '';
-  const woF    = (document.getElementById('mov-wo-filter')?.value || '').trim().toLowerCase();
+  const dateF   = document.getElementById('mov-date-filter')?.value || '';
+  const woF     = (document.getElementById('mov-wo-filter')?.value || '').trim().toLowerCase();
+  const pageF   = (document.getElementById('mov-page-filter')?.value || '').trim().toLowerCase();
+  const codeF   = (document.getElementById('mov-code-filter')?.value || '').trim().toLowerCase();
+  const serialF = (document.getElementById('mov-serial-filter')?.value || '').trim().toLowerCase();
+  const bookF   = (document.getElementById('mov-book-filter')?.value || '').trim().toLowerCase();
+  const deptF   = (document.getElementById('mov-dept-filter')?.value || '').trim().toLowerCase();
 
   // عنوان التقرير
-  const title = woF
-    ? 'حركات أمر العمل: ' + woF
-    : (dateF ? 'حركات بتاريخ: ' + dateF : 'سجل الحركات');
+  const title = pageF
+    ? 'حركات رقم الصفحة: ' + pageF
+    : woF
+      ? 'حركات أمر العمل: ' + woF
+      : (dateF ? 'حركات بتاريخ: ' + dateF : 'سجل الحركات');
 
   // نبني البيانات من DB مباشرة بدل سحب innerHTML
   const MOV_LABELS = { in:'📥 إدخال', out:'📤 صرف', 'ret-in':'↩ إرجاع إدخال', 'ret-out':'↪ إرجاع صرف' };
@@ -5733,10 +5788,15 @@ function printMovementsOnly(){
     ...DB.returnDispatches.map(r=>({...r, type:'ret-out'}))
   ].sort((a,b) => { const dc = b.date.localeCompare(a.date); return dc !== 0 ? dc : b.id.localeCompare(a.id); });
 
-  if(movFilter) all=all.filter(m=>m.code.toLowerCase().includes(movFilter)||m.name.includes(movFilter)||m.id.toLowerCase().includes(movFilter));
+  if(movFilter)  all=all.filter(m=>(m.code||'').toLowerCase().includes(movFilter)||(m.name||'').includes(movFilter)||(m.id||'').toLowerCase().includes(movFilter));
   if(movTypeFilter) all=all.filter(m=>m.type===movTypeFilter);
-  if(dateF) all=all.filter(m=>m.date===dateF);
-  if(woF)   all=all.filter(m=>(m.workorder||'').toLowerCase().includes(woF));
+  if(dateF)   all=all.filter(m=>m.date===dateF);
+  if(woF)     all=all.filter(m=>(m.workorder||'').toLowerCase().includes(woF));
+  if(pageF)   all=all.filter(m=>(m.pagenum||'').toLowerCase().includes(pageF));
+  if(codeF)   all=all.filter(m=>(m.code||'').toLowerCase().includes(codeF));
+  if(serialF) all=all.filter(m=>(m.serial||'').toLowerCase().includes(serialF));
+  if(bookF)   all=all.filter(m=>(m.booknum||'').toLowerCase().includes(bookF));
+  if(deptF)   all=all.filter(m=>(m.dept||m.supplier||'').toLowerCase().includes(deptF));
 
   const rows = all.map((m,i) => `<tr style="${i%2===1?'background:#f9f9f9':''}">
     <td style="font-family:monospace;font-size:11px">${m.id}</td>
@@ -6784,6 +6844,19 @@ function previewCustodyPDF(custody){
       actEl.prepend(wrap);
     }
   }
+  // inject id-photo button (always shown)
+  const actEl2 = document.getElementById('cust-pdf-modal-actions');
+  if(actEl2 && !actEl2.querySelector('#id-photo-wrap')){
+    const photoWrap = document.createElement('div');
+    photoWrap.id = 'id-photo-wrap';
+    photoWrap.style = 'display:flex;align-items:center;gap:6px;';
+    photoWrap.innerHTML = `
+      <input type="file" id="id-photo-input" accept="image/*" style="display:none" onchange="loadIdPhoto(this)">
+      <button onclick="document.getElementById('id-photo-input').click()" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-family:var(--font)">📷 صورة الهوية</button>
+      <span id="id-photo-status" style="font-size:11px;color:var(--text3)"></span>
+    `;
+    actEl2.prepend(photoWrap);
+  }
   document.getElementById('cust-pdf-modal').classList.add('show');
 }
 
@@ -6796,12 +6869,227 @@ function toggleAdminSig(checked){
 
 function closeCustodyPDF(){
   document.getElementById('cust-pdf-modal').classList.remove('show');
+  // clear photo on close
+  window._custodyIdPhoto = null;
+  const inp = document.getElementById('id-photo-input');
+  if(inp) inp.value = '';
+  const st = document.getElementById('id-photo-status');
+  if(st) st.textContent = '';
+}
+
+function loadIdPhoto(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    window._custodyIdPhoto = e.target.result; // base64, not saved anywhere
+    const st = document.getElementById('id-photo-status');
+    if(st) st.textContent = '✓ تم التحميل';
+    // re-render preview with photo
+    const c = _pdfPrintCustody || _pendingCustody;
+    if(c){
+      document.getElementById('cust-pdf-content').innerHTML = _buildCustodyPDFHTML(c, window._showAdminSig||false);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function _getCustodyLogo(){
+  // اللوجو مخزّن كـ base64 داخل _buildCustodyPDFHTML — نستخرجه بتشغيل مؤقت
+  try {
+    var s = _buildCustodyPDFHTML.toString();
+    var m = s.match(/LOGO\s*=\s*['"]([^'"]{30,})['"]/);
+    if(m) return m[1];
+  } catch(e){}
+  // fallback: أي img في الصفحة يحتوي على base64
+  var imgs = document.querySelectorAll('img');
+  for(var i=0;i<imgs.length;i++){
+    if(imgs[i].src && imgs[i].src.indexOf('data:image')===0 && imgs[i].src.length > 100) return imgs[i].src;
+  }
+  return '';
 }
 
 function printCustodyPDF(){
   const c = _pdfPrintCustody || _pendingCustody;
   if(!c) return;
-  const html = _buildCustodyPDFHTML(c, window._showAdminSig||false);
+  const showSig = window._showAdminSig||false;
+  const allItems = c.items||[];
+  const ITEMS_PER_PAGE = 6;
+  const totalPages = Math.max(1, Math.ceil(allItems.length / ITEMS_PER_PAGE));
+  const idPhoto = window._custodyIdPhoto || '';
+  // التقاط اللوجو من المتغير العام أو من دالة البناء الأصلية
+  const LOGO_SRC = window._warehouseLogo || _getCustodyLogo();
+
+  // دالة بناء صفحة واحدة كاملة
+  function buildPage(pageItems, pageNum, startIdx){
+    const GOLD='#C8960C'; const DARK='#1A1A2E'; const LIGHT='#F8F4E8';
+    const LOGO = LOGO_SRC;
+    const statusMap={'active':'نشطة','returned':'مُرجَعة','partial':'مُرجَعة جزئياً'};
+    const statusColorMap={'active':'#0A7C3E','returned':'#555','partial':'#B45309'};
+    const statusText = statusMap[c.status]||c.status||'';
+    const statusColor = statusColorMap[c.status]||'#333';
+    const salfaText = c.salfa ? ` وذلك على سبيل ${c.salfa}.` : `.`;
+    const pageLabel = `${pageNum} / ${totalPages}`;
+
+    const itemRowsHTML = pageItems.map((it,i)=>`
+      <tr style="background:${(startIdx+i)%2===0?'#fff':'#fafafa'}">
+        <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;color:#666;font-size:13px">${startIdx+i+1}</td>
+        <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;font-family:monospace;font-size:12px;color:#1A1A2E">${it.code}</td>
+        <td style="padding:9px 12px;border:1px solid #e0e0e0;font-weight:500;font-size:13px">${it.name}</td>
+        <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;color:#555;font-size:13px">${it.unit}</td>
+        <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;font-weight:700;font-size:15px;color:${DARK}">${it.qty}</td>
+      </tr>`).join('');
+
+    const pageItemsTotal = pageItems.reduce((s,i)=>s+i.qty,0);
+    const allItemsTotal  = allItems.reduce((s,i)=>s+i.qty,0);
+
+    return `
+    <!-- ════ صفحة ${pageNum} ════ -->
+    <div class="page-wrap">
+
+      <!-- هيدر الشركة -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid ${GOLD};margin-bottom:12px">
+        <div style="flex:1">
+          <div style="font-size:19px;font-weight:700;color:${DARK};margin-bottom:3px">شركة محمد محسن سالم الصانبي وشركاه للمقاولات</div>
+          <div style="font-size:11px;color:#888;letter-spacing:.5px">Al-Sanibi & Partners Contracting Co.</div>
+        </div>
+        <img src="${LOGO}" style="width:72px;height:72px;object-fit:contain;margin-right:8px" alt="ALSANIBI">
+      </div>
+
+      <!-- العنوان -->
+      <div style="text-align:center;margin-bottom:10px">
+        <div style="font-size:26px;font-weight:700;color:${GOLD};letter-spacing:1px">وثيقة تسليم عهدة</div>
+        <div style="font-size:10px;color:#aaa;margin-top:2px">Custody Handover Document</div>
+      </div>
+
+      <!-- بيانات العهدة -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:13px">
+        <tr>
+          <td style="background:${DARK};color:#fff;padding:9px 12px;font-size:13px;font-weight:700;width:22%;border:1px solid #ccc;text-align:center">رقم العهدة</td>
+          <td style="padding:9px 12px;font-weight:700;color:${GOLD};font-size:15px;border:1px solid #ccc;width:28%;text-align:center">${c.id}</td>
+          <td style="background:${DARK};color:#fff;padding:9px 12px;font-size:13px;font-weight:700;width:22%;border:1px solid #ccc;text-align:center">التاريخ</td>
+          <td style="padding:9px 12px;font-size:13px;border:1px solid #ccc;width:28%;text-align:center">${c.date||''}</td>
+        </tr>
+        <tr>
+          <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">اسم المستلم</td>
+          <td style="padding:9px 12px;font-size:14px;font-weight:600;border:1px solid #ccc">${c.receiver||''}</td>
+          <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">المهنة</td>
+          <td style="padding:9px 12px;font-size:13px;border:1px solid #ccc">${c.job||'—'}</td>
+        </tr>
+        <tr>
+          <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">الشركة / الجهة</td>
+          <td style="padding:9px 12px;font-size:14px;font-weight:600;border:1px solid #ccc">${c.company||''}</td>
+          <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">صورة الهوية</td>
+          <td style="padding:5px 8px;border:1px solid #ccc;text-align:center;vertical-align:middle">
+            ${idPhoto
+              ? `<img src="${idPhoto}" style="max-height:120px;max-width:90px;border-radius:4px;border:1px solid #ddd;object-fit:contain" alt="صورة الهوية">`
+              : `<span style="font-size:11px;color:#aaa">—</span>`}
+          </td>
+        </tr>
+        <tr>
+          <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">رقم الإقامة</td>
+          <td style="padding:9px 12px;font-size:13px;text-align:center;border:1px solid #ccc">${c.iqama||''}</td>
+          <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">رقم الجوال</td>
+          <td style="padding:9px 12px;font-size:13px;text-align:center;border:1px solid #ccc">${c.mobile||''}</td>
+        </tr>
+        ${c.supervisor?`<tr>
+          <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">بعلم</td>
+          <td colspan="3" style="padding:9px 12px;font-size:13px;border:1px solid #ccc">${c.supervisor}</td>
+        </tr>`:''}
+        <tr>
+          <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">الحالة</td>
+          <td style="padding:9px 12px;font-size:13px;font-weight:700;color:${statusColor};border:1px solid #ccc;text-align:center">${statusText}</td>
+          <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">تاريخ الإرجاع</td>
+          <td style="padding:9px 12px;font-size:13px;text-align:center;border:1px solid #ccc">${c.returnDate||'لم يتم الإرجاع'}</td>
+        </tr>
+      </table>
+
+      <!-- عنوان الأصناف مع رقم الصفحة -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+        <div style="font-size:13px;font-weight:700;color:${DARK};border-right:4px solid ${GOLD};padding-right:9px">
+          الأصناف المسلّمة
+          ${totalPages>1 ? `<span style="font-size:11px;color:#888;font-weight:400;margin-right:8px">(المواد ${startIdx+1}–${startIdx+pageItems.length} من إجمالي ${allItems.length})</span>` : ''}
+        </div>
+        <div style="font-size:12px;color:#888;border:1px solid #ddd;border-radius:4px;padding:3px 10px;background:#fafafa">
+          صفحة ${pageLabel}
+        </div>
+      </div>
+
+      <!-- جدول الأصناف -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px">
+        <thead>
+          <tr style="background:${DARK};color:#fff">
+            <th style="padding:9px 7px;text-align:center;border:1px solid #333;width:5%;font-size:13px">م</th>
+            <th style="padding:9px 7px;text-align:center;border:1px solid #333;width:18%;font-size:13px">كود المادة</th>
+            <th style="padding:9px 10px;text-align:right;border:1px solid #333;font-size:13px">اسم المادة</th>
+            <th style="padding:9px 7px;text-align:center;border:1px solid #333;width:10%;font-size:13px">الوحدة</th>
+            <th style="padding:9px 7px;text-align:center;border:1px solid #333;width:10%;font-size:13px">الكمية</th>
+          </tr>
+        </thead>
+        <tbody>${itemRowsHTML}</tbody>
+        <tfoot></tfoot>
+      </table>
+
+      <!-- نص الإقرار -->
+      <div style="border:1px solid #e0d0a0;background:#fffdf5;border-radius:5px;padding:9px 13px;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:700;color:${DARK};margin-bottom:6px;border-bottom:1px solid #e8d88a;padding-bottom:5px">إقرار المستلم</div>
+        <div style="font-size:13px;line-height:2;color:#222">
+          استلمت أنا السيد / <strong>${c.receiver}</strong>&nbsp;(${c.job||''})&nbsp; لدى شركة <strong>${c.company}</strong>،
+          المواد الموضحة أعلاه من مستودع شركة محمد محسن سالم الصانبي وشركاه للمقاولات${salfaText}
+          ${totalPages>1 ? `<span style="color:#888;font-size:11px"> — صفحة ${pageLabel}</span>` : ''}
+        </div>
+      </div>
+
+      <!-- جدول التوقيعات -->
+      <div style="font-size:13px;font-weight:700;color:${DARK};margin-bottom:7px;border-right:4px solid ${GOLD};padding-right:9px">التوقيعات</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">
+        <thead>
+          <tr style="background:#f0f0f0">
+            <th style="padding:9px 12px;text-align:center;border:1px solid #ccc;font-size:13px;font-weight:700;width:33%">اسم المُسلِّم</th>
+            <th style="padding:9px 12px;text-align:center;border:1px solid #ccc;font-size:13px;font-weight:700;width:33%">توقيع المُسلِّم</th>
+            <th style="padding:9px 12px;text-align:center;border:1px solid #ccc;font-size:13px;font-weight:700;width:34%">توقيع المُستلِم</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border:1px solid #ccc;vertical-align:middle;text-align:center;padding:7px 10px">
+              ${showSig
+                ? `<div style="font-size:20px;font-weight:700;color:#1A1A2E;margin-bottom:3px">${c.deliverer||c.createdBy||''}</div>`
+                : `<div style="font-size:15px;font-weight:500;color:#1A1A2E;text-align:right;padding:3px 6px">${c.deliverer||c.createdBy||''}</div><div style="margin-top:24px;border-top:1px solid #999;font-size:9px;color:#aaa;padding-top:3px">التوقيع</div>`}
+            </td>
+            <td style="padding:36px 12px;border:1px solid #ccc"></td>
+            <td style="padding:36px 12px;border:1px solid #ccc"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- سطر المستلم تحت التوقيعات -->
+      <div style="display:flex;gap:14px;font-size:12px;color:#555;margin-bottom:6px;padding:8px 12px;background:#f9f9f9;border-radius:4px;border:1px solid #eee">
+        <span>اسم المستلم: <strong style="color:${DARK}">${c.receiver}</strong></span>
+        <span style="color:#ccc">|</span>
+        <span>رقم الإقامة: <strong>${c.iqama||'—'}</strong></span>
+        <span style="color:#ccc">|</span>
+        <span>رقم الجوال: <strong>${c.mobile||'—'}</strong></span>
+      </div>
+
+      <!-- فوتر الصفحة -->
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid ${GOLD};padding-top:7px;margin-top:4px;font-size:11px;color:#999">
+        <span>تاريخ الإصدار: ${c.date||''}</span>
+        ${c.notes?`<span>ملاحظات: ${c.notes}</span>`:''}
+        <span style="font-weight:600;color:${GOLD}">${c.id} — صفحة ${pageLabel}</span>
+      </div>
+
+    </div>`;
+  }
+
+  // بناء كل الصفحات
+  let allPagesHTML = '';
+  for(let p=0; p<totalPages; p++){
+    const start = p * ITEMS_PER_PAGE;
+    const chunk = allItems.slice(start, start + ITEMS_PER_PAGE);
+    allPagesHTML += (p>0 ? '<div style="page-break-before:always"></div>' : '') + buildPage(chunk, p+1, start);
+  }
+
   const win = window.open('','_blank','width=900,height=700');
   win.document.open();
   win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head>
@@ -6809,19 +7097,50 @@ function printCustodyPDF(){
     <title>عهدة ${c.id} — ${c.receiver}</title>
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
-      body{font-family:Arial,sans-serif;direction:rtl;background:#fff;color:#111;padding:32px 40px}
-      @page{size:A4;margin:15mm 15mm 15mm 15mm}
-      @media print{body{padding:0} .no-print{display:none!important}}
+      body{font-family:Arial,sans-serif;direction:rtl;background:#fff;color:#111}
+      .page-wrap{padding:28px 36px}
+      @page{size:A4;margin:10mm}
+      @media print{
+        body{background:#fff}
+        .no-print{display:none!important}
+        .page-wrap{padding:0}
+      }
     </style>
-  </head><body>${html}
-  <div class="no-print" style="text-align:center;margin-top:24px">
+  </head><body>${allPagesHTML}
+  <div class="no-print" style="text-align:center;padding:18px;position:sticky;bottom:0;background:#fff;border-top:1px solid #ddd;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+    <button onclick="pickIdPhoto()" style="padding:8px 16px;font-size:13px;background:#f5f5f5;color:#333;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-family:Arial;display:inline-flex;align-items:center;gap:6px">
+      📷 <span id="photo-btn-label">${idPhoto?'✓ تم تحميل الصورة':'إضافة صورة الهوية'}</span>
+    </button>
     <button onclick="window.print()" style="padding:10px 32px;font-size:15px;background:#1A1A2E;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Arial">🖨️ طباعة / حفظ PDF</button>
-    <button onclick="window.close()" style="padding:10px 22px;font-size:14px;background:#eee;color:#333;border:1px solid #ccc;border-radius:6px;cursor:pointer;margin-right:10px;font-family:Arial">إغلاق</button>
+    <button onclick="window.close()" style="padding:10px 22px;font-size:14px;background:#eee;color:#333;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-family:Arial">إغلاق</button>
   </div>
-  
+  <script>
+    function pickIdPhoto(){
+      var inp=document.createElement('input');
+      inp.type='file';inp.accept='image/*';
+      inp.onchange=function(e){
+        var file=e.target.files[0];if(!file)return;
+        var reader=new FileReader();
+        reader.onload=function(ev){
+          var src=ev.target.result;
+          if(window.opener) window.opener._custodyIdPhoto=src;
+          // تحديث كل صور الهوية في الصفحة
+          document.querySelectorAll('img[alt="صورة الهوية"]').forEach(function(img){img.src=src;});
+          // إضافة صورة في الخلايا الفارغة
+          document.querySelectorAll('td').forEach(function(td){
+            if(td.innerHTML.trim()==='<span style="font-size:11px;color:#aaa">—</span>' || td.innerHTML.includes('font-size:11px;color:#aaa')){
+              td.innerHTML='<img src="'+src+'" style="max-height:120px;max-width:90px;border-radius:4px;border:1px solid #ddd;object-fit:contain" alt="صورة الهوية">';
+            }
+          });
+          document.getElementById('photo-btn-label').textContent='✓ تم التحميل';
+        };
+        reader.readAsDataURL(file);
+      };
+      inp.click();
+    }
+  <\/script>
 </body></html>`);
   win.document.close();
-  win.onload = ()=>{ win.focus(); setTimeout(()=>win.print(), 600); };
 }
 
 function _buildCustodyPDFHTML(c, showSig){
@@ -6843,22 +7162,22 @@ function _buildCustodyPDFHTML(c, showSig){
 
   return `
   <!-- هيدر الشركة بلوجو -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:3px solid ${GOLD};margin-bottom:22px">
+  <div class="pdf-section" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid ${GOLD};margin-bottom:14px">
     <div style="flex:1">
       <div style="font-size:20px;font-weight:700;color:${DARK};margin-bottom:4px">شركة محمد محسن سالم الصانبي وشركاه للمقاولات</div>
       <div style="font-size:12px;color:#888;letter-spacing:.5px">Al-Sanibi & Partners Contracting Co.</div>
     </div>
-    <img src="${LOGO}" style="width:80px;height:80px;object-fit:contain;margin-right:8px" alt="ALSANIBI">
+    <img src="${LOGO}" class="logo-img" style="width:80px;height:80px;object-fit:contain;margin-right:8px" alt="ALSANIBI">
   </div>
 
   <!-- العنوان -->
-  <div style="text-align:center;margin-bottom:22px">
+  <div style="text-align:center;margin-bottom:12px">
     <div style="font-size:28px;font-weight:700;color:${GOLD};letter-spacing:1px">وثيقة تسليم عهدة</div>
     <div style="font-size:11px;color:#aaa;margin-top:3px">Custody Handover Document</div>
   </div>
 
   <!-- بيانات العهدة -->
-  <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px">
+  <table class="info-table" style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px">
     <tr>
       <td style="background:${DARK};color:#fff;padding:10px 14px;font-size:14px;font-weight:700;width:22%;border:1px solid #ccc;text-align:center">رقم العهدة</td>
       <td style="padding:10px 14px;font-weight:700;color:${GOLD};font-size:16px;border:1px solid #ccc;width:28%;text-align:center">${c.id}</td>
@@ -6873,7 +7192,13 @@ function _buildCustodyPDFHTML(c, showSig){
     </tr>
     <tr>
       <td style="background:${LIGHT};padding:10px 14px;font-size:14px;font-weight:700;border:1px solid #ccc;text-align:center">الشركة / الجهة</td>
-      <td colspan="3" style="padding:10px 14px;font-size:15px;font-weight:600;border:1px solid #ccc">${c.company||''}</td>
+      <td style="padding:10px 14px;font-size:15px;font-weight:600;border:1px solid #ccc">${c.company||''}</td>
+      <td style="background:${LIGHT};padding:10px 14px;font-size:14px;font-weight:700;border:1px solid #ccc;text-align:center">صورة الهوية</td>
+      <td style="padding:6px 10px;border:1px solid #ccc;text-align:center;vertical-align:middle">
+        ${window._custodyIdPhoto
+          ? `<img src="${window._custodyIdPhoto}" style="max-height:${itemCount<=6?'90':'70'}px;max-width:${itemCount<=6?'70':'55'}px;border-radius:4px;border:1px solid #ddd;object-fit:contain" alt="صورة الهوية">`
+          : `<span style="font-size:11px;color:#aaa">—</span>`}
+      </td>
     </tr>
     <tr>
       <td style="background:${LIGHT};padding:10px 14px;font-size:14px;font-weight:700;border:1px solid #ccc;text-align:center">رقم الإقامة</td>
@@ -6894,8 +7219,8 @@ function _buildCustodyPDFHTML(c, showSig){
   </table>
 
   <!-- جدول الأصناف -->
-  <div style="font-size:16px;font-weight:700;color:${DARK};margin-bottom:10px;border-right:5px solid ${GOLD};padding-right:12px">الأصناف المسلّمة</div>
-  <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px">
+  <div style="font-size:14px;font-weight:700;color:${DARK};margin-bottom:8px;border-right:5px solid ${GOLD};padding-right:10px">الأصناف المسلّمة</div>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:13px">
     <thead>
       <tr style="background:${DARK};color:#fff">
         <th style="padding:10px 8px;text-align:center;border:1px solid #333;width:5%;font-size:14px">م</th>
@@ -6915,7 +7240,7 @@ function _buildCustodyPDFHTML(c, showSig){
   </table>
 
   <!-- نص الإقرار -->
-  <div style="border:1px solid #e0d0a0;background:#fffdf5;border-radius:5px;padding:14px 16px;margin-bottom:20px">
+  <div class="pdf-section" style="border:1px solid #e0d0a0;background:#fffdf5;border-radius:5px;padding:10px 14px;margin-bottom:12px">
     <div style="font-size:15px;font-weight:700;color:${DARK};margin-bottom:8px;border-bottom:1px solid #e8d88a;padding-bottom:6px">إقرار المستلم</div>
     <div style="font-size:14px;line-height:2.2;color:#222">
       استلمت أنا السيد / <strong>${c.receiver}</strong>&nbsp;(${c.job||''})&nbsp; لدى شركة <strong>${c.company}</strong>،
@@ -6924,8 +7249,8 @@ function _buildCustodyPDFHTML(c, showSig){
   </div>
 
   <!-- جدول التوقيعات - 3 خانات -->
-  <div style="font-size:16px;font-weight:700;color:${DARK};margin-bottom:10px;border-right:5px solid ${GOLD};padding-right:12px">التوقيعات</div>
-  <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
+  <div class="sig-section" style="font-size:14px;font-weight:700;color:${DARK};margin-bottom:8px;border-right:5px solid ${GOLD};padding-right:10px">التوقيعات</div>
+  <table class="sig-section" style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px">
     <thead>
       <tr style="background:#f0f0f0">
         <th style="padding:10px 14px;text-align:center;border:1px solid #ccc;font-size:14px;font-weight:700;width:33%">اسم المُسلِّم</th>
