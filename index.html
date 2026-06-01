@@ -1794,6 +1794,9 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <input class="lm-inp" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" style="position:relative;z-index:20;pointer-events:auto" onkeydown="if(event.key==='Enter')doLogin()">
         </div>
         <button class="lm-btn" onclick="doLogin()" style="position:relative;z-index:20;pointer-events:auto">دخول إلى النظام 🌊</button>
+        <div style="text-align:center;margin-top:12px;position:relative;z-index:20">
+          <button onclick="doForgotPassword()" style="background:none;border:none;color:rgba(56,212,224,.55);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px;transition:color .2s" onmouseover="this.style.color='rgba(56,212,224,.9)'" onmouseout="this.style.color='rgba(56,212,224,.55)'">🔑 نسيت كلمة المرور؟</button>
+        </div>
         <div class="lm-bar"></div>
         <div style="text-align:center;margin-top:14px;font-size:10px;color:rgba(56,212,224,.25);letter-spacing:.8px">✦ <span style="color:rgba(26,168,184,.5);font-weight:700">محمود حوم</span> — مصمم النظام ✦</div>
       </div>
@@ -1842,6 +1845,14 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
             <div class="field">
               <label id="txn-party-label">المورد / الجهة</label>
               <input type="text" id="txn-edit-party">
+            </div>
+            <div class="field">
+              <label>رقم الكتاب</label>
+              <input type="text" id="txn-edit-booknum" placeholder="رقم الكتاب">
+            </div>
+            <div class="field">
+              <label>رقم الصفحة</label>
+              <input type="text" id="txn-edit-pagenum" placeholder="رقم الصفحة">
             </div>
             <div class="field">
               <label>المستودع</label>
@@ -1944,11 +1955,11 @@ function setTheme(t){
 // ══ DATA STORE ══
 let DB = {
   users: [
-    {username:'hoom2211', fullname:'محمود حوم',         email:'hoom@store.com',           password:'__HASH__642017', role:'admin',      active:true, lastLogin:null},
-    {username:'mok57',    fullname:'Mokhtar Safwet',     email:'ahmed@store.com',          password:'__HASH__333999', role:'supervisor', active:true, lastLogin:null},
+    {username:'hoom2211', fullname:'محمود حوم',         email:'hoom122017@gmail.com',           password:'__HASH__642017', role:'admin',      active:true, lastLogin:null},
+    {username:'mok57',    fullname:'Mokhtar Safwet',     email:'mokhtarsafwat968@gmail.com',          password:'__HASH__333999', role:'supervisor', active:true, lastLogin:null},
     {username:'muh12',    fullname:'Emg.Muhtadi Khalid', email:'muhtadi@store.com',        password:'__HASH__123456', role:'supervisor', active:true, lastLogin:null},
-    {username:'kha195',   fullname:'Khaled Badr',        email:'khalid@store.com',         password:'__HASH__123456', role:'supervisor', active:true, lastLogin:null},
-    {username:'dem85',    fullname:'Mahmoud Demirdash',  email:'mahmoud@store.com',        password:'__HASH__123456', role:'supervisor', active:true, lastLogin:null},
+    {username:'kha195',   fullname:'Khaled Badr',        email:'Kbadr4366@gmail.com',         password:'__HASH__123456', role:'supervisor', active:true, lastLogin:null},
+    {username:'dem85',    fullname:'Mahmoud Demirdash',  email:'mahmoud@store.com',        password:'__HASH__5101985', role:'supervisor', active:true, lastLogin:null},
   ],
   custodies: [],
   items: [
@@ -5904,6 +5915,32 @@ function hasPerm(perm) {
   return role && role.perms.includes(perm);
 }
 
+async function doForgotPassword() {
+  const uname = document.getElementById('login-username').value.trim();
+  let email = '';
+  if (uname.includes('@')) {
+    email = uname;
+  } else {
+    const dbUser = DB.users.find(u => u.username === uname);
+    if (dbUser) email = dbUser.email;
+  }
+  if (!email) {
+    const input = prompt('أدخل بريدك الإلكتروني المسجّل في النظام:');
+    if (!input || !input.includes('@')) { toast('بريد إلكتروني غير صحيح', 'error'); return; }
+    email = input.trim().toLowerCase();
+  }
+  try {
+    await firebaseAuth.sendPasswordResetEmail(email);
+    toast('✅ تم إرسال رابط إعادة تعيين كلمة المرور إلى: ' + email, 'success');
+  } catch(e) {
+    if (e.code === 'auth/user-not-found') {
+      toast('البريد الإلكتروني غير مسجّل في النظام', 'error');
+    } else {
+      toast('حدث خطأ: ' + e.message, 'error');
+    }
+  }
+}
+
 async function doLogin() {
   const uname = document.getElementById('login-username').value.trim();
   const pass  = document.getElementById('login-password').value;
@@ -6156,7 +6193,9 @@ function openTxnEdit(type, id) {
   document.getElementById('txn-edit-date').value = txn.date;
   document.getElementById('txn-edit-ref').value  = txn.ref||'';
   document.getElementById('txn-edit-warehouse').value = txn.warehouse||'مستودع رئيسي';
-  document.getElementById('txn-edit-notes').value = txn.notes||'';
+  document.getElementById('txn-edit-notes').value   = txn.notes||'';
+  document.getElementById('txn-edit-booknum').value = txn.booknum||'';
+  document.getElementById('txn-edit-pagenum').value = txn.pagenum||'';
   if(type==='in') {
     document.getElementById('txn-modal-title').textContent = '✏️ تعديل سند إدخال — ' + id;
     document.getElementById('txn-ref-label').textContent   = 'رقم الإذن / الفاتورة';
@@ -6188,6 +6227,8 @@ function openReturnEdit(type, id) {
   document.getElementById('txn-edit-ref').value      = txn.ref||'';
   document.getElementById('txn-edit-warehouse').value = txn.warehouse||'مستودع رئيسي';
   document.getElementById('txn-edit-notes').value    = txn.notes||'';
+  document.getElementById('txn-edit-booknum').value  = txn.booknum||'';
+  document.getElementById('txn-edit-pagenum').value  = txn.pagenum||'';
   document.getElementById('txn-edit-party').value    = txn.supplier||txn.dept||txn.user||'';
   const label = type==='ret-in' ? 'إرجاع إدخال' : 'إرجاع صرف';
   document.getElementById('txn-modal-title').textContent = '✏️ تعديل ' + label + ' — ' + id;
@@ -6217,6 +6258,8 @@ function saveTxnEdit() {
       ref:       document.getElementById('txn-edit-ref').value,
       warehouse: document.getElementById('txn-edit-warehouse').value,
       notes:     document.getElementById('txn-edit-notes').value,
+      booknum:   document.getElementById('txn-edit-booknum').value,
+      pagenum:   document.getElementById('txn-edit-pagenum').value,
       user:      document.getElementById('txn-edit-party').value,
     };
     saveLocal();
@@ -6255,6 +6298,8 @@ function saveTxnEdit() {
     ref:       document.getElementById('txn-edit-ref').value,
     warehouse: document.getElementById('txn-edit-warehouse').value,
     notes:     document.getElementById('txn-edit-notes').value,
+    booknum:   document.getElementById('txn-edit-booknum').value,
+    pagenum:   document.getElementById('txn-edit-pagenum').value,
     [type==='in'?'supplier':'dept']: document.getElementById('txn-edit-party').value,
   };
   if(firebaseDB && initialSyncCompleted && fbKey) {
