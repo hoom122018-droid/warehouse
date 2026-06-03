@@ -65,23 +65,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .sidebar.collapsed .logo-text,
 .sidebar.collapsed .nav-label,
 .sidebar.collapsed .nav-item .nav-text,
-.sidebar.collapsed .theme-switcher-block,
-.sidebar.collapsed .sidebar-profile-block,
 .sidebar.collapsed .user-info,
 .sidebar.collapsed .sidebar-footer .user-card>button{opacity:0;width:0;overflow:hidden;white-space:nowrap;pointer-events:none}
+.sidebar.collapsed .theme-switcher-block,
+.sidebar.collapsed .sidebar-profile-block{opacity:0;height:0;padding:0;margin:0;border:0;overflow:hidden;pointer-events:none}
 .sidebar.collapsed .logo{padding:18px 0 14px;display:flex;justify-content:center}
 .sidebar.collapsed .logo-mark{justify-content:center;gap:0}
 .sidebar.collapsed .sidebar-collapse-btn{margin:0}
-.sidebar.collapsed .nav{padding:16px 8px;overflow:visible}
+.sidebar.collapsed .nav{padding:16px 8px;overflow-y:auto;overflow-x:visible}
 .sidebar.collapsed .nav-section{margin-bottom:14px}
 .sidebar.collapsed .nav-item{justify-content:center;padding:11px 0}
 .sidebar.collapsed .nav-item .icon{width:auto}
 .sidebar.collapsed .nav-badge{position:absolute;top:4px;left:8px;margin:0;min-width:6px;height:6px;padding:0;font-size:0;border-radius:50%}
 .sidebar.collapsed .user-card{justify-content:center;padding:8px}
-/* tooltip when collapsed */
+/* tooltip when collapsed — rendered as a fixed element via JS to avoid scroll clipping */
 .sidebar.collapsed .nav-item{position:relative}
-.sidebar.collapsed .nav-item::after{content:attr(data-title);position:absolute;right:calc(100% + 10px);top:50%;transform:translateY(-50%) scale(.9);background:var(--bg4);color:var(--text);font-size:12px;font-weight:500;padding:6px 10px;border-radius:8px;white-space:nowrap;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s,transform .15s,visibility .15s;box-shadow:var(--shadow);z-index:1000;border:1px solid var(--border2)}
-.sidebar.collapsed .nav-item:hover::after{opacity:1;visibility:visible;transform:translateY(-50%) scale(1)}
+.collapsed-tip{position:fixed;background:var(--bg4);color:var(--text);font-size:12px;font-weight:500;padding:6px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow);z-index:3000;border:1px solid var(--border2);opacity:0;transform:scale(.92);transition:opacity .12s,transform .12s}
+.collapsed-tip.show{opacity:1;transform:scale(1)}
 .sidebar.collapsed .nav-item.active::before{right:auto;left:6px;width:3px}
 
 /* ── Sidebar ── */
@@ -6555,6 +6555,32 @@ function toggleSidebar() {
       if (sb) { sb.classList.add('collapsed'); if (btn) btn.textContent = '›'; }
     }
   } catch(e){}
+})();
+
+// Fixed-position tooltip for collapsed sidebar nav items (avoids scroll-clipping)
+(function(){
+  var tip;
+  function ensureTip(){
+    if (!tip){ tip = document.createElement('div'); tip.className='collapsed-tip'; document.body.appendChild(tip); }
+    return tip;
+  }
+  document.addEventListener('mouseover', function(e){
+    var item = e.target.closest && e.target.closest('.sidebar.collapsed .nav-item');
+    if (!item) return;
+    var label = item.getAttribute('data-title');
+    if (!label) return;
+    var t = ensureTip();
+    t.textContent = label;
+    var r = item.getBoundingClientRect();
+    t.style.top = (r.top + r.height/2) + 'px';
+    t.style.right = (window.innerWidth - r.left + 10) + 'px';
+    t.style.transform = 'translateY(-50%) scale(1)';
+    t.classList.add('show');
+  });
+  document.addEventListener('mouseout', function(e){
+    var item = e.target.closest && e.target.closest('.sidebar.collapsed .nav-item');
+    if (item && tip){ tip.classList.remove('show'); }
+  });
 })();
 
 // ══════════════════════════════════════════════
