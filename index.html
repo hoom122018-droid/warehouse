@@ -1830,11 +1830,11 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         <div class="lm-err" id="lm-err-show">اسم المستخدم أو كلمة المرور غير صحيحة</div>
         <div style="margin-bottom:16px">
           <div class="lm-lbl">👤 اسم المستخدم</div>
-          <input class="lm-inp" type="text" id="login-username" placeholder="أدخل اسم المستخدم" autocomplete="username" style="position:relative;z-index:20;pointer-events:auto" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+          <input class="lm-inp" type="text" id="login-username" placeholder="أدخل اسم المستخدم" name="wh-user-field" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly')" style="position:relative;z-index:20;pointer-events:auto" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
         </div>
         <div style="margin-bottom:18px">
           <div class="lm-lbl">🔒 كلمة المرور</div>
-          <input class="lm-inp" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" style="position:relative;z-index:20;pointer-events:auto" onkeydown="if(event.key==='Enter')doLogin()">
+          <input class="lm-inp" type="password" id="login-password" placeholder="••••••••" name="wh-pass-field" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly')" style="position:relative;z-index:20;pointer-events:auto" onkeydown="if(event.key==='Enter')doLogin()">
         </div>
         <button class="lm-btn" onclick="doLogin()" style="position:relative;z-index:20;pointer-events:auto">دخول إلى النظام 🌊</button>
         <div style="text-align:center;margin-top:12px;position:relative;z-index:20">
@@ -6156,8 +6156,45 @@ async function doLogin() {
   renderDashboard();
 }
 
+// ══ خروج تلقائي بعد 15 دقيقة من الخمول ══
+const IDLE_LIMIT_MS = 15 * 60 * 1000; // 15 دقيقة
+let _idleTimer = null;
+let _idleListenersBound = false;
+
+function _resetIdleTimer() {
+  if (!currentUser) return; // لا يعمل إلا أثناء جلسة نشطة
+  if (_idleTimer) clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(_doIdleLogout, IDLE_LIMIT_MS);
+}
+
+function _startIdleTracking() {
+  if (!_idleListenersBound) {
+    ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(function(ev){
+      document.addEventListener(ev, _resetIdleTimer, { passive: true });
+    });
+    _idleListenersBound = true;
+  }
+  _resetIdleTimer();
+}
+
+function _stopIdleTracking() {
+  if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+}
+
+async function _doIdleLogout() {
+  _stopIdleTracking();
+  if (firebaseAuth) { try { await firebaseAuth.signOut(); } catch(e) {} }
+  currentUser = null;
+  document.getElementById('sidebar-footer').style.display = 'none';
+  document.getElementById('login-modal').style.display = 'flex';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  toast('تم تسجيل الخروج تلقائياً بعد 15 دقيقة من الخمول', 'info');
+}
+
 async function doLogout() {
   if(!confirm('تأكيد تسجيل الخروج؟')) return;
+  _stopIdleTracking();
   if(firebaseAuth) { try { await firebaseAuth.signOut(); } catch(e) {} }
   currentUser = null;
   document.getElementById('sidebar-footer').style.display = 'none';
@@ -6168,6 +6205,7 @@ async function doLogout() {
 
 function applyRoleUI() {
   if(!currentUser) return;
+  _startIdleTracking();
   document.getElementById('sidebar-footer').style.display = '';
   document.getElementById('sb-username').textContent = currentUser.fullname;
   document.getElementById('sb-role').textContent = roleLabel(currentUser.role);
