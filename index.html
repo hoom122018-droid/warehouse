@@ -65,10 +65,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .sidebar.collapsed .logo-text,
 .sidebar.collapsed .nav-label,
 .sidebar.collapsed .nav-item .nav-text,
+.sidebar.collapsed .theme-switcher-block,
+.sidebar.collapsed .sidebar-profile-block,
 .sidebar.collapsed .user-info,
 .sidebar.collapsed .sidebar-footer .user-card>button{opacity:0;width:0;overflow:hidden;white-space:nowrap;pointer-events:none}
-.sidebar.collapsed .theme-switcher-block,
-.sidebar.collapsed .sidebar-profile-block{opacity:0;height:0;padding:0;margin:0;border:0;overflow:hidden;pointer-events:none}
 .sidebar.collapsed .logo{padding:18px 0 14px;display:flex;justify-content:center}
 .sidebar.collapsed .logo-mark{justify-content:center;gap:0}
 .sidebar.collapsed .sidebar-collapse-btn{margin:0}
@@ -78,10 +78,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .sidebar.collapsed .nav-item .icon{width:auto}
 .sidebar.collapsed .nav-badge{position:absolute;top:4px;left:8px;margin:0;min-width:6px;height:6px;padding:0;font-size:0;border-radius:50%}
 .sidebar.collapsed .user-card{justify-content:center;padding:8px}
-/* tooltip when collapsed — rendered as a fixed element via JS to avoid scroll clipping */
+/* tooltip when collapsed */
 .sidebar.collapsed .nav-item{position:relative}
-.collapsed-tip{position:fixed;background:var(--bg4);color:var(--text);font-size:12px;font-weight:500;padding:6px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow);z-index:3000;border:1px solid var(--border2);opacity:0;transform:scale(.92);transition:opacity .12s,transform .12s}
-.collapsed-tip.show{opacity:1;transform:scale(1)}
+.sidebar.collapsed .nav-item::after{content:attr(data-title);position:absolute;right:calc(100% + 10px);top:50%;transform:translateY(-50%) scale(.9);background:var(--bg4);color:var(--text);font-size:12px;font-weight:500;padding:6px 10px;border-radius:8px;white-space:nowrap;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s,transform .15s,visibility .15s;box-shadow:var(--shadow);z-index:1000;border:1px solid var(--border2)}
+.sidebar.collapsed .nav-item:hover::after{opacity:1;visibility:visible;transform:translateY(-50%) scale(1)}
 .sidebar.collapsed .nav-item.active::before{right:auto;left:6px;width:3px}
 
 /* ── Sidebar ── */
@@ -2222,6 +2222,14 @@ const firebaseConfig = {
   appId: "1:112839297874:web:c9ea4daa7cf8634724088b"
 };
 
+// ══ HTML ESCAPE — حماية ضد XSS ══
+// تحوّل أي رموز HTML خطرة لنص عادي يُعرَض فقط ولا يُنفَّذ
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
 // Firebase SDK (loaded via CDN in <head>)
 let firebaseDB = null;
 let firebaseAuth = null;
@@ -3581,9 +3589,9 @@ function renderDashboard() {
     <td><span class="code-chip">${r.id}</span></td>
     <td>${typeLabel[r.type]||r.type}</td>
     <td>${r.workorder?'<span class="code-chip">'+r.workorder+'</span>':'—'}</td>
-    <td><span class="code-chip">${r.code}</span></td>
-    <td>${r.name}</td>
-    <td><strong>${r.qty.toLocaleString()}</strong> ${r.unit}</td>
+    <td><span class="code-chip">${esc(r.code)}</span></td>
+    <td>${esc(r.name)}</td>
+    <td><strong>${r.qty.toLocaleString()}</strong> ${esc(r.unit)}</td>
     <td>${r.date}</td>
     <td>${r.user||'—'}</td>
   </tr>`).join('');
@@ -3683,9 +3691,9 @@ function addItemToRcvList(){
 function renderRcvList(){
   document.getElementById('rcv-list-count').textContent=_rcvList.length+' مادة';
   document.getElementById('rcv-items-list').innerHTML=_rcvList.map((it,i)=>`<tr>
-    <td>${i+1}</td><td><span class="code-chip">${it.code}</span></td><td>${it.name}</td>
-    <td>${it.unit}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
-    <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${it.notes||'—'}</td>
+    <td>${i+1}</td><td><span class="code-chip">${esc(it.code)}</span></td><td>${esc(it.name)}</td>
+    <td>${esc(it.unit)}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
+    <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${esc(it.notes)||'—'}</td>
     <td><button class="btn btn-sm btn-danger" onclick="_rcvList.splice(${i},1);renderRcvList()">🗑</button></td>
   </tr>`).join('');
 }
@@ -3750,43 +3758,43 @@ function _buildProfessionalPDF(opts) {
     tbodyRows = records.map((r,i) => [
       i+1,
       `<span class="chip">${r.id}</span>`,
-      `<span class="chip code">${r.code}</span>`,
-      `<strong>${r.name}</strong>`,
+      `<span class="chip code">${esc(r.code)}</span>`,
+      `<strong>${esc(r.name)}</strong>`,
       `<span class="qty-val">${r.qty.toLocaleString()}</span>`,
       r.unit,
       r.supplier||'—',
       r.warehouse||'—',
       r.date||'—',
-      `<span class="note-cell">${r.notes||'—'}</span>`
+      `<span class="note-cell">${esc(r.notes)||'—'}</span>`
     ]);
   } else if(opts.docType === 'dispatch') {
     theadCols = ['#','رقم السند','كود المادة','اسم المادة / الصنف','الكمية','الوحدة','الجهة / القسم','المستودع','التاريخ','السبب / الملاحظات'];
     tbodyRows = records.map((r,i) => [
       i+1,
       `<span class="chip">${r.id}</span>`,
-      `<span class="chip code">${r.code}</span>`,
-      `<strong>${r.name}</strong>`,
+      `<span class="chip code">${esc(r.code)}</span>`,
+      `<strong>${esc(r.name)}</strong>`,
       `<span class="qty-val" style="color:#922b21">${r.qty.toLocaleString()}</span>`,
       r.unit,
       r.dept||'—',
       r.warehouse||'—',
       r.date||'—',
-      `<span class="note-cell">${r.notes||'—'}</span>`
+      `<span class="note-cell">${esc(r.notes)||'—'}</span>`
     ]);
   } else {
     theadCols = ['#','رقم السند','كود المادة','اسم المادة / الصنف','كمية الإرجاع','الوحدة','الجهة / المورد','أمر العمل','المستودع','التاريخ','السبب / الملاحظات'];
     tbodyRows = records.map((r,i) => [
       i+1,
       `<span class="chip">${r.id}</span>`,
-      `<span class="chip code">${r.code}</span>`,
-      `<strong>${r.name}</strong>`,
+      `<span class="chip code">${esc(r.code)}</span>`,
+      `<strong>${esc(r.name)}</strong>`,
       `<span class="qty-val" style="color:${C.accent}">${r.qty.toLocaleString()}</span>`,
       r.unit,
       r.dept||'—',
       r.workorder||'—',
       r.warehouse||'—',
       r.date||'—',
-      `<span class="note-cell">${r.notes||'—'}</span>`
+      `<span class="note-cell">${esc(r.notes)||'—'}</span>`
     ]);
   }
 
@@ -4047,9 +4055,9 @@ function _buildReturnSummary(records, docType) {
   const accentColor = isReturnDispatch ? '#6c3483' : '#b7770d';
   const tbody = rows.map((r,i)=>`<tr class="${i%2===1?'alt':''}">
     <td class="ctr">${i+1}</td>
-    <td class="chip">${r.code}</td>
-    <td><strong>${r.name}</strong></td>
-    <td class="ctr">${r.unit}</td>
+    <td class="chip">${esc(r.code)}</td>
+    <td><strong>${esc(r.name)}</strong></td>
+    <td class="ctr">${esc(r.unit)}</td>
     <td class="ctr qty-dispatched">${r.totalDispatched.toLocaleString()}</td>
     <td class="ctr qty-returned" style="color:#b7770d;font-weight:700">${r.prevReturnDisp.toLocaleString()}</td>
     <td class="ctr" style="color:${accentColor};font-weight:700">${r.thisReturn.toLocaleString()}</td>
@@ -4374,10 +4382,10 @@ function addItemToDspList(){
 function renderDspList(){
   document.getElementById('dsp-list-count').textContent=_dspList.length+' مادة';
   document.getElementById('dsp-items-list').innerHTML=_dspList.map((it,i)=>`<tr>
-    <td>${i+1}</td><td><span class="code-chip">${it.code}</span></td><td>${it.name}</td>
-    <td>${it.unit}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
+    <td>${i+1}</td><td><span class="code-chip">${esc(it.code)}</span></td><td>${esc(it.name)}</td>
+    <td>${esc(it.unit)}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
     <td style="color:var(--green-l)">${it.balance.toLocaleString()}</td>
-    <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${it.notes||'—'}</td>
+    <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${esc(it.notes)||'—'}</td>
     <td><button class="btn btn-sm btn-danger" onclick="_dspList.splice(${i},1);renderDspList()">🗑</button></td>
   </tr>`).join('');
 }
@@ -4585,8 +4593,8 @@ function renderStock(){
                 '<span class="badge badge-green">✓ متوفر</span>';
     return `<tr class="${cls}">
       <td>${(stockPage-1)*STOCK_PER_PAGE+i+1}</td>
-      <td><span class="code-chip">${d.code}</span></td>
-      <td>${d.name}</td><td>${d.unit}</td>
+      <td><span class="code-chip">${esc(d.code)}</span></td>
+      <td>${esc(d.name)}</td><td>${esc(d.unit)}</td>
       <td style="color:var(--green-l)">${d.totalIn.toLocaleString()}</td>
       <td style="color:var(--red-l)">${d.totalOut.toLocaleString()}</td>
       <td><strong style="font-size:15px">${d.balance.toLocaleString()}</strong></td>
@@ -4618,9 +4626,9 @@ function renderLowStock(){
     const diff=d.balance-d.min;
     return `<tr class="${d.status==='out'?'stock-out':'stock-low'}">
       <td>${i+1}</td>
-      <td><span class="code-chip">${d.code}</span></td>
-      <td><strong>${d.name}</strong></td>
-      <td>${d.unit}</td>
+      <td><span class="code-chip">${esc(d.code)}</span></td>
+      <td><strong>${esc(d.name)}</strong></td>
+      <td>${esc(d.unit)}</td>
       <td style="color:${d.status==='out'?'var(--red-l)':'var(--amber-l)'};font-weight:700;font-size:15px">${d.balance.toLocaleString()}</td>
       <td>${d.min.toLocaleString()}</td>
       <td style="color:var(--red-l)">${diff.toLocaleString()}</td>
@@ -4992,9 +5000,9 @@ function renderMovements(){
     // ── عمود الجهة/المورد ──
     let partyDisplay = '—';
     if(m._displayCompany) {
-      partyDisplay = '<strong style="color:var(--blue-l)">' + m._displayCompany + '</strong>';
+      partyDisplay = '<strong style="color:var(--blue-l)">' + esc(m._displayCompany) + '</strong>';
     } else {
-      partyDisplay = m.supplier || m.dept || '—';
+      partyDisplay = esc(m.supplier || m.dept || '—');
     }
 
     let btns = '—';
@@ -5023,17 +5031,17 @@ function renderMovements(){
       }
     }
     return `<tr>
-      <td><span class="code-chip">${m.id}</span></td>
+      <td><span class="code-chip">${esc(m.id)}</span></td>
       <td>${badge}</td>
-      <td>${m.date||'—'}</td>
-      <td><span class="code-chip">${m.code}</span></td>
-      <td>${m.name}</td>
-      <td><strong>${(m.qty||0).toLocaleString()}</strong> ${m.unit||''}</td>
-      <td>${m.workorder||'—'}</td>
-      <td style="font-size:12px;color:var(--text3)">${m.serial||'—'}</td>
-      <td style="font-size:12px;color:var(--text3)">${m.pagenum||'—'}</td>
+      <td>${esc(m.date)||'—'}</td>
+      <td><span class="code-chip">${esc(m.code)}</span></td>
+      <td>${esc(m.name)}</td>
+      <td><strong>${(m.qty||0).toLocaleString()}</strong> ${esc(m.unit||'')}</td>
+      <td>${esc(m.workorder)||'—'}</td>
+      <td style="font-size:12px;color:var(--text3)">${esc(m.serial)||'—'}</td>
+      <td style="font-size:12px;color:var(--text3)">${esc(m.pagenum)||'—'}</td>
       <td>${partyDisplay}</td>
-      <td>${m.user||'—'}</td>
+      <td>${esc(m.user)||'—'}</td>
       <td style="white-space:nowrap">${btns}</td>
     </tr>`;
   }).join('');
@@ -5193,7 +5201,7 @@ async function loadPerformanceAnalytics() {
           const highlight = i===0 ? 'background:rgba(59,164,247,.06)' : '';
           return `<tr style="${highlight}">
             <td style="padding:10px 14px;border-bottom:1px solid var(--border)">
-              <strong>${u.name}</strong>${i===0?'<span style="font-size:10px;color:var(--blue-l);margin-right:6px">⭐ الأكثر نشاطاً</span>':''}
+              <strong>${esc(u.name)}</strong>${i===0?'<span style="font-size:10px;color:var(--blue-l);margin-right:6px">⭐ الأكثر نشاطاً</span>':''}
             </td>
             <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:16px;font-weight:700;color:var(--blue-l)">${u.count}</td>
             <td style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--green-l)">${firstToday}</td>
@@ -5220,11 +5228,11 @@ function renderItems(){
   const tb=document.getElementById('items-tbody');
   tb.innerHTML=data.map((it,i)=>`<tr>
     <td>${i+1}</td>
-    <td><span class="code-chip">${it.code}</span></td>
-    <td>${it.name}</td><td>${it.unit}</td>
+    <td><span class="code-chip">${esc(it.code)}</span></td>
+    <td>${esc(it.name)}</td><td>${esc(it.unit)}</td>
     <td>${(it.opening||0).toLocaleString()}</td>
     <td>${it.min.toLocaleString()}</td>
-    <td>${it.notes||'—'}</td>
+    <td>${esc(it.notes)||'—'}</td>
     <td>${canManage ? '<button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red)" onclick="deleteItem(\''+it.code+'\')">حذف</button>' : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
   </tr>`).join('');
 }
@@ -5295,11 +5303,11 @@ function renderPickerList(q){
   if(q) data=data.filter(d=>d.code.toLowerCase().includes(q)||d.name.includes(q));
   const el=document.getElementById('picker-list');
   el.innerHTML=data.map(it=>`
-    <div onclick="selectItem('${it.code}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);border-radius:var(--radius);margin-bottom:4px;transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+    <div onclick="selectItem('${esc(it.code)}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);border-radius:var(--radius);margin-bottom:4px;transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
       <div style="display:flex;align-items:center;gap:8px">
-        <span class="code-chip">${it.code}</span>
-        <strong style="font-size:13px">${it.name}</strong>
-        <span style="margin-right:auto;font-size:12px;color:var(--text3)">${it.unit} · حد أدنى: ${it.min}</span>
+        <span class="code-chip">${esc(it.code)}</span>
+        <strong style="font-size:13px">${esc(it.name)}</strong>
+        <span style="margin-right:auto;font-size:12px;color:var(--text3)">${esc(it.unit)} · حد أدنى: ${it.min}</span>
       </div>
       <div style="font-size:11px;color:var(--text3);margin-top:4px">
         رصيد حالي: <strong style="color:var(--green-l)">${getStock(it.code).balance.toLocaleString()}</strong>
@@ -5529,12 +5537,12 @@ function printReceivePage(){
     <td>${i+1}</td>
     <td style="font-family:monospace;color:#1F6FEB">${r.id}</td>
     <td>${r.date}</td>
-    <td style="font-family:monospace;font-size:11px">${r.code}</td>
-    <td>${r.name}</td>
-    <td>${r.unit}</td>
+    <td style="font-family:monospace;font-size:11px">${esc(r.code)}</td>
+    <td>${esc(r.name)}</td>
+    <td>${esc(r.unit)}</td>
     <td style="font-weight:700;color:#2E7D32">${r.qty.toLocaleString()}</td>
-    <td>${r.workorder||'—'}</td>
-    <td>${r.supplier||'—'}</td>
+    <td>${esc(r.workorder)||'—'}</td>
+    <td>${esc(r.supplier)||'—'}</td>
     <td>${r.warehouse||'—'}</td>
     <td>${r.user||'—'}</td>
   </tr>`).join('');
@@ -5555,12 +5563,12 @@ function printDispatchPage(){
     <td>${i+1}</td>
     <td style="font-family:monospace;color:#c62828">${d.id}</td>
     <td>${d.date}</td>
-    <td style="font-family:monospace;font-size:11px">${d.code}</td>
-    <td>${d.name}</td>
-    <td>${d.unit}</td>
+    <td style="font-family:monospace;font-size:11px">${esc(d.code)}</td>
+    <td>${esc(d.name)}</td>
+    <td>${esc(d.unit)}</td>
     <td style="font-weight:700;color:#c62828">${d.qty.toLocaleString()}</td>
-    <td>${d.workorder||'—'}</td>
-    <td>${d.dept||'—'}</td>
+    <td>${esc(d.workorder)||'—'}</td>
+    <td>${esc(d.dept)||'—'}</td>
     <td>${d.warehouse||'—'}</td>
     <td>${d.user||'—'}</td>
   </tr>`).join('');
@@ -5581,12 +5589,12 @@ function printReturnReceivePage(){
     <td>${i+1}</td>
     <td style="font-family:monospace;color:#f57f17">${r.id}</td>
     <td>${r.date}</td>
-    <td style="font-family:monospace;font-size:11px">${r.code}</td>
-    <td>${r.name}</td>
-    <td>${r.unit}</td>
+    <td style="font-family:monospace;font-size:11px">${esc(r.code)}</td>
+    <td>${esc(r.name)}</td>
+    <td>${esc(r.unit)}</td>
     <td style="font-weight:700;color:#f57f17">${r.qty.toLocaleString()}</td>
-    <td>${r.workorder||'—'}</td>
-    <td>${r.dept||'—'}</td>
+    <td>${esc(r.workorder)||'—'}</td>
+    <td>${esc(r.dept)||'—'}</td>
     <td>${r.warehouse||'—'}</td>
     <td>${r.user||'—'}</td>
   </tr>`).join('');
@@ -5607,12 +5615,12 @@ function printReturnDispatchPage(){
     <td>${i+1}</td>
     <td style="font-family:monospace;color:#7B1FA2">${d.id}</td>
     <td>${d.date}</td>
-    <td style="font-family:monospace;font-size:11px">${d.code}</td>
-    <td>${d.name}</td>
-    <td>${d.unit}</td>
+    <td style="font-family:monospace;font-size:11px">${esc(d.code)}</td>
+    <td>${esc(d.name)}</td>
+    <td>${esc(d.unit)}</td>
     <td style="font-weight:700;color:#7B1FA2">${d.qty.toLocaleString()}</td>
-    <td>${d.workorder||'—'}</td>
-    <td>${d.dept||'—'}</td>
+    <td>${esc(d.workorder)||'—'}</td>
+    <td>${esc(d.dept)||'—'}</td>
     <td>${d.warehouse||'—'}</td>
     <td>${d.user||'—'}</td>
   </tr>`).join('');
@@ -5667,12 +5675,12 @@ function printItemsPage(){
   if(itemsFilter) data = data.filter(d=>d.code.toLowerCase().includes(itemsFilter)||d.name.includes(itemsFilter));
   const rows = data.map((it,i)=>`<tr>
     <td>${i+1}</td>
-    <td style="font-family:monospace;color:#1F6FEB">${it.code}</td>
-    <td><strong>${it.name}</strong></td>
-    <td>${it.unit}</td>
+    <td style="font-family:monospace;color:#1F6FEB">${esc(it.code)}</td>
+    <td><strong>${esc(it.name)}</strong></td>
+    <td>${esc(it.unit)}</td>
     <td>${(it.opening||0).toLocaleString()}</td>
     <td>${it.min.toLocaleString()}</td>
-    <td style="font-size:11px;color:#555">${it.notes||'—'}</td>
+    <td style="font-size:11px;color:#555">${esc(it.notes)||'—'}</td>
   </tr>`).join('');
   const summary = `<div class="sum-card"><div class="lbl">إجمالي الأصناف</div><div class="val">${data.length}</div></div>`;
   const table = `<table><thead><tr>
@@ -5693,9 +5701,9 @@ function printCatalogPage(){
     const badgeTxt = st==='out'?'⛔ نفد':st==='low'?'⚠ تحت الحد':'✓ متوفر';
     return `<tr>
       <td>${i+1}</td>
-      <td style="font-family:monospace;color:#1F6FEB">${it.code}</td>
-      <td><strong>${it.name}</strong>${it.notes?'<br><span style="font-size:10px;color:#888">'+it.notes+'</span>':''}</td>
-      <td>${it.unit}</td>
+      <td style="font-family:monospace;color:#1F6FEB">${esc(it.code)}</td>
+      <td><strong>${esc(it.name)}</strong>${it.notes?'<br><span style="font-size:10px;color:#888">'+it.notes+'</span>':''}</td>
+      <td>${esc(it.unit)}</td>
       <td style="font-weight:700">${s.balance.toLocaleString()}</td>
       <td>${it.min.toLocaleString()}</td>
       <td><span class="${badgeCls}">${badgeTxt}</span></td>
@@ -5717,7 +5725,7 @@ function printUsersPage(){
   const rows = data.map((u,i)=>`<tr>
     <td>${i+1}</td>
     <td style="font-family:monospace">${u.username}</td>
-    <td><strong>${u.fullname}</strong></td>
+    <td><strong>${esc(u.fullname)}</strong></td>
     <td>${roleMap[u.role]||u.role}</td>
     <td style="font-size:11px">${u.email||'—'}</td>
     <td>${u.lastLogin||'—'}</td>
@@ -5818,9 +5826,9 @@ function printStockPage() {
     const rowBg    = d.status==='out' ? 'background:#fff0f0' : d.status==='low' ? 'background:#fffbf0' : '';
     return `<tr style="${rowBg}">
       <td>${i+1}</td>
-      <td style="font-family:monospace;font-size:11px;color:#1F6FEB">${d.code}</td>
-      <td>${d.name}</td>
-      <td>${d.unit}</td>
+      <td style="font-family:monospace;font-size:11px;color:#1F6FEB">${esc(d.code)}</td>
+      <td>${esc(d.name)}</td>
+      <td>${esc(d.unit)}</td>
       <td style="color:#2E7D32;font-weight:600">${d.totalIn.toLocaleString()}</td>
       <td style="color:#c62828;font-weight:600">${d.totalOut.toLocaleString()}</td>
       <td style="font-weight:700;font-size:14px">${d.balance.toLocaleString()}</td>
@@ -5863,9 +5871,9 @@ function printLowStockPage() {
     const rowBg    = d.status==='out' ? 'background:#fff0f0' : 'background:#fffbf0';
     return `<tr style="${rowBg}">
       <td>${i+1}</td>
-      <td style="font-family:monospace;font-size:11px;color:#1F6FEB">${d.code}</td>
-      <td><strong>${d.name}</strong></td>
-      <td>${d.unit}</td>
+      <td style="font-family:monospace;font-size:11px;color:#1F6FEB">${esc(d.code)}</td>
+      <td><strong>${esc(d.name)}</strong></td>
+      <td>${esc(d.unit)}</td>
       <td style="font-weight:700;font-size:14px;color:${d.status==='out'?'#c62828':'#f57f17'}">${d.balance.toLocaleString()}</td>
       <td>${d.min.toLocaleString()}</td>
       <td style="color:#c62828;font-weight:600">${diff.toLocaleString()}</td>
@@ -5902,10 +5910,10 @@ function printDashboardPage() {
   const rows = all.map((r,i) => `<tr>
     <td>${r.id}</td>
     <td style="color:${r.typeColor};font-weight:600">${r.type}</td>
-    <td>${r.workorder||'—'}</td>
-    <td style="font-family:monospace;font-size:11px">${r.code}</td>
-    <td>${r.name}</td>
-    <td style="font-weight:700">${r.qty.toLocaleString()} ${r.unit}</td>
+    <td>${esc(r.workorder)||'—'}</td>
+    <td style="font-family:monospace;font-size:11px">${esc(r.code)}</td>
+    <td>${esc(r.name)}</td>
+    <td style="font-weight:700">${r.qty.toLocaleString()} ${esc(r.unit)}</td>
     <td>${r.date}</td>
     <td>${r.user||'—'}</td>
   </tr>`).join('');
@@ -5961,11 +5969,11 @@ function printMovementsOnly(){
     <td style="font-family:monospace;font-size:11px">${m.id}</td>
     <td style="color:${TYPE_COLORS[m.type]||'#333'};font-weight:600">${MOV_LABELS[m.type]||m.type}</td>
     <td>${m.date}</td>
-    <td style="font-family:monospace;font-size:11px">${m.code}</td>
-    <td>${m.name}</td>
-    <td style="font-weight:700;text-align:center">${m.qty.toLocaleString()} ${m.unit}</td>
-    <td>${m.workorder||'—'}</td>
-    <td>${m.supplier||m.dept||'—'}</td>
+    <td style="font-family:monospace;font-size:11px">${esc(m.code)}</td>
+    <td>${esc(m.name)}</td>
+    <td style="font-weight:700;text-align:center">${m.qty.toLocaleString()} ${esc(m.unit)}</td>
+    <td>${esc(m.workorder)||'—'}</td>
+    <td>${esc(m.supplier||m.dept||'—')}</td>
     <td>${m.user||'—'}</td>
   </tr>`).join('');
 
@@ -6269,10 +6277,10 @@ function renderUsers() {
         + (isAdmin ? '<button class="btn btn-sm" style="color:var(--purple-l);border-color:var(--purple);margin-right:4px" onclick="changeUserRole(\''+u.username+'\',\''+u.role+'\')">🛡 الدور</button>' : '');
     return '<tr>'
       + '<td style="color:var(--text3)">'+(i+1)+'</td>'
-      + '<td><span class="code-chip">'+u.username+'</span></td>'
-      + '<td>'+u.fullname+'</td>'
+      + '<td><span class="code-chip">'+esc(u.username)+'</span></td>'
+      + '<td>'+esc(u.fullname)+'</td>'
       + '<td><span class="badge badge-'+rc+'">'+roleLabel(u.role)+'</span></td>'
-      + '<td style="font-size:12px;color:var(--text3)">'+(u.lastLogin||'—')+'</td>'
+      + '<td style="font-size:12px;color:var(--text3)">'+esc(u.lastLogin||'—')+'</td>'
       + '<td>'+statusBadge+'</td>'
       + '<td style="white-space:nowrap">'+actionBtns+'</td>'
       + '</tr>';
@@ -6557,32 +6565,6 @@ function toggleSidebar() {
   } catch(e){}
 })();
 
-// Fixed-position tooltip for collapsed sidebar nav items (avoids scroll-clipping)
-(function(){
-  var tip;
-  function ensureTip(){
-    if (!tip){ tip = document.createElement('div'); tip.className='collapsed-tip'; document.body.appendChild(tip); }
-    return tip;
-  }
-  document.addEventListener('mouseover', function(e){
-    var item = e.target.closest && e.target.closest('.sidebar.collapsed .nav-item');
-    if (!item) return;
-    var label = item.getAttribute('data-title');
-    if (!label) return;
-    var t = ensureTip();
-    t.textContent = label;
-    var r = item.getBoundingClientRect();
-    t.style.top = (r.top + r.height/2) + 'px';
-    t.style.right = (window.innerWidth - r.left + 10) + 'px';
-    t.style.transform = 'translateY(-50%) scale(1)';
-    t.classList.add('show');
-  });
-  document.addEventListener('mouseout', function(e){
-    var item = e.target.closest && e.target.closest('.sidebar.collapsed .nav-item');
-    if (item && tip){ tip.classList.remove('show'); }
-  });
-})();
-
 // ══════════════════════════════════════════════
 // ══  CUSTODY MODULE - إدارة العهد  ══════════
 // ══════════════════════════════════════════════
@@ -6647,9 +6629,9 @@ function renderCustItemsList() {
   tbody.innerHTML=_custItemsList.map((it,i)=>`
     <tr>
       <td style="color:var(--text3);width:36px">${i+1}</td>
-      <td><span class="code-chip">${it.code}</span></td>
-      <td>${it.name}</td>
-      <td>${it.unit}</td>
+      <td><span class="code-chip">${esc(it.code)}</span></td>
+      <td>${esc(it.name)}</td>
+      <td>${esc(it.unit)}</td>
       <td style="font-weight:600">${it.qty}</td>
       <td><button class="btn btn-danger btn-sm" onclick="custRemoveItem(${i})">✕</button></td>
     </tr>`).join('');
@@ -6910,14 +6892,14 @@ function renderCustodyTable(){
       const badge=c.status==='active'?'<span class="badge badge-amber">📤 في الخارج</span>':'<span class="badge badge-green">✓ مرجعة</span>';
       const cJ=JSON.stringify(c).replace(/"/g,'&quot;');
       return `<tr>
-        <td><span class="code-chip">${c.id}</span></td>
-        <td>${c.date||''}</td>
-        <td style="font-weight:500">${c.receiver||''}</td>
-        <td style="color:var(--text2)">${c.job||'—'}</td>
-        <td>${c.company||''}</td>
+        <td><span class="code-chip">${esc(c.id)}</span></td>
+        <td>${esc(c.date||'')}</td>
+        <td style="font-weight:500">${esc(c.receiver||'')}</td>
+        <td style="color:var(--text2)">${esc(c.job)||'—'}</td>
+        <td>${esc(c.company||'')}</td>
         <td style="text-align:center">${(c.items||[]).length} صنف</td>
         <td>${badge}</td>
-        <td>${c.returnDate ? c.returnDate : '<span style="color:var(--amber-l);font-size:12px">لم يتم الإرجاع</span>'}</td>
+        <td>${c.returnDate ? esc(c.returnDate) : '<span style="color:var(--amber-l);font-size:12px">لم يتم الإرجاع</span>'}</td>
         <td style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="btn btn-sm" onclick="exportCustodyWord(${cJ})" title="تنزيل Word">📝 Word</button>
           <button class="btn btn-sm" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple-l)" onclick="previewCustodyPDF(${cJ})" title="معاينة وطباعة PDF">📄 PDF</button>
@@ -6945,9 +6927,9 @@ function exportCustodyWord(custody){
   const itemsHtml = (custody.items||[]).map((it,i)=>`
     <tr>
       <td align="center">${i+1}</td>
-      <td align="center" style="font-family:Courier New">${it.code}</td>
-      <td align="right">${it.name}</td>
-      <td align="center">${it.unit}</td>
+      <td align="center" style="font-family:Courier New">${esc(it.code)}</td>
+      <td align="right">${esc(it.name)}</td>
+      <td align="center">${esc(it.unit)}</td>
       <td align="center"><b>${it.qty}</b></td>
     </tr>`).join('');
 
@@ -7010,13 +6992,13 @@ function exportCustodyWord(custody){
   </tr>
   <tr>
     <td class="light-cell">اسم المستلم</td>
-    <td><b>${custody.receiver||''}</b></td>
+    <td><b>${esc(custody.receiver)||''}</b></td>
     <td class="light-cell">المهنة</td>
-    <td>${custody.job||'—'}</td>
+    <td>${esc(custody.job)||'—'}</td>
   </tr>
   <tr>
     <td class="light-cell">الشركة / الجهة</td>
-    <td colspan="3"><b>${custody.company||''}</b></td>
+    <td colspan="3"><b>${esc(custody.company)||''}</b></td>
   </tr>
   <tr>
     <td class="light-cell">رقم الإقامة</td>
@@ -7053,7 +7035,7 @@ function exportCustodyWord(custody){
 <!-- إقرار المستلم -->
 <h2>إقرار المستلم</h2>
 <p style="background:${LIGHT};border:1pt solid #e0d080;padding:10pt;line-height:2;font-size:11pt">
-  استلمت أنا السيد / <b>${custody.receiver}</b> (${custody.job||''}) لدى شركة <b>${custody.company}</b>،
+  استلمت أنا السيد / <b>${esc(custody.receiver)}</b> (${esc(custody.job)||''}) لدى شركة <b>${esc(custody.company)}</b>،
   المواد الموضحة أعلاه من مستودع شركة محمد محسن سالم الصانبي وشركاه للمقاولات${salfaLine}
 </p>
 
@@ -7072,14 +7054,14 @@ function exportCustodyWord(custody){
   </tr>
 </table>
 <p style="font-size:9pt;color:#666">
-  اسم المستلم: <b>${custody.receiver}</b> &nbsp;|&nbsp;
+  اسم المستلم: <b>${esc(custody.receiver)}</b> &nbsp;|&nbsp;
   رقم الإقامة: <b>${custody.iqama||'—'}</b> &nbsp;|&nbsp;
   رقم الجوال: <b>${custody.mobile||'—'}</b>
 </p>
 
 <div class="footer-bar" style="display:flex;justify-content:space-between">
   <span>تاريخ الإصدار: ${custody.date||''}</span>
-  ${custody.notes?`<span>ملاحظات: ${custody.notes}</span>`:''}
+  ${custody.notes?`<span>ملاحظات: ${esc(custody.notes)}</span>`:''}
   <span style="color:${GOLD};font-weight:bold">${custody.id}</span>
 </div>
 
@@ -7211,9 +7193,9 @@ function printCustodyPDF(){
     const itemRowsHTML = pageItems.map((it,i)=>`
       <tr style="background:${(startIdx+i)%2===0?'#fff':'#fafafa'}">
         <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;color:#666;font-size:13px">${startIdx+i+1}</td>
-        <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;font-family:monospace;font-size:12px;color:#1A1A2E">${it.code}</td>
-        <td style="padding:9px 12px;border:1px solid #e0e0e0;font-weight:500;font-size:13px">${it.name}</td>
-        <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;color:#555;font-size:13px">${it.unit}</td>
+        <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;font-family:monospace;font-size:12px;color:#1A1A2E">${esc(it.code)}</td>
+        <td style="padding:9px 12px;border:1px solid #e0e0e0;font-weight:500;font-size:13px">${esc(it.name)}</td>
+        <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;color:#555;font-size:13px">${esc(it.unit)}</td>
         <td style="padding:9px 8px;text-align:center;border:1px solid #e0e0e0;font-weight:700;font-size:15px;color:${DARK}">${it.qty}</td>
       </tr>`).join('');
 
@@ -7249,13 +7231,13 @@ function printCustodyPDF(){
         </tr>
         <tr>
           <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">اسم المستلم</td>
-          <td style="padding:9px 12px;font-size:14px;font-weight:600;border:1px solid #ccc">${c.receiver||''}</td>
+          <td style="padding:9px 12px;font-size:14px;font-weight:600;border:1px solid #ccc">${esc(c.receiver)||''}</td>
           <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">المهنة</td>
-          <td style="padding:9px 12px;font-size:13px;border:1px solid #ccc">${c.job||'—'}</td>
+          <td style="padding:9px 12px;font-size:13px;border:1px solid #ccc">${esc(c.job)||'—'}</td>
         </tr>
         <tr>
           <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">الشركة / الجهة</td>
-          <td style="padding:9px 12px;font-size:14px;font-weight:600;border:1px solid #ccc">${c.company||''}</td>
+          <td style="padding:9px 12px;font-size:14px;font-weight:600;border:1px solid #ccc">${esc(c.company)||''}</td>
           <td style="background:${LIGHT};padding:9px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">صورة الهوية</td>
           <td style="padding:5px 8px;border:1px solid #ccc;text-align:center;vertical-align:middle">
             ${idPhoto
@@ -7311,7 +7293,7 @@ function printCustodyPDF(){
       <div style="border:1px solid #e0d0a0;background:#fffdf5;border-radius:5px;padding:9px 13px;margin-bottom:10px">
         <div style="font-size:14px;font-weight:700;color:${DARK};margin-bottom:6px;border-bottom:1px solid #e8d88a;padding-bottom:5px">إقرار المستلم</div>
         <div style="font-size:13px;line-height:2;color:#222">
-          استلمت أنا السيد / <strong>${c.receiver}</strong>&nbsp;(${c.job||''})&nbsp; لدى شركة <strong>${c.company}</strong>،
+          استلمت أنا السيد / <strong>${esc(c.receiver)}</strong>&nbsp;(${esc(c.job)||''})&nbsp; لدى شركة <strong>${esc(c.company)}</strong>،
           المواد الموضحة أعلاه من مستودع شركة محمد محسن سالم الصانبي وشركاه للمقاولات${salfaText}
           ${totalPages>1 ? `<span style="color:#888;font-size:11px"> — صفحة ${pageLabel}</span>` : ''}
         </div>
@@ -7342,7 +7324,7 @@ function printCustodyPDF(){
 
       <!-- سطر المستلم تحت التوقيعات -->
       <div style="display:flex;gap:14px;font-size:12px;color:#555;margin-bottom:6px;padding:8px 12px;background:#f9f9f9;border-radius:4px;border:1px solid #eee">
-        <span>اسم المستلم: <strong style="color:${DARK}">${c.receiver}</strong></span>
+        <span>اسم المستلم: <strong style="color:${DARK}">${esc(c.receiver)}</strong></span>
         <span style="color:#ccc">|</span>
         <span>رقم الإقامة: <strong>${c.iqama||'—'}</strong></span>
         <span style="color:#ccc">|</span>
@@ -7352,7 +7334,7 @@ function printCustodyPDF(){
       <!-- فوتر الصفحة -->
       <div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid ${GOLD};padding-top:7px;margin-top:4px;font-size:11px;color:#999">
         <span>تاريخ الإصدار: ${c.date||''}</span>
-        ${c.notes?`<span>ملاحظات: ${c.notes}</span>`:''}
+        ${c.notes?`<span>ملاحظات: ${esc(c.notes)}</span>`:''}
         <span style="font-weight:600;color:${GOLD}">${c.id} — صفحة ${pageLabel}</span>
       </div>
 
@@ -7429,9 +7411,9 @@ function _buildCustodyPDFHTML(c, showSig){
   const itemRows = (c.items||[]).map((it,i)=>`
     <tr style="background:${i%2===0?'#fff':'#fafafa'}">
       <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;color:#666;font-size:14px">${i+1}</td>
-      <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;font-family:monospace;font-size:13px;color:#1A1A2E">${it.code}</td>
-      <td style="padding:10px 12px;border:1px solid #e0e0e0;font-weight:500;font-size:14px">${it.name}</td>
-      <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;color:#555;font-size:14px">${it.unit}</td>
+      <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;font-family:monospace;font-size:13px;color:#1A1A2E">${esc(it.code)}</td>
+      <td style="padding:10px 12px;border:1px solid #e0e0e0;font-weight:500;font-size:14px">${esc(it.name)}</td>
+      <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;color:#555;font-size:14px">${esc(it.unit)}</td>
       <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;font-weight:700;font-size:16px;color:${DARK}">${it.qty}</td>
     </tr>`).join('');
 
@@ -7463,13 +7445,13 @@ function _buildCustodyPDFHTML(c, showSig){
     </tr>
     <tr>
       <td style="background:${LIGHT};padding:10px 14px;font-size:14px;font-weight:700;border:1px solid #ccc;text-align:center">اسم المستلم</td>
-      <td style="padding:10px 14px;font-size:15px;font-weight:600;border:1px solid #ccc">${c.receiver||''}</td>
+      <td style="padding:10px 14px;font-size:15px;font-weight:600;border:1px solid #ccc">${esc(c.receiver)||''}</td>
       <td style="background:${LIGHT};padding:10px 14px;font-size:14px;font-weight:700;border:1px solid #ccc;text-align:center">المهنة</td>
-      <td style="padding:10px 14px;font-size:14px;border:1px solid #ccc">${c.job||'—'}</td>
+      <td style="padding:10px 14px;font-size:14px;border:1px solid #ccc">${esc(c.job)||'—'}</td>
     </tr>
     <tr>
       <td style="background:${LIGHT};padding:10px 14px;font-size:14px;font-weight:700;border:1px solid #ccc;text-align:center">الشركة / الجهة</td>
-      <td style="padding:10px 14px;font-size:15px;font-weight:600;border:1px solid #ccc">${c.company||''}</td>
+      <td style="padding:10px 14px;font-size:15px;font-weight:600;border:1px solid #ccc">${esc(c.company)||''}</td>
       <td style="background:${LIGHT};padding:10px 14px;font-size:14px;font-weight:700;border:1px solid #ccc;text-align:center">صورة الهوية</td>
       <td style="padding:6px 10px;border:1px solid #ccc;text-align:center;vertical-align:middle">
         ${window._custodyIdPhoto
@@ -7520,7 +7502,7 @@ function _buildCustodyPDFHTML(c, showSig){
   <div class="pdf-section" style="border:1px solid #e0d0a0;background:#fffdf5;border-radius:5px;padding:10px 14px;margin-bottom:12px">
     <div style="font-size:15px;font-weight:700;color:${DARK};margin-bottom:8px;border-bottom:1px solid #e8d88a;padding-bottom:6px">إقرار المستلم</div>
     <div style="font-size:14px;line-height:2.2;color:#222">
-      استلمت أنا السيد / <strong>${c.receiver}</strong>&nbsp;(${c.job||''})&nbsp; لدى شركة <strong>${c.company}</strong>،
+      استلمت أنا السيد / <strong>${esc(c.receiver)}</strong>&nbsp;(${esc(c.job)||''})&nbsp; لدى شركة <strong>${esc(c.company)}</strong>،
       المواد الموضحة أعلاه من مستودع شركة محمد محسن سالم الصانبي وشركاه للمقاولات${salfaText}
     </div>
   </div>
@@ -7551,7 +7533,7 @@ function _buildCustodyPDFHTML(c, showSig){
 
   <!-- سطر: اسم المستلم + رقم الإقامة تحت جدول التوقيع -->
   <div style="display:flex;gap:16px;font-size:13px;color:#555;margin-bottom:8px;padding:10px 14px;background:#f9f9f9;border-radius:4px;border:1px solid #eee">
-    <span>اسم المستلم: <strong style="color:${DARK}">${c.receiver}</strong></span>
+    <span>اسم المستلم: <strong style="color:${DARK}">${esc(c.receiver)}</strong></span>
     <span style="color:#ccc">|</span>
     <span>رقم الإقامة: <strong>${c.iqama||'—'}</strong></span>
     <span style="color:#ccc">|</span>
@@ -7561,7 +7543,7 @@ function _buildCustodyPDFHTML(c, showSig){
   <!-- فوتر -->
   <div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid ${GOLD};padding-top:8px;margin-top:6px;font-size:11px;color:#999">
     <span>تاريخ الإصدار: ${c.date||''}</span>
-    ${c.notes?`<span>ملاحظات: ${c.notes}</span>`:''}
+    ${c.notes?`<span>ملاحظات: ${esc(c.notes)}</span>`:''}
     <span style="font-weight:600;color:${GOLD}">${c.id}</span>
   </div>`;
 }
@@ -7633,9 +7615,9 @@ function renderCatalog() {
     const balColor = bal > 0 ? 'var(--green-l)' : 'var(--red-l)';
     return `<tr>
     <td style="color:var(--text3)">${startIdx+i+1}</td>
-    <td><span class="code-chip">${it.code}</span></td>
-    <td><strong>${it.name}</strong>${it.notes?'<span style="font-size:11px;color:var(--text3);margin-right:6px">'+it.notes+'</span>':''}</td>
-    <td><span class="badge badge-blue">${it.unit}</span></td>
+    <td><span class="code-chip">${esc(it.code)}</span></td>
+    <td><strong>${esc(it.name)}</strong>${it.notes?'<span style="font-size:11px;color:var(--text3);margin-right:6px">'+esc(it.notes)+'</span>':''}</td>
+    <td><span class="badge badge-blue">${esc(it.unit)}</span></td>
     <td><strong style="color:${balColor}">${bal.toLocaleString()}</strong></td>
     <td style="white-space:nowrap">
       <button class="btn btn-sm" onclick="openEditModal('${it.code.replace(/'/g,"\'")}')">✏️ تعديل</button>
@@ -7798,9 +7780,9 @@ function addItemToRrcvList(){
 function renderRrcvList(){
   document.getElementById('rrcv-list-count').textContent=_rrcvList.length+' مادة';
   document.getElementById('rrcv-items-list').innerHTML=_rrcvList.map((it,i)=>`<tr>
-    <td>${i+1}</td><td><span class="code-chip">${it.code}</span></td><td>${it.name}</td>
-    <td>${it.unit}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
-    <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${it.notes||'—'}</td>
+    <td>${i+1}</td><td><span class="code-chip">${esc(it.code)}</span></td><td>${esc(it.name)}</td>
+    <td>${esc(it.unit)}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
+    <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${esc(it.notes)||'—'}</td>
     <td><button class="btn btn-sm btn-danger" onclick="_rrcvList.splice(${i},1);renderRrcvList()">🗑</button></td>
   </tr>`).join('');
 }
@@ -7921,9 +7903,9 @@ function addItemToRdspList(){
 function renderRdspList(){
   document.getElementById('rdsp-list-count').textContent=_rdspList.length+' مادة';
   document.getElementById('rdsp-items-list').innerHTML=_rdspList.map((it,i)=>`<tr>
-    <td>${i+1}</td><td><span class="code-chip">${it.code}</span></td><td>${it.name}</td>
-    <td>${it.unit}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
-    <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${it.notes||'—'}</td>
+    <td>${i+1}</td><td><span class="code-chip">${esc(it.code)}</span></td><td>${esc(it.name)}</td>
+    <td>${esc(it.unit)}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
+    <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${esc(it.notes)||'—'}</td>
     <td><button class="btn btn-sm btn-danger" onclick="_rdspList.splice(${i},1);renderRdspList()">🗑</button></td>
   </tr>`).join('');
 }
@@ -8105,10 +8087,10 @@ function renderReturnRcvRecent(){
     return `<tr>
     <td><span class="code-chip">${r.id}</span></td>
     <td>${r.date}</td>
-    <td>${r.workorder||'—'}</td>
-    <td><span class="code-chip">${r.code}</span></td>
-    <td>${r.name}</td>
-    <td><strong>${r.qty.toLocaleString()}</strong> ${r.unit}</td>
+    <td>${esc(r.workorder)||'—'}</td>
+    <td><span class="code-chip">${esc(r.code)}</span></td>
+    <td>${esc(r.name)}</td>
+    <td><strong>${r.qty.toLocaleString()}</strong> ${esc(r.unit)}</td>
     <td>${r.warehouse||'—'}</td>
     <td style="white-space:nowrap">${btns}</td>
   </tr>`;
@@ -8225,10 +8207,10 @@ function renderReturnDspRecent(){
     return `<tr>
     <td><span class="code-chip">${d.id}</span></td>
     <td>${d.date}</td>
-    <td>${d.workorder||'—'}</td>
-    <td><span class="code-chip">${d.code}</span></td>
-    <td>${d.name}</td>
-    <td><strong>${d.qty.toLocaleString()}</strong> ${d.unit}</td>
+    <td>${esc(d.workorder)||'—'}</td>
+    <td><span class="code-chip">${esc(d.code)}</span></td>
+    <td>${esc(d.name)}</td>
+    <td><strong>${d.qty.toLocaleString()}</strong> ${esc(d.unit)}</td>
     <td>${d.warehouse||'—'}</td>
     <td style="white-space:nowrap">${btns}</td>
   </tr>`;
@@ -8400,9 +8382,9 @@ function generateReport(){
       const planned = plannedMap[m.code] || 0;
       return `<tr>
         <td>${i+1}</td>
-        <td><span class="code-chip">${m.code}</span></td>
-        <td><strong>${m.name}</strong></td>
-        <td>${m.unit}</td>
+        <td><span class="code-chip">${esc(m.code)}</span></td>
+        <td><strong>${esc(m.name)}</strong></td>
+        <td>${esc(m.unit)}</td>
         <td style="color:var(--green-l)">${m.qtyIn.toLocaleString()}</td>
         <td style="color:var(--amber-l)">${m.retIn>0?'<span style="color:var(--amber-l)">↩ -'+m.retIn.toLocaleString()+'</span>':'—'}</td>
         <td><strong style="font-size:14px;color:var(--green-l)">${netIn.toLocaleString()}</strong></td>
@@ -8497,18 +8479,18 @@ function generateReport(){
       <td><span class="code-chip">${r.id}</span></td>
       <td>${r._type}</td>
       <td>${r.date}</td>
-      <td>${r.workorder||'—'}</td>
-      <td>${r.serial||'—'}</td>
-      <td>${r.booknum||'—'}</td>
-      <td>${r.pagenum||'—'}</td>
-      <td>${r.dept||r.supplier||'—'}</td>
-      <td><span class="code-chip">${r.code}</span></td>
-      <td>${r.name}</td>
+      <td>${esc(r.workorder)||'—'}</td>
+      <td>${esc(r.serial)||'—'}</td>
+      <td>${esc(r.booknum)||'—'}</td>
+      <td>${esc(r.pagenum)||'—'}</td>
+      <td>${esc(r.dept||r.supplier||'—')}</td>
+      <td><span class="code-chip">${esc(r.code)}</span></td>
+      <td>${esc(r.name)}</td>
       <td><strong>${r.qty.toLocaleString()}</strong></td>
-      <td>${r.unit}</td>
+      <td>${esc(r.unit)}</td>
       <td>${r.warehouse||'—'}</td>
       <td>${r.user||'—'}</td>
-      <td style="font-size:11px;color:var(--text3)">${r.notes||'—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${esc(r.notes)||'—'}</td>
     </tr>`).join('');
 
     document.getElementById('rpt-count').textContent=data.length+' سجل';
@@ -8553,8 +8535,8 @@ function generateStockReport(){
 
   document.getElementById('report-tbody').innerHTML=data.map((d,i)=>`<tr>
     <td>${i+1}</td>
-    <td><span class="code-chip">${d.code}</span></td>
-    <td>${d.name}</td><td>${d.unit}</td>
+    <td><span class="code-chip">${esc(d.code)}</span></td>
+    <td>${esc(d.name)}</td><td>${esc(d.unit)}</td>
     <td style="color:var(--green-l)">${d.totalIn.toLocaleString()}</td>
     <td style="color:var(--amber-l)">${d.retIn.toLocaleString()}</td>
     <td style="color:var(--red-l)">${d.totalOut.toLocaleString()}</td>
@@ -8816,9 +8798,9 @@ function printReport(){
       const netOut = m.qtyOut - m.retOut;
       return `<tr style="${i%2===1?'background:#f9f9f9':''}">
         <td style="text-align:center">${i+1}</td>
-        <td style="font-family:monospace;font-size:11px">${m.code}</td>
-        <td><strong>${m.name}</strong></td>
-        <td style="text-align:center">${m.unit}</td>
+        <td style="font-family:monospace;font-size:11px">${esc(m.code)}</td>
+        <td><strong>${esc(m.name)}</strong></td>
+        <td style="text-align:center">${esc(m.unit)}</td>
         <td style="color:#2E7D32;text-align:center">${m.qtyIn.toLocaleString()}</td>
         <td style="color:#f57f17;text-align:center">${m.retIn>0?'↩ -'+m.retIn.toLocaleString():'—'}</td>
         <td style="color:#2E7D32;font-weight:700;font-size:13px;text-align:center">${netIn.toLocaleString()}</td>
@@ -8854,8 +8836,8 @@ function printReport(){
       const stClr = d.status==='ok'?'#2E7D32':d.status==='low'?'#f57f17':'#c62828';
       return `<tr style="${i%2===1?'background:#f9f9f9':''}">
         <td style="text-align:center">${i+1}</td>
-        <td style="font-family:monospace;font-size:11px">${d.code}</td>
-        <td>${d.name}</td><td style="text-align:center">${d.unit}</td>
+        <td style="font-family:monospace;font-size:11px">${esc(d.code)}</td>
+        <td>${esc(d.name)}</td><td style="text-align:center">${esc(d.unit)}</td>
         <td style="color:#2E7D32;font-weight:600;text-align:center">${d.totalIn||0}</td>
         <td style="color:#f57f17;text-align:center">${d.retIn||0}</td>
         <td style="color:#c62828;font-weight:600;text-align:center">${d.totalOut||0}</td>
@@ -8886,20 +8868,20 @@ function printReport(){
         <td style="font-family:monospace;font-size:11px">${r.id}</td>
         <td style="color:${typeColor};font-weight:600">${typeClean}</td>
         <td>${r.date||'—'}</td>
-        <td>${r.workorder||'—'}</td>
+        <td>${esc(r.workorder)||'—'}</td>
         <td>${r.region||'—'}</td>
-        <td>${r.booknum||'—'}</td>
-        <td>${r.pagenum||'—'}</td>
-        <td style="font-family:monospace;font-size:11px">${r.serial||'—'}</td>
-        <td>${r.dept||r.supplier||'—'}</td>
-        <td style="font-family:monospace;font-size:11px">${r.code}</td>
-        <td>${r.name}</td>
+        <td>${esc(r.booknum)||'—'}</td>
+        <td>${esc(r.pagenum)||'—'}</td>
+        <td style="font-family:monospace;font-size:11px">${esc(r.serial)||'—'}</td>
+        <td>${esc(r.dept||r.supplier||'—')}</td>
+        <td style="font-family:monospace;font-size:11px">${esc(r.code)}</td>
+        <td>${esc(r.name)}</td>
         <td style="font-weight:700;text-align:center">${r.qty}</td>
-        <td style="text-align:center">${r.unit}</td>
+        <td style="text-align:center">${esc(r.unit)}</td>
         <td>${r.warehouse||'—'}</td>
-        <td>${r.dept||r.supplier||'—'}</td>
+        <td>${esc(r.dept||r.supplier||'—')}</td>
         <td>${r.user||'—'}</td>
-        <td style="font-size:10px;color:#555">${r.notes||'—'}</td>
+        <td style="font-size:10px;color:#555">${esc(r.notes)||'—'}</td>
       </tr>`;
     }).join('');
   }
@@ -9115,7 +9097,7 @@ function renderExtWorkOrders() {
     <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;background:var(--bg3)">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <div style="background:var(--blue);color:#fff;border-radius:6px;padding:3px 12px;font-size:12px;font-weight:700;white-space:nowrap">أمر عمل ${idx+1}</div>
-        <input type="text" id="ext-wonum-${wo.id}" value="${wo.woNum||''}"
+        <input type="text" id="ext-wonum-${wo.id}" value="${esc(wo.woNum||'')}"
           oninput="extUpdateWoNum(${wo.id},this.value)"
           maxlength="9" placeholder="رقم أمر العمل (9 أرقام كحد أقصى)"
           style="flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 12px">
@@ -9163,10 +9145,10 @@ function renderExtWorkOrders() {
           <tbody>${wo.items.map((it,i) => `
             <tr>
               <td style="text-align:center">${i+1}</td>
-              <td><strong>${it.name}</strong></td>
-              <td style="font-family:monospace;font-size:11px">${it.code||'—'}</td>
+              <td><strong>${esc(it.name)}</strong></td>
+              <td style="font-family:monospace;font-size:11px">${esc(it.code)||'—'}</td>
               <td style="text-align:center;font-weight:700">${it.qty}</td>
-              <td style="text-align:center">${it.unit||'—'}</td>
+              <td style="text-align:center">${esc(it.unit)||'—'}</td>
               <td style="text-align:center">
                 <button class="btn btn-danger btn-sm" style="padding:2px 6px" onclick="extWoRemoveItem(${wo.id},${i})">🗑</button>
               </td>
@@ -9315,11 +9297,11 @@ function renderExtRequests(filter='') {
       const isFirst=wi===0;
       rows.push(`<tr>
         ${isFirst?`<td rowspan="${wos.length}" style="vertical-align:middle;border-left:3px solid var(--blue)">
-          <strong>${r.company}</strong><br>
-          <small style="color:var(--text3)">${r.delegate||''} ${r.office?'| '+r.office:''}</small>
+          <strong>${esc(r.company)}</strong><br>
+          <small style="color:var(--text3)">${esc(r.delegate||'')} ${r.office?'| '+esc(r.office):''}</small>
         </td>
-        <td rowspan="${wos.length}" style="vertical-align:middle;text-align:center">${r.date||'—'}</td>`:''}
-        <td style="font-family:monospace;font-weight:700;text-align:center">${wo.woNum||'—'}</td>
+        <td rowspan="${wos.length}" style="vertical-align:middle;text-align:center">${esc(r.date)||'—'}</td>`:''}
+        <td style="font-family:monospace;font-weight:700;text-align:center">${esc(wo.woNum)||'—'}</td>
         <td style="text-align:center">${items.length}</td>
         <td style="text-align:center;font-weight:700">${totalQty}</td>
         <td style="text-align:center"><span class="badge ${bc}">${lb}</span></td>
@@ -9388,9 +9370,9 @@ function openReceiveExtModal(reqId, woIndex) {
     const rem=it.qty-prev;
     rows+=`<tr>
       <td style="padding:7px 8px;border-bottom:1px solid var(--border)">
-        <strong>${it.name}</strong>${it.code?`<br><small style="color:var(--text3);font-family:monospace">${it.code}</small>`:''}
+        <strong>${esc(it.name)}</strong>${it.code?`<br><small style="color:var(--text3);font-family:monospace">${esc(it.code)}</small>`:''}
       </td>
-      <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:center">${it.qty} ${it.unit||''}</td>
+      <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:center">${it.qty} ${esc(it.unit)||''}</td>
       <td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:center;color:${prev>0?'var(--green-l)':'var(--text3)'}">${prev}</td>
       <td style="padding:7px 8px;border-bottom:1px solid var(--border)">
         <input type="number" id="ext-rcv-${key}" value="${rem>0?rem:0}" min="0" max="${rem}"
@@ -9402,7 +9384,7 @@ function openReceiveExtModal(reqId, woIndex) {
   overlay.className='modal-overlay show';overlay.style.zIndex='10000';
   overlay.innerHTML=`<div class="modal" style="width:600px;max-width:95vw;max-height:85vh;overflow-y:auto">
     <div class="modal-header">
-      <span class="modal-title">✅ استلام أمر العمل: ${wo.woNum||'—'} — ${r.company}</span>
+      <span class="modal-title">✅ استلام أمر العمل: ${esc(wo.woNum)||'—'} — ${esc(r.company)}</span>
       <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
     </div>
     <div class="modal-body">
@@ -9530,7 +9512,7 @@ function _generateExtPDF(r) {
     ? 'لمندوبنا السيد / ' + r.delegate + ' الذي يحمل أقامه (' + (r.iqama||'—') + ')'
     : 'لمندوبنا';
   const notesLine = r.notes
-    ? `<div style="margin:10px 14px 0;padding:8px 14px;background:rgba(26,35,126,0.04);border-right:3px solid #1a237e;border-radius:4px;font-size:12px"><strong>ملاحظات:</strong> ${r.notes}</div>`
+    ? `<div style="margin:10px 14px 0;padding:8px 14px;background:rgba(26,35,126,0.04);border-right:3px solid #1a237e;border-radius:4px;font-size:12px"><strong>ملاحظات:</strong> ${esc(r.notes)}</div>`
     : '';
 
   // ══ HEADER ══
@@ -9571,7 +9553,7 @@ function _generateExtPDF(r) {
   // جدول أرقام الطلبات
   const reqRows = wos.map((w,i) =>
     `<tr>
-      <td style="text-align:center;font-weight:700;font-size:15px;padding:9px 32px;border:2px solid #1a237e">${w.woNum||'—'}</td>
+      <td style="text-align:center;font-weight:700;font-size:15px;padding:9px 32px;border:2px solid #1a237e">${esc(w.woNum)||'—'}</td>
       <td style="text-align:center;padding:9px 20px;border:2px solid #1a237e">${i+1}</td>
     </tr>`
   ).join('');
@@ -9581,8 +9563,8 @@ function _generateExtPDF(r) {
     const rows = (wo.items||[]).map((it,i) =>
       `<tr>
         <td style="text-align:center;padding:8px 10px;border:1px solid #ddd">${i+1}</td>
-        <td style="padding:8px 12px;border:1px solid #ddd;font-weight:600">${it.name}</td>
-        <td style="text-align:center;padding:8px 10px;border:1px solid #ddd;font-family:monospace;font-size:11px">${it.code||'—'}</td>
+        <td style="padding:8px 12px;border:1px solid #ddd;font-weight:600">${esc(it.name)}</td>
+        <td style="text-align:center;padding:8px 10px;border:1px solid #ddd;font-family:monospace;font-size:11px">${esc(it.code)||'—'}</td>
         <td style="text-align:center;padding:8px 10px;border:1px solid #ddd;font-weight:700">${it.qty}${it.unit?' '+it.unit:''}</td>
       </tr>`
     ).join('');
@@ -9593,7 +9575,7 @@ function _generateExtPDF(r) {
         ${HDR}
         <div style="font-size:14px;font-weight:700;color:#1a237e;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a237e;padding:10px 0 7px;margin-bottom:12px">
           <span>بيان تصفية المواد النهائي</span>
-          <span style="background:#1a237e;color:#fff;font-size:12px;border-radius:5px;padding:3px 14px">أمر العمل: ${wo.woNum||'—'}</span>
+          <span style="background:#1a237e;color:#fff;font-size:12px;border-radius:5px;padding:3px 14px">أمر العمل: ${esc(wo.woNum)||'—'}</span>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <thead>
@@ -9668,7 +9650,7 @@ body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;background:#fff;color:#
       <!-- التاريخ والسادة والتحية — فوق على اليمين مباشرة تحت الهيدر -->
       <div style="text-align:right;margin-bottom:18px;padding-top:6px">
         <div style="font-size:13px;font-weight:700;text-decoration:underline;margin-bottom:8px">التاريخ / ${dateStr}</div>
-        <div style="font-size:14px;font-weight:700;margin-bottom:7px">السادة / ${r.company}</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:7px">السادة / ${esc(r.company)}</div>
         <div style="font-size:13px;color:#333">تحية طيبة وبعد ...............</div>
       </div>
       <div style="font-size:14px;font-weight:700;line-height:2.1;text-align:center;border:1px solid #e8eaf6;border-radius:8px;padding:16px 20px;background:rgba(26,35,126,0.03);margin-bottom:6px">
@@ -9788,7 +9770,7 @@ function renderReprintResults(){
     const rowsHtml = grp.map((r,i)=>`<tr>
       <td style="color:var(--text3)">${i+1}</td>
       <td><span class="code-chip">${r.id||'—'}</span></td>
-      <td><span class="code-chip">${r.code||'—'}</span></td>
+      <td><span class="code-chip">${esc(r.code)||'—'}</span></td>
       <td>${_escapeHtml(r.name||'—')}</td>
       <td>${_escapeHtml(r.unit||'')}</td>
       <td><strong style="color:${cfg.color}">${(Number(r.qty)||0).toLocaleString()}</strong></td>
