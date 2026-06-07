@@ -80,8 +80,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .sidebar.collapsed .user-card{justify-content:center;padding:8px}
 /* tooltip when collapsed */
 .sidebar.collapsed .nav-item{position:relative}
-.sidebar.collapsed .nav-item::after{content:attr(data-title);position:absolute;right:calc(100% + 10px);top:50%;transform:translateY(-50%) scale(.9);background:var(--bg4);color:var(--text);font-size:12px;font-weight:500;padding:6px 10px;border-radius:8px;white-space:nowrap;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s,transform .15s,visibility .15s;box-shadow:var(--shadow);z-index:1000;border:1px solid var(--border2)}
-.sidebar.collapsed .nav-item:hover::after{opacity:1;visibility:visible;transform:translateY(-50%) scale(1)}
+/* تول-تيب القايمة المطوية — fixed عبر JS حتى لا يُقص بفعل overflow */
+#nav-tooltip{position:fixed;background:var(--bg4);color:var(--text);font-size:12px;font-weight:500;padding:6px 10px;border-radius:8px;white-space:nowrap;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s;box-shadow:var(--shadow);z-index:99999;border:1px solid var(--border2)}
+#nav-tooltip.show{opacity:1;visibility:visible}
 .sidebar.collapsed .nav-item.active::before{right:auto;left:6px;width:3px}
 
 /* ── Sidebar ── */
@@ -119,6 +120,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .btn-danger{background:var(--red-bg);border-color:var(--red);color:var(--red-l)}
 .btn-danger:hover{background:var(--red);color:#fff}
 .btn-sm{padding:4px 10px;font-size:12px}
+/* ── قائمة إجراءات المستخدم المنسدلة ── */
+.user-actions{position:relative;display:inline-block}
+.user-actions-toggle{padding:5px 12px;font-size:13px;cursor:pointer}
+.user-actions-menu{position:absolute;top:100%;left:0;margin-top:4px;min-width:190px;background:var(--bg2,#0D3347);border:1px solid var(--border2,#1c5170);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.45);padding:6px;z-index:1000;display:none}
+.user-actions-menu.open{display:block}
+.user-actions-menu .uam-item{display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 12px;font-size:13px;color:var(--text2,#cfe3f2);background:transparent;border:none;border-radius:8px;cursor:pointer;white-space:nowrap}
+.user-actions-menu .uam-item:hover{background:var(--bg3,#0a2030)}
+.user-actions-menu .uam-item.danger{color:var(--red-l,#f87171)}
+.user-actions-menu .uam-sep{height:1px;background:var(--border2,#1c5170);margin:5px 4px}
+.user-actions-menu .uam-label{font-size:11px;color:var(--text3,#7da0bb);padding:6px 12px 2px}
 .btn-icon{padding:6px 8px}
 
 /* ── Content ── */
@@ -271,6 +282,8 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 </style>
 </head>
 <body>
+
+<div id="nav-tooltip"></div>
 
 <div class="app">
 <!-- ══ SIDEBAR ══ -->
@@ -1471,13 +1484,13 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
               <div style="font-size:13px;font-weight:600;color:var(--text2)">📋 أوامر العمل والمواد</div>
-              <button class="btn btn-primary btn-sm" onclick="extAddWorkOrder()">+ إضافة أمر عمل</button>
+              <button id="ext-add-wo-btn" class="btn btn-primary btn-sm" onclick="extAddWorkOrder()">+ إضافة أمر عمل</button>
             </div>
             <div id="ext-workorders-wrap"></div>
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn btn-primary" onclick="saveExtRequest()">💾 حفظ الطلب</button>
+          <button id="extreq-save-btn" class="btn btn-primary" onclick="saveExtRequest()">💾 حفظ الطلب</button>
           <button class="btn" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple-l)" onclick="previewExtRequestPDF()">📄 معاينة وطباعة PDF</button>
           <button class="btn" onclick="clearExtForm()">↺ مسح الكل</button>
         </div>
@@ -1896,6 +1909,10 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
             <div class="field">
               <label>رقم الصفحة</label>
               <input type="text" id="txn-edit-pagenum" placeholder="رقم الصفحة">
+            </div>
+            <div class="field">
+              <label>الرقم التسلسلي</label>
+              <input type="text" id="txn-edit-serial" placeholder="الرقم التسلسلي">
             </div>
             <div class="field">
               <label>المستودع</label>
@@ -2369,6 +2386,8 @@ function _showCriticalBanner(msg, btnText, btnAction, color) {
 async function _runDailyBackup() {
   if (_backupInProgress) return;
   if (!firebaseDB || !initialSyncCompleted) return;
+  // 🛡️ النسخ الاحتياطية مقصورة على المدير (admin) بقواعد Firebase — لا يحاولها غيره (يمنع رسالة الرفض)
+  if (!currentUser || currentUser.role !== 'admin') return;
 
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const lastBackup = localStorage.getItem('_last_firebase_backup_date');
@@ -2534,6 +2553,13 @@ async function saveDB() {
   // 🛡️ منع أي كتابة لـ Firebase قبل اكتمال أول sync ناجح
   if (!firebaseReady || !initialSyncCompleted) {
     console.warn('saveDB: blocked — initial sync not completed yet (saved locally only)');
+    return;
+  }
+  // 🛡️ saveDB يكتب فقط على erpdata/users — وهي مقصورة على المدير (admin) بقواعد Firebase.
+  // لذا أي مستخدم غير المدير يكتفي بالحفظ المحلي ولا يحاول الكتابة على Firebase
+  // (يمنع رسالة "Firebase رفض الحفظ" التي تظهر للمشرف/أمين المستودع/المراقب).
+  // ملاحظة: هذا لا يؤثر على حفظ العُهد/الطلبات/أوامر العمل/الحركات لأن لها دوال حفظ مستقلة.
+  if (!currentUser || currentUser.role !== 'admin') {
     return;
   }
   // إلغاء أي حفظ معلّق سابق (debounce خفيف 100ms فقط لتجنب الحفظات المتزامنة)
@@ -2933,7 +2959,7 @@ async function _migratePasswordsToHash() {
   }
   if (changed) {
     saveLocal();
-    if (firebaseDB && initialSyncCompleted) {
+    if (firebaseDB && initialSyncCompleted && currentUser && currentUser.role === 'admin') {
       firebaseDB.ref('erpdata/users').set(DB.users).catch(e => console.warn('migratePasswordsToHash firebase error:', e));
     }
   }
@@ -3295,6 +3321,8 @@ async function _runInventoryTransactionBatch(ops) {
 // ── ترحيل شامل: السجلات القديمة بدون fbKey → إضافة fbKey ومزامنة Firebase ──
 async function _migrateAllMissingFbKeys() {
   if (!firebaseDB || !initialSyncCompleted) return;
+  // 🛡️ المراقب (viewer) ممنوع من الكتابة على الصرف/المرتجعات — نتخطى الترحيل التلقائي لتجنب رسائل الرفض
+  if (currentUser && currentUser.role === 'viewer') return;
   try {
     let changed = false;
 
@@ -4709,13 +4737,17 @@ async function _saveDeletePIN(pin) {
 
 // ── طلب رقم السري قبل تنفيذ أي حذف ──
 async function requireDeletePIN(callback) {
-  if (!currentUser || currentUser.role !== 'admin') {
-    toast('للمدير فقط', 'error');
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'supervisor')) {
+    toast('الحذف متاح للمدير والمشرف فقط', 'error');
     return;
   }
   const pin = await _getDeletePIN();
   if (!pin) {
-    // لم يُحدد رقم سري بعد — نطلب تحديده أولاً
+    // لم يُحدد رقم سري بعد — تحديد الرقم للمدير فقط
+    if (currentUser.role !== 'admin') {
+      toast('لم يُحدد رقم سري للحذف بعد — يرجى مراجعة المدير', 'error');
+      return;
+    }
     if (confirm('لم يتم تحديد رقم سري للحذف بعد.\n\nهل تريد تحديده الآن؟')) {
       openDeletePinSettings(callback);
     }
@@ -4755,6 +4787,11 @@ function cancelDeletePin() {
 
 // ── إعدادات تغيير الرقم السري ──
 async function openDeletePinSettings(afterSaveCallback) {
+  // 🔒 تغيير/تحديد الرقم السري للحذف — للمدير فقط
+  if (!currentUser || currentUser.role !== 'admin') {
+    toast('تغيير الرقم السري متاح للمدير فقط', 'error');
+    return;
+  }
   const currentPin = await _getDeletePIN();
   const msg = currentPin
     ? 'الرقم الحالي محدد.\nأدخل الرقم السري الجديد (أرقام فقط):'
@@ -4783,7 +4820,7 @@ function viewCustodyFromMovements(custodyId){
 
 // ── حذف عهدة من سجل الحركات ──
 function deleteCustodyFromMovements(custodyId){
-  if(!currentUser||currentUser.role!=='admin'){ toast('للمدير فقط','error'); return; }
+  if(!currentUser||(currentUser.role!=='admin'&&currentUser.role!=='supervisor')){ toast('الحذف متاح للمدير والمشرف فقط','error'); return; }
   const c=(DB.custodies||[]).find(x=>x.id===custodyId);
   if(!c){ toast('العهدة غير موجودة','error'); return; }
   const itemsCount = (c.items||[]).length;
@@ -4817,7 +4854,7 @@ function deleteExtRequestFromMovements(reqId){
   requireDeletePIN(() => _deleteExtRequestFromMovementsCore(reqId));
 }
 function _deleteExtRequestFromMovementsCore(reqId){
-  if(!currentUser||currentUser.role!=='admin'){ toast('للمدير فقط','error'); return; }
+  if(!currentUser||(currentUser.role!=='admin'&&currentUser.role!=='supervisor')){ toast('الحذف متاح للمدير والمشرف فقط','error'); return; }
   const r=(DB.extRequests||[]).find(x=>x.id===reqId);
   if(!r){ toast('لم يُعثر على الطلب','error'); return; }
   const totalItems = (r.workOrders||[]).reduce((s,wo)=>s+(wo.items||[]).length,0);
@@ -5526,6 +5563,9 @@ function printPage(){
   if(currentPage === 'users')            { printUsersPage();          return; }
   if(currentPage === 'reports')          { printReport();             return; }
   if(currentPage === 'ext-requests')     { previewExtRequestPDF();    return; }
+  if(currentPage === 'custody')          { exportAllCustodyPDF();     return; }
+  if(currentPage === 'workorders')       { printWoReport();           return; }
+  if(currentPage === 'reprint')          { toast('استخدم زر الطباعة بجانب كل سند في نتائج البحث','info'); return; }
   window.print();
   toast('جاري الطباعة');
 }
@@ -6127,6 +6167,7 @@ async function doLogin() {
       currentUser = dbUser;
       dbUser.lastLogin = new Date().toLocaleString('ar-SA');
       saveDB();
+      _markSessionActive(); // تفعيل علامة الجلسة
       document.getElementById('login-modal').style.display = 'none';
       applyRoleUI();
       renderDashboard();
@@ -6164,6 +6205,37 @@ async function doLogin() {
   renderDashboard();
 }
 
+// ══ التحقق من صلاحية الجلسة (إغلاق المتصفح/التاب + مهلة زمنية) ══
+// (أ) sessionStorage يُمسح تلقائياً عند إغلاق المتصفح/التاب → علامة غيابها = جلسة منتهية
+// (ب) نسجّل وقت آخر نشاط، وعند فتح الصفحة نرفض الجلسة لو تجاوزت المهلة
+const SESSION_MARK_KEY = 'wh_session_active';
+const SESSION_LAST_ACTIVE_KEY = 'wh_last_active_ms';
+const SESSION_MAX_GAP_MS = 15 * 60 * 1000; // 15 دقيقة كحد أقصى منذ آخر نشاط
+
+function _markSessionActive() {
+  try {
+    sessionStorage.setItem(SESSION_MARK_KEY, '1');
+    localStorage.setItem(SESSION_LAST_ACTIVE_KEY, String(Date.now()));
+  } catch(e) {}
+}
+function _clearSessionMark() {
+  try {
+    sessionStorage.removeItem(SESSION_MARK_KEY);
+    localStorage.removeItem(SESSION_LAST_ACTIVE_KEY);
+  } catch(e) {}
+}
+// ترجع true لو الجلسة المخزّنة في Firebase ما زالت مقبولة عند فتح الصفحة
+function _isStoredSessionValid() {
+  try {
+    // (أ)+(ب): لو علامة التاب غير موجودة → المتصفح/التاب أُغلق → ارفض
+    if (sessionStorage.getItem(SESSION_MARK_KEY) !== '1') return false;
+    // مهلة زمنية احتياطية منذ آخر نشاط
+    const last = parseInt(localStorage.getItem(SESSION_LAST_ACTIVE_KEY) || '0', 10);
+    if (!last || (Date.now() - last) > SESSION_MAX_GAP_MS) return false;
+    return true;
+  } catch(e) { return false; }
+}
+
 // ══ خروج تلقائي بعد 15 دقيقة من الخمول ══
 const IDLE_LIMIT_MS = 15 * 60 * 1000; // 15 دقيقة
 let _idleTimer = null;
@@ -6171,6 +6243,7 @@ let _idleListenersBound = false;
 
 function _resetIdleTimer() {
   if (!currentUser) return; // لا يعمل إلا أثناء جلسة نشطة
+  _markSessionActive(); // (ب) تحديث وقت آخر نشاط
   if (_idleTimer) clearTimeout(_idleTimer);
   _idleTimer = setTimeout(_doIdleLogout, IDLE_LIMIT_MS);
 }
@@ -6191,6 +6264,7 @@ function _stopIdleTracking() {
 
 async function _doIdleLogout() {
   _stopIdleTracking();
+  _clearSessionMark();
   if (firebaseAuth) { try { await firebaseAuth.signOut(); } catch(e) {} }
   currentUser = null;
   document.getElementById('sidebar-footer').style.display = 'none';
@@ -6203,6 +6277,7 @@ async function _doIdleLogout() {
 async function doLogout() {
   if(!confirm('تأكيد تسجيل الخروج؟')) return;
   _stopIdleTracking();
+  _clearSessionMark();
   if(firebaseAuth) { try { await firebaseAuth.signOut(); } catch(e) {} }
   currentUser = null;
   document.getElementById('sidebar-footer').style.display = 'none';
@@ -6257,6 +6332,14 @@ function applyRoleUI() {
   // زر النسخة الاحتياطية — للمدير فقط
   const backupBtn = document.getElementById('btn-backup');
   if(backupBtn) backupBtn.style.display = (currentUser && currentUser.role === 'admin') ? '' : 'none';
+
+  // 🛡️ المراقب (viewer): يستطيع رؤية صفحات العُهد/الطلبات/أوامر العمل والطباعة منها،
+  // لكن تُخفى أزرار الإضافة/الحفظ لأنه ممنوع من الكتابة (الصفحات تبقى للعرض والطباعة فقط).
+  const isViewer = currentUser && currentUser.role === 'viewer';
+  ['cust-save-btn','extreq-save-btn','wo-save-btn','ext-add-wo-btn'].forEach(function(btnId){
+    const b = document.getElementById(btnId);
+    if(b) b.style.display = isViewer ? 'none' : '';
+  });
 }
 
 // ── Users CRUD ──
@@ -6271,10 +6354,7 @@ function renderUsers() {
       : '<span class="badge badge-red">○ موقوف</span>';
     const actionBtns = isSelf
       ? '<button class="btn btn-sm" onclick="openEditProfile()">✏️ تعديل بياناتي</button><button class="btn btn-sm" onclick="openChangePassword()" style="margin-right:4px">🔑</button>'
-      : '<button class="btn btn-sm" onclick="toggleUserActive(\''+u.username+'\')">'+(u.active?'🚫 إيقاف':'✓ تفعيل')+'</button>'
-        + '<button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red);margin-right:4px" onclick="deleteUser(\''+u.username+'\')">🗑</button>'
-        + '<button class="btn btn-sm" onclick="resetPassword(\''+u.username+'\')">🔑</button>'
-        + (isAdmin ? '<button class="btn btn-sm" style="color:var(--purple-l);border-color:var(--purple);margin-right:4px" onclick="changeUserRole(\''+u.username+'\',\''+u.role+'\')">🛡 الدور</button>' : '');
+      : _buildUserActionsMenu(u, isAdmin);
     return '<tr>'
       + '<td style="color:var(--text3)">'+(i+1)+'</td>'
       + '<td><span class="code-chip">'+esc(u.username)+'</span></td>'
@@ -6285,6 +6365,103 @@ function renderUsers() {
       + '<td style="white-space:nowrap">'+actionBtns+'</td>'
       + '</tr>';
   }).join('');
+}
+
+// ── بناء قائمة إجراءات المستخدم المنسدلة ──
+function _buildUserActionsMenu(u, isAdmin){
+  const un = esc(u.username).replace(/'/g, "\\'");
+  const roles = [['admin','مدير'],['supervisor','مشرف'],['storekeeper','أمين مستودع'],['viewer','مراقب']];
+  let roleItems = '';
+  if(isAdmin){
+    roleItems = '<div class="uam-label">تغيير الدور إلى:</div>';
+    roles.forEach(function(r){
+      const active = (u.role === r[0]) ? ' • (الحالي)' : '';
+      roleItems += '<button class="uam-item" onclick="changeUserRoleTo(\''+un+'\',\''+r[0]+'\')">🛡 '+r[1]+active+'</button>';
+    });
+    roleItems += '<div class="uam-sep"></div>';
+  }
+  return ''
+    + '<div class="user-actions">'
+    + '<button class="btn btn-sm user-actions-toggle" onclick="toggleUserActionsMenu(event,\''+un+'\')">⚙️ إجراءات ▾</button>'
+    + '<div class="user-actions-menu" id="uam-'+un+'">'
+    + '<button class="uam-item" onclick="openEditUserData(\''+un+'\')">✏️ تعديل الاسم والبيانات</button>'
+    + roleItems
+    + '<button class="uam-item" onclick="toggleUserActive(\''+un+'\')">'+(u.active?'🚫 إيقاف الحساب':'✓ تفعيل الحساب')+'</button>'
+    + '<button class="uam-item" onclick="resetPassword(\''+un+'\')">🔑 إرسال رابط تغيير كلمة المرور</button>'
+    + '<div class="uam-sep"></div>'
+    + '<button class="uam-item danger" onclick="deleteUser(\''+un+'\')">🗑 حذف المستخدم</button>'
+    + '</div>'
+    + '</div>';
+}
+
+// ── فتح/قفل القائمة المنسدلة (وقفل أي قائمة أخرى مفتوحة) ──
+function toggleUserActionsMenu(ev, username){
+  ev.stopPropagation();
+  const id = 'uam-' + esc(username).replace(/'/g, "\\'");
+  const menu = document.getElementById(id);
+  const wasOpen = menu && menu.classList.contains('open');
+  // اقفل كل القوائم المفتوحة أولاً
+  document.querySelectorAll('.user-actions-menu.open').forEach(function(m){
+    m.classList.remove('open');
+    m.style.position=''; m.style.top=''; m.style.left=''; m.style.bottom='';
+  });
+  if(menu && !wasOpen){
+    menu.classList.add('open');
+    // تموضع ثابت ذكي: يتجاهل قص الجدول (overflow) ويفتح للأعلى لو لا توجد مساحة بالأسفل
+    const btn = (ev.target && ev.target.closest) ? ev.target.closest('.user-actions-toggle') : ev.target;
+    const r = btn.getBoundingClientRect();
+    const menuH = menu.offsetHeight || 280;
+    const spaceBelow = window.innerHeight - r.bottom;
+    menu.style.position = 'fixed';
+    menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px';
+    if(spaceBelow < menuH + 16){
+      // افتح للأعلى
+      menu.style.top = 'auto';
+      menu.style.bottom = (window.innerHeight - r.top + 4) + 'px';
+    } else {
+      // افتح للأسفل
+      menu.style.bottom = 'auto';
+      menu.style.top = (r.bottom + 4) + 'px';
+    }
+  }
+}
+// قفل القوائم عند الضغط في أي مكان آخر
+document.addEventListener('click', function(){
+  document.querySelectorAll('.user-actions-menu.open').forEach(function(m){
+    m.classList.remove('open');
+    m.style.position=''; m.style.top=''; m.style.left=''; m.style.bottom='';
+  });
+});
+
+// ── تغيير الدور مباشرة (بضغطة من القائمة) ──
+function changeUserRoleTo(username, newRole){
+  if(!hasPerm('manage_users')){ toast('ليس لديك صلاحية','error'); return; }
+  const roles = ['admin','supervisor','storekeeper','viewer'];
+  const labels = {'admin':'مدير','supervisor':'مشرف','storekeeper':'أمين مستودع','viewer':'مراقب'};
+  if(!roles.includes(newRole)){ toast('الدور غير صحيح','error'); return; }
+  const u = DB.users.find(x=>x.username===username);
+  if(!u){ toast('المستخدم غير موجود','error'); return; }
+  if(u.role === newRole){ toast('المستخدم بهذا الدور بالفعل','error'); return; }
+  const oldLabel = labels[u.role] || u.role;
+  if(!confirm('تغيير دور "'+username+'"\n\nمن: '+oldLabel+'\nإلى: '+labels[newRole]+'\n\nهل تريد المتابعة؟')) return;
+  u.role = newRole;
+  saveDB();
+  renderUsers();
+  toast('تم تغيير دور ' + username + ' إلى ' + labels[newRole] + ' ✓');
+}
+
+// ── تعديل اسم وبيانات مستخدم آخر (للمدير) ──
+function openEditUserData(username){
+  if(!hasPerm('manage_users')){ toast('ليس لديك صلاحية','error'); return; }
+  const u = DB.users.find(x=>x.username===username);
+  if(!u){ toast('المستخدم غير موجود','error'); return; }
+  const newName = prompt('تعديل الاسم الكامل للمستخدم "'+username+'":', u.fullname || '');
+  if(newName === null) return;
+  if(!newName.trim()){ toast('الاسم لا يمكن أن يكون فارغاً','error'); return; }
+  u.fullname = newName.trim();
+  saveDB();
+  renderUsers();
+  toast('تم تحديث بيانات ' + username + ' ✓');
 }
 
 async function saveUser() {
@@ -6350,14 +6527,21 @@ function changeUserRole(username, currentRole) {
 
 async function resetPassword(username) {
   if(!hasPerm('manage_users')){ toast('ليس لديك صلاحية','error'); return; }
-  const np = prompt('كلمة المرور الجديدة للمستخدم ' + username + ':');
-  if(!np) return;
-  if(np.length < 6){ toast('كلمة المرور يجب أن تكون 6 أحرف على الأقل','error'); return; }
   const u = DB.users.find(u=>u.username===username);
-  if(!u) return;
-  u.password = await _hashPassword(np);
-  saveDB();
-  toast('تم تغيير كلمة المرور بنجاح ✓');
+  if(!u){ toast('المستخدم غير موجود','error'); return; }
+  if(!u.email || !u.email.includes('@')){ toast('لا يوجد بريد إلكتروني صحيح لهذا المستخدم','error'); return; }
+  if(!firebaseAuth){ toast('خدمة المصادقة غير متاحة حالياً','error'); return; }
+  if(!confirm('إرسال رابط إعادة تعيين كلمة المرور إلى بريد المستخدم "'+username+'"؟\n\nالبريد: '+u.email+'\n\nسيستلم المستخدم رابطاً يغيّر منه كلمة المرور بنفسه بشكل آمن.')) return;
+  try {
+    await firebaseAuth.sendPasswordResetEmail(u.email);
+    toast('✅ تم إرسال رابط إعادة التعيين إلى: ' + u.email, 'success');
+  } catch(e) {
+    if (e.code === 'auth/user-not-found') {
+      toast('هذا البريد غير مسجّل في خدمة المصادقة', 'error');
+    } else {
+      toast('تعذّر الإرسال: ' + (e.message||e.code||'خطأ غير معروف'), 'error');
+    }
+  }
 }
 
 // ── Transaction Edit / Delete ──
@@ -6377,6 +6561,7 @@ function openTxnEdit(type, id) {
   document.getElementById('txn-edit-notes').value   = txn.notes||'';
   document.getElementById('txn-edit-booknum').value = txn.booknum||'';
   document.getElementById('txn-edit-pagenum').value = txn.pagenum||'';
+  document.getElementById('txn-edit-serial').value  = txn.serial||'';
   if(type==='in') {
     document.getElementById('txn-modal-title').textContent = '✏️ تعديل سند إدخال — ' + id;
     document.getElementById('txn-ref-label').textContent   = 'رقم الإذن / الفاتورة';
@@ -6395,7 +6580,7 @@ function closeTxnModal() { document.getElementById('txn-edit-modal').classList.r
 
 /* ── تعديل إرجاع إدخال أو إرجاع صرف (للمدير فقط من سجل الحركات) ── */
 function openReturnEdit(type, id) {
-  if(!currentUser || currentUser.role !== 'admin'){ toast('للمدير فقط','error'); return; }
+  if(!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'supervisor')){ toast('التعديل متاح للمدير والمشرف فقط','error'); return; }
   const arr = type==='ret-in' ? DB.returnReceives : DB.returnDispatches;
   const txn = arr.find(t=>t.id===id);
   if(!txn){ toast('السجل غير موجود','error'); return; }
@@ -6410,6 +6595,7 @@ function openReturnEdit(type, id) {
   document.getElementById('txn-edit-notes').value    = txn.notes||'';
   document.getElementById('txn-edit-booknum').value  = txn.booknum||'';
   document.getElementById('txn-edit-pagenum').value  = txn.pagenum||'';
+  document.getElementById('txn-edit-serial').value   = txn.serial||'';
   document.getElementById('txn-edit-party').value    = txn.supplier||txn.dept||txn.user||'';
   const label = type==='ret-in' ? 'إرجاع إدخال' : 'إرجاع صرف';
   document.getElementById('txn-modal-title').textContent = '✏️ تعديل ' + label + ' — ' + id;
@@ -6424,7 +6610,7 @@ function saveTxnEdit() {
   const type = document.getElementById('txn-edit-type').value;
   // إذا كان نوع إرجاع، نستخدم منطق خاص
   if(type === 'ret-in' || type === 'ret-out'){
-    if(!currentUser || currentUser.role !== 'admin'){ toast('للمدير فقط','error'); return; }
+    if(!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'supervisor')){ toast('التعديل متاح للمدير والمشرف فقط','error'); return; }
     const id  = document.getElementById('txn-edit-id').value;
     const qty = parseFloat(document.getElementById('txn-edit-qty').value);
     if(!qty||qty<=0){ toast('الكمية غير صحيحة','error'); return; }
@@ -6441,6 +6627,7 @@ function saveTxnEdit() {
       notes:     document.getElementById('txn-edit-notes').value,
       booknum:   document.getElementById('txn-edit-booknum').value,
       pagenum:   document.getElementById('txn-edit-pagenum').value,
+      serial:    document.getElementById('txn-edit-serial').value,
       user:      document.getElementById('txn-edit-party').value,
     };
     saveLocal();
@@ -6481,6 +6668,7 @@ function saveTxnEdit() {
     notes:     document.getElementById('txn-edit-notes').value,
     booknum:   document.getElementById('txn-edit-booknum').value,
     pagenum:   document.getElementById('txn-edit-pagenum').value,
+    serial:    document.getElementById('txn-edit-serial').value,
     [type==='in'?'supplier':'dept']: document.getElementById('txn-edit-party').value,
   };
   if(firebaseDB && initialSyncCompleted && fbKey) {
@@ -6665,6 +6853,7 @@ let _pendingCustody = null;
 
 async function saveCustody() {
   if (!currentUser){toast('يجب تسجيل الدخول','error');return;}
+  if (currentUser.role === 'viewer'){toast('ليس لديك صلاحية إصدار عهدة','error');return;}
   const receiver  = document.getElementById('cust-receiver').value.trim();
   const job       = document.getElementById('cust-job').value.trim();
   const company   = document.getElementById('cust-company').value.trim();
@@ -9026,6 +9215,16 @@ async function doChangePassword() {
       unsubscribe();
 
       if (user) {
+        // (أ)+(ب): تحقق أن الجلسة لم تُغلق مع المتصفح/التاب ولم تتجاوز المهلة
+        if (!_isStoredSessionValid()) {
+          try { await firebaseAuth.signOut(); } catch(e) {}
+          _clearSessionMark();
+          const lm = document.getElementById('loading-msg');
+          if(lm) lm.remove();
+          overlay.style.display = 'flex';
+          resolve();
+          return;
+        }
         // جلسة نشطة - حمّل البيانات مباشرة
         lmDiv.textContent = 'جاري تحميل البيانات...';
         try { await loadSavedData(); } catch(e) { console.warn(e); }
@@ -9035,6 +9234,7 @@ async function doChangePassword() {
           currentUser = dbUser;
           dbUser.lastLogin = new Date().toLocaleString('ar-SA');
           saveDB();
+          _markSessionActive();
           const lm = document.getElementById('loading-msg');
           if(lm) lm.remove();
           overlay.style.display = 'none';
@@ -9207,6 +9407,7 @@ function clearExtForm() {
 
 function saveExtRequest() {
   if(!currentUser){toast('يجب تسجيل الدخول أولاً','error');return;}
+  if(currentUser.role === 'viewer'){toast('ليس لديك صلاحية حفظ طلب خارجي','error');return;}
   const company=document.getElementById('ext-company').value.trim();
   if(!company){toast('يجب إدخال اسم الشركة','error');return;}
   const validWOs=_extWorkOrders.filter(w=>w.items.length>0);
@@ -9895,6 +10096,7 @@ function renderWoList() {
 }
 
 function saveWorkOrder() {
+  if(currentUser && currentUser.role === 'viewer'){toast('ليس لديك صلاحية حفظ أمر عمل','error');return;}
   const woNum = (document.getElementById('wo-workorder').value||'').trim();
   const desc  = (document.getElementById('wo-desc').value||'').trim();
   const date  = document.getElementById('wo-date').value || new Date().toISOString().slice(0,10);
@@ -10513,6 +10715,36 @@ function _setupWorkOrdersListener() {
     if(a!==b){ DB.workOrders=arr; saveLocal(); if(currentPage==='workorders') renderWorkOrdersTable(); }
   }, e=>console.warn('WO listener:',e));
 }
+
+// ══ تول-تيب القايمة الجانبية المطوية (fixed حتى لا يُقص) ══
+(function(){
+  const tip = document.getElementById('nav-tooltip');
+  if(!tip) return;
+  function isCollapsed(){
+    const sb = document.querySelector('.sidebar');
+    return sb && sb.classList.contains('collapsed');
+  }
+  document.addEventListener('mouseover', function(e){
+    const item = e.target.closest('.nav-item');
+    if(!item || !isCollapsed()) { tip.classList.remove('show'); return; }
+    const title = item.getAttribute('data-title');
+    if(!title) return;
+    tip.textContent = title;
+    const r = item.getBoundingClientRect();
+    tip.style.top = (r.top + r.height/2) + 'px';
+    tip.style.transform = 'translateY(-50%)';
+    // القايمة على اليمين (RTL) → التول-تيب على يسار الأيقونة
+    tip.style.right = (window.innerWidth - r.left + 10) + 'px';
+    tip.style.left = 'auto';
+    tip.classList.add('show');
+  });
+  document.addEventListener('mouseout', function(e){
+    const item = e.target.closest('.nav-item');
+    if(item) tip.classList.remove('show');
+  });
+  // إخفاء عند التمرير داخل القايمة
+  document.addEventListener('scroll', function(){ tip.classList.remove('show'); }, true);
+})();
 </script>
 
 <!-- ══ EDIT PROFILE MODAL ══ -->
