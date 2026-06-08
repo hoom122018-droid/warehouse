@@ -191,6 +191,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 /* ── Table ── */
 .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow)}
 .table-toolbar{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+/* ══ سجل الحركات: تثبيت شريط الفلاتر ورأس الجدول مع تمرير داخلي ══ */
+.mov-sticky-wrap{display:flex;flex-direction:column;max-height:calc(100vh - 150px);overflow:hidden}
+.mov-sticky-wrap > .table-toolbar{position:sticky;top:0;z-index:30;background:var(--bg2);flex:0 0 auto}
+.mov-sticky-wrap > table{flex:1 1 auto}
+.mov-sticky-wrap{overflow-y:auto;overflow-x:auto}
+.mov-sticky-wrap > table thead th{position:sticky;top:0;z-index:20;background:var(--bg3)}
+/* ══ تثبيت رأس الجدول العام (كتالوج/مواد/تحت الحد/مراقبة/مخزون) ══ */
+.sticky-thead{display:flex;flex-direction:column;max-height:calc(100vh - 150px);overflow-y:auto;overflow-x:auto}
+.sticky-thead > .table-toolbar{position:sticky;top:0;z-index:30;background:var(--bg2);flex:0 0 auto}
+.sticky-thead > table{flex:1 1 auto}
+.sticky-thead > table thead th{position:sticky;top:0;z-index:20;background:var(--bg3)}
+/* عند وجود toolbar ثابت، رأس الجدول يلتصق أسفله */
+.sticky-thead > .table-toolbar ~ table thead th{top:0}
 .search-wrap{position:relative;flex:1}
 .search-wrap input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px;padding:10px 12px 10px 34px;width:100%;transition:border-color .15s,box-shadow .15s}
 .search-wrap input:focus{outline:none;border-color:var(--blue);box-shadow:var(--ring)}
@@ -240,13 +253,13 @@ tr.stock-out td:first-child{border-right:2px solid var(--red)}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:999}
 #login-modal{z-index:9999;background:rgba(0,0,0,.85)}
 .modal-overlay.show{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-xl);width:520px;max-width:95vw;box-shadow:0 24px 70px rgba(0,0,0,.55)}
-.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-xl);width:520px;max-width:95vw;box-shadow:0 24px 70px rgba(0,0,0,.55);max-height:90vh;display:flex;flex-direction:column}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex:0 0 auto}
+.modal-body{padding:20px;overflow-y:auto;flex:1 1 auto}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex:0 0 auto}
 .modal-title{font-size:14px;font-weight:600;color:var(--text)}
 .modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:2px 6px;border-radius:4px}
 .modal-close:hover{color:var(--text);background:var(--bg3)}
-.modal-body{padding:20px}
-.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
 
 /* ── Scrollbar ── */
 input[type=number]{-moz-appearance:textfield}
@@ -272,11 +285,15 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .theme-btn[data-t="light"]{background:linear-gradient(135deg,#94A3B8,#1A56DB);color:#fff}
 /* ── Reprint page tabs ── */
 .reprint-tab{padding:12px 22px;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:14px;font-weight:600;font-family:var(--font);background:transparent;color:var(--text3);transition:all .15s}
+/* ══ رأس صفحة طباعة السندات: ثابت + لون ديناميكي خفيف حسب نوع السند ══ */
+.reprint-header{position:sticky;top:0;z-index:40;backdrop-filter:blur(6px);border:1.5px solid var(--rp-accent,var(--border2));border-top:4px solid var(--rp-accent,var(--accent));background:var(--rp-tint,var(--bg2));box-shadow:0 6px 22px rgba(0,0,0,.28);transition:border-color .25s, background .25s}
 .reprint-tab:hover{border-color:var(--border2);color:var(--text2)}
 .reprint-tab.active[data-rt="dispatch"]{background:var(--red-bg);border-color:var(--red);color:var(--red-l)}
 .reprint-tab.active[data-rt="receive"]{background:var(--green-bg);border-color:var(--green);color:var(--green-l)}
 .reprint-tab.active[data-rt="ret-in"]{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-l)}
 .reprint-tab.active[data-rt="ret-out"]{background:var(--purple-bg);border-color:var(--purple);color:var(--purple-l)}
+.reprint-tab.active[data-rt="custody"]{background:var(--blue-bg);border-color:var(--blue);color:var(--blue-l)}
+.reprint-tab.active[data-rt="ext-req"]{background:var(--blue-bg);border-color:var(--blue);color:var(--blue-l)}
 .reprint-op-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
 .reprint-op-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--bg3);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
 </style>
@@ -461,7 +478,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
               <input type="text" id="rcv-workorder" placeholder="123456789" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);document.getElementById('rcv-wo-header').textContent=this.value||'—'">
             </div>
             <div class="field">
-              <label>الرقم التسلسلي</label>
+              <label>رقم المسلسل</label>
               <input type="text" id="rcv-serial" placeholder="اختياري">
             </div>
             <div class="field">
@@ -534,7 +551,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
         <div class="form-actions">
           <button class="btn btn-success" onclick="addItemToRcvList()">+ إضافة للقائمة</button>
-          <button class="btn" onclick="clearReceive()">↺ مسح الحقول</button>
+          <button class="btn" onclick="_fullClearAfterSave('rcv');toast('تم مسح الحقول')">↺ مسح الحقول</button>
           <div style="margin-right:auto;display:flex;align-items:center;gap:12px">
             <span id="rcv-offline-badge" style="display:none;background:var(--red-bg);border:1px solid var(--red);color:var(--red-l);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px">📵 لا يوجد اتصال</span>
             <span style="font-size:12px;color:var(--text3)">الرصيد الحالي: <strong id="rcv-balance" style="color:var(--blue-l)">—</strong></span>
@@ -587,7 +604,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
               <input type="text" id="dsp-workorder" placeholder="123456789" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);document.getElementById('dsp-wo-header').textContent=this.value||'—'">
             </div>
             <div class="field">
-              <label>الرقم التسلسلي</label>
+              <label>رقم المسلسل</label>
               <input type="text" id="dsp-serial" placeholder="اختياري">
             </div>
             <div class="field">
@@ -660,7 +677,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
         <div class="form-actions">
           <button class="btn btn-danger" onclick="addItemToDspList()">+ إضافة للقائمة</button>
-          <button class="btn" onclick="clearDispatch()">↺ مسح الحقول</button>
+          <button class="btn" onclick="_fullClearAfterSave('dsp');toast('تم مسح الحقول')">↺ مسح الحقول</button>
         </div>
       </div>
       <!-- Multi-item list dispatch -->
@@ -706,7 +723,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
               <input type="text" id="rrcv-workorder" placeholder="123456789" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);document.getElementById('rrcv-wo-header').textContent=this.value||'—';if(document.getElementById('rrcv-dept'))document.getElementById('rrcv-dept').value='';">
             </div>
             <div class="field">
-              <label>الرقم التسلسلي</label>
+              <label>رقم المسلسل</label>
               <input type="text" id="rrcv-serial" placeholder="اختياري">
             </div>
             <div class="field">
@@ -776,7 +793,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" style="background:var(--amber-bg);border-color:var(--amber);color:var(--amber-l)" onclick="addItemToRrcvList()">+ إضافة للقائمة</button>
-          <button class="btn" onclick="clearReturnReceive()">↺ مسح</button>
+          <button class="btn" onclick="_fullClearAfterSave('rrcv');toast('تم مسح الحقول')">↺ مسح</button>
         </div>
       </div>
       <!-- Multi-item list return-receive -->
@@ -820,7 +837,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
               <input type="text" id="rdsp-workorder" placeholder="123456789" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);document.getElementById('rdsp-wo-header').textContent=this.value||'—';if(document.getElementById('rdsp-dept'))document.getElementById('rdsp-dept').value='';">
             </div>
             <div class="field">
-              <label>الرقم التسلسلي</label>
+              <label>رقم المسلسل</label>
               <input type="text" id="rdsp-serial" placeholder="اختياري">
             </div>
             <div class="field">
@@ -890,7 +907,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
         <div class="form-actions">
           <button class="btn" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple-l)" onclick="addItemToRdspList()">+ إضافة للقائمة</button>
-          <button class="btn" onclick="clearReturnDispatch()">↺ مسح</button>
+          <button class="btn" onclick="_fullClearAfterSave('rdsp');toast('تم مسح الحقول')">↺ مسح</button>
         </div>
       </div>
       <!-- Multi-item list return-dispatch -->
@@ -922,7 +939,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
     <!-- ══ STOCK PAGE ══ -->
     <div class="page" id="page-stock">
-      <div class="table-wrap">
+      <div class="table-wrap sticky-thead">
         <div class="table-toolbar">
           <div class="search-wrap">
             <span class="search-icon">🔍</span>
@@ -954,7 +971,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
     <!-- ══ LOW STOCK PAGE ══ -->
     <div class="page" id="page-lowstock">
-      <div class="table-wrap">
+      <div class="table-wrap sticky-thead">
         <div class="table-toolbar" style="flex-wrap:wrap;gap:8px">
           <div class="search-wrap" style="flex:1">
             <span class="search-icon">🔍</span>
@@ -981,7 +998,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
     <!-- ══ MOVEMENTS ══ -->
     <div class="page" id="page-movements">
-      <div class="table-wrap">
+      <div class="table-wrap mov-sticky-wrap">
         <div class="table-toolbar" style="flex-wrap:wrap;gap:8px">
           <div class="search-wrap" style="min-width:200px;flex:1">
             <span class="search-icon">🔍</span>
@@ -999,7 +1016,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           </select>
           <input type="date" class="filter-select" id="mov-date-filter" onchange="filterMovements('')" title="تصفية بالتاريخ">
           <input type="text" class="filter-select" id="mov-code-filter" placeholder="🔍 كود المادة" oninput="renderMovements()" style="width:130px">
-          <input type="text" class="filter-select" id="mov-serial-filter" placeholder="🔍 الرقم التسلسلي" oninput="renderMovements()" style="width:150px">
+          <input type="text" class="filter-select" id="mov-serial-filter" placeholder="🔍 رقم المسلسل" oninput="renderMovements()" style="width:150px">
           <input type="text" class="filter-select" id="mov-book-filter" placeholder="🔍 رقم الكتاب" oninput="renderMovements()" style="width:130px">
           <input type="text" class="filter-select" id="mov-page-filter" placeholder="🔍 رقم الصفحة" oninput="renderMovements()" style="width:130px">
           <input type="text" class="filter-select" id="mov-dept-filter" placeholder="🔍 الجهة/المورد" oninput="renderMovements()" style="width:140px">
@@ -1008,7 +1025,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         <table>
           <thead><tr>
             <th>رقم العملية</th><th>النوع</th><th>التاريخ</th><th>الكود</th>
-            <th>المادة</th><th>الكمية</th><th>أمر العمل</th><th>الرقم التسلسلي</th><th>رقم الصفحة</th><th>الجهة/المورد</th><th>المستخدم</th><th>إجراءات</th>
+            <th>المادة</th><th>الكمية</th><th>أمر العمل</th><th>رقم المسلسل</th><th>رقم الصفحة</th><th>الجهة/المورد</th><th>المستخدم</th><th>إجراءات</th>
           </tr></thead>
           <tbody id="mov-tbody"></tbody>
         </table>
@@ -1064,7 +1081,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
       </div>
       <!-- Table -->
-      <div class="table-wrap" style="margin-bottom:24px">
+      <div class="table-wrap sticky-thead" style="margin-bottom:24px">
         <table>
           <thead><tr>
             <th>#</th><th>الوقت والتاريخ</th><th>الموظف</th><th>نوع العملية</th>
@@ -1128,7 +1145,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <button class="btn" onclick="clearItemForm()">↺ مسح</button>
         </div>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap sticky-thead">
         <div class="table-toolbar">
           <div class="search-wrap">
             <span class="search-icon">🔍</span>
@@ -1148,7 +1165,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
     <!-- ══ CATALOG PAGE ══ -->
     <div class="page" id="page-catalog">
-      <div class="table-wrap">
+      <div class="table-wrap sticky-thead">
         <div class="table-toolbar" style="flex-wrap:wrap;gap:8px">
           <div class="search-wrap" style="min-width:200px;flex:1">
             <span class="search-icon">🔍</span>
@@ -1438,8 +1455,8 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
     <!-- ══ REPRINT PAGE — إعادة طباعة السندات ══ -->
     <div class="page" id="page-reprint">
-      <div class="form-panel" style="margin-bottom:18px">
-        <div style="color:var(--text3);font-size:13px;margin-bottom:16px">اختر نوع السند، ابحث برقم أمر العمل، وأعد توليد ملف الـ PDF لأي عملية سابقة — بنفس الشكل الأصلي. (يعمل من البيانات المحمّلة، دون أي ضغط على قاعدة البيانات)</div>
+      <div class="form-panel reprint-header" id="reprint-header" style="margin-bottom:18px">
+        <div style="color:var(--text3);font-size:13px;margin-bottom:16px">اختر نوع السند، ابحث برقم أمر العمل أو التاريخ، وأعد توليد ملف الـ PDF لأي عملية سابقة — بنفس الشكل الأصلي.</div>
 
         <!-- التبويبات -->
         <div class="reprint-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
@@ -1447,15 +1464,22 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <button class="reprint-tab" data-rt="receive" onclick="switchReprintTab('receive')">إدخال</button>
           <button class="reprint-tab" data-rt="ret-in" onclick="switchReprintTab('ret-in')">إرجاع إدخال</button>
           <button class="reprint-tab" data-rt="ret-out" onclick="switchReprintTab('ret-out')">إرجاع صرف</button>
+          <button class="reprint-tab" data-rt="custody" onclick="switchReprintTab('custody')">العهدة</button>
+          <button class="reprint-tab" data-rt="ext-req" onclick="switchReprintTab('ext-req')">الطلبات الخارجية</button>
         </div>
 
         <!-- شريط البحث -->
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-          <div class="field" style="flex:1;min-width:240px">
+          <div class="field" style="flex:1;min-width:200px">
             <label>رقم أمر العمل (اتركه فارغاً لعرض آخر العمليات)</label>
             <input type="text" id="reprint-search" placeholder="مثال: 908569105" oninput="renderReprintResults()">
           </div>
+          <div class="field" style="min-width:160px">
+            <label>التاريخ</label>
+            <input type="date" id="reprint-date" onchange="renderReprintResults()">
+          </div>
           <button class="btn" onclick="renderReprintResults()">🔍 بحث</button>
+          <button class="btn" onclick="document.getElementById('reprint-search').value='';document.getElementById('reprint-date').value='';renderReprintResults()" style="color:var(--red-l);border-color:var(--red)">✕ مسح</button>
         </div>
       </div>
 
@@ -1713,19 +1737,21 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
       </div>
 
-      <!-- ══ مودال معاينة PDF ══ -->
-      <div class="modal-overlay" id="cust-pdf-modal" style="z-index:1100;align-items:flex-start;padding-top:20px">
-        <div class="modal" style="width:860px;max-width:97vw;max-height:92vh;display:flex;flex-direction:column">
-          <div class="modal-header" style="flex-shrink:0">
-            <span class="modal-title" id="cust-pdf-modal-title">📄 معاينة وثيقة العهدة</span>
-            <div id="cust-pdf-modal-actions" style="display:flex;gap:8px;align-items:center">
-              <button class="btn btn-primary btn-sm" onclick="printCustodyPDF()">🖨️ طباعة / حفظ PDF</button>
-              <button class="modal-close" onclick="closeCustodyPDF()">✕</button>
-            </div>
+      <!-- مودال معاينة PDF تم نقله خارج الصفحة ليعمل من أي صفحة -->
+    </div>
+
+    <!-- ══ مودال معاينة PDF للعهدة (مستوى عام — يعمل من صفحة العهد ومن إعادة الطباعة) ══ -->
+    <div class="modal-overlay" id="cust-pdf-modal" style="z-index:1100;align-items:flex-start;padding-top:20px">
+      <div class="modal" style="width:860px;max-width:97vw;max-height:92vh;display:flex;flex-direction:column">
+        <div class="modal-header" style="flex-shrink:0">
+          <span class="modal-title" id="cust-pdf-modal-title">📄 معاينة وثيقة العهدة</span>
+          <div id="cust-pdf-modal-actions" style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-primary btn-sm" onclick="printCustodyPDF()">🖨️ طباعة / حفظ PDF</button>
+            <button class="modal-close" onclick="closeCustodyPDF()">✕</button>
           </div>
-          <div style="flex:1;overflow-y:auto;padding:20px 16px;background:#c8c8c8">
-            <div id="cust-pdf-content" style="background:#fff;max-width:760px;margin:0 auto;padding:42px 48px;font-family:Arial,sans-serif;direction:rtl;box-shadow:0 4px 24px rgba(0,0,0,.25);border-radius:3px;min-height:1050px">
-            </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:20px 16px;background:#c8c8c8">
+          <div id="cust-pdf-content" style="background:#fff;max-width:760px;margin:0 auto;padding:42px 48px;font-family:Arial,sans-serif;direction:rtl;box-shadow:0 4px 24px rgba(0,0,0,.25);border-radius:3px;min-height:1050px">
           </div>
         </div>
       </div>
@@ -1911,8 +1937,8 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
               <input type="text" id="txn-edit-pagenum" placeholder="رقم الصفحة">
             </div>
             <div class="field">
-              <label>الرقم التسلسلي</label>
-              <input type="text" id="txn-edit-serial" placeholder="الرقم التسلسلي">
+              <label>رقم المسلسل</label>
+              <input type="text" id="txn-edit-serial" placeholder="رقم المسلسل">
             </div>
             <div class="field">
               <label>المستودع</label>
@@ -2695,6 +2721,10 @@ function _applyFirebaseData(saved) {
   // الـ erpdata listener العام بيجيب snapshot قديمة أحياناً تسبب رجوع المحذوف
   // (لا تمسح هذا التعليق — الـ listeners المستقلة هي المرجع الصحيح للإرجاعات)
   if (Array.isArray(saved.users)  && JSON.stringify(saved.users)  !== JSON.stringify(DB.users))  { DB.users  = saved.users;  changed = true; }
+  // دمج آخر دخول من المسار المستقل بعد أي تحديث للمستخدمين
+  if (saved.lastLogins && typeof saved.lastLogins === 'object') {
+    DB.users.forEach(u => { const ll = saved.lastLogins[u.username]; if (ll && u.lastLogin !== ll) { u.lastLogin = ll; changed = true; } });
+  }
   // items: يقبل object (structure جديدة) أو array (backward compat)
   if (saved.items) {
     let newItems;
@@ -3055,6 +3085,14 @@ async function loadSavedData() {
         }
       }
       if (Array.isArray(saved.users))            DB.users            = saved.users;
+
+      // دمج آخر دخول من المسار المستقل (يظهر لكل المستخدمين عند المدير)
+      if (saved.lastLogins && typeof saved.lastLogins === 'object') {
+        DB.users.forEach(u => {
+          const ll = saved.lastLogins[u.username];
+          if (ll) u.lastLogin = ll;
+        });
+      }
 
       // خطوة 4: حفظ محلي محدّث
       saveLocal();
@@ -3722,8 +3760,28 @@ function renderRcvList(){
     <td>${i+1}</td><td><span class="code-chip">${esc(it.code)}</span></td><td>${esc(it.name)}</td>
     <td>${esc(it.unit)}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
     <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${esc(it.notes)||'—'}</td>
-    <td><button class="btn btn-sm btn-danger" onclick="_rcvList.splice(${i},1);renderRcvList()">🗑</button></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-sm" onclick="editRcvItem(${i})">✏️</button>
+      <button class="btn btn-sm btn-danger" style="margin-right:4px" onclick="_rcvList.splice(${i},1);renderRcvList()">🗑</button>
+    </td>
   </tr>`).join('');
+}
+
+// ── تعديل مادة من قائمة الإدخال قبل الحفظ ──
+function editRcvItem(i){
+  const it = _rcvList[i]; if(!it) return;
+  const setVal=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v==null?'':v); };
+  setVal('rcv-code', it.code);
+  setVal('rcv-name', it.name);
+  setVal('rcv-unit', it.unit);
+  setVal('rcv-qty',  it.qty);
+  if(it.ref!=null) setVal('rcv-ref', it.ref);
+  if(it.notes!=null) setVal('rcv-notes', it.notes);
+  _rcvList.splice(i,1);
+  renderRcvList();
+  if(typeof lookupItem==='function') lookupItem('rcv');
+  const c=document.getElementById('rcv-code'); if(c) c.focus();
+  toast('تم تحميل المادة للتعديل — عدّل ثم اضغط إضافة');
 }
 
 function clearRcvList(){ _rcvList=[]; renderRcvList(); }
@@ -3938,7 +3996,11 @@ tr.total-row td{background:#f7f7f7;border-top:2px solid ${C.accent};font-size:11
       <span class="hm-val big">${wo}</span>
     </div>
     <div class="hm-item">
-      <span class="hm-label">رقم السند / التسلسلي</span>
+      <span class="hm-label">رقم المسلسل</span>
+      <span class="hm-val big">${serial && serial!=='—' ? serial : '—'}</span>
+    </div>
+    <div class="hm-item">
+      <span class="hm-label">رقم السند</span>
       <span class="hm-val mono">${docRange}</span>
     </div>
     <div class="hm-item">
@@ -4182,9 +4244,21 @@ async function _getNextSerial(prefix) {
 }
 
 // ── MAIN SAVE FUNCTION (Phase-1 Upgraded) ──
+// ── فحص: هل توجد مادة في الخانات العلوية لم تُضف للقائمة بعد؟ ──
+// يمنع فقدان المادة عند الضغط على "حفظ الكل" بدون إضافتها
+function _hasPendingItem(prefix){
+  const codeEl = document.getElementById(prefix+'-code');
+  const qtyEl  = document.getElementById(prefix+'-qty');
+  const code = codeEl ? codeEl.value.trim() : '';
+  const qty  = qtyEl  ? qtyEl.value.trim()  : '';
+  return (code !== '' && qty !== '');
+}
+
 async function saveAllReceive(){
   // 0. Auth check
   if(!currentUser){ toast('يجب تسجيل الدخول','error'); return; }
+  // منع الحفظ لو في مادة بالخانات العلوية لم تُضف للقائمة
+  if(_hasPendingItem('rcv')){ toast('يوجد كود مادة وكمية بالأعلى لم يُضافا للقائمة — اضغط "إضافة" أولاً أو امسح الحقول','error'); return; }
   if(_rcvList.length===0){ toast('القائمة فارغة، أضف مواد أولاً','error'); return; }
 
   // 1. Validate: "السبب" is mandatory
@@ -4285,6 +4359,7 @@ async function saveAllReceive(){
     _writeAuditLog('receive', newRecords.map(r=>({...r, wo:r.workorder})));
     clearRcvList();
     clearReceive();
+    _fullClearAfterSave('rcv');
     _currentRcvId = null; // رقم جديد للسند الجديد
     initReceive();
     renderRcvRecent();
@@ -4414,12 +4489,33 @@ function renderDspList(){
     <td>${esc(it.unit)}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
     <td style="color:var(--green-l)">${it.balance.toLocaleString()}</td>
     <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${esc(it.notes)||'—'}</td>
-    <td><button class="btn btn-sm btn-danger" onclick="_dspList.splice(${i},1);renderDspList()">🗑</button></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-sm" onclick="editDspItem(${i})">✏️</button>
+      <button class="btn btn-sm btn-danger" style="margin-right:4px" onclick="_dspList.splice(${i},1);renderDspList()">🗑</button>
+    </td>
   </tr>`).join('');
+}
+
+// ── تعديل مادة من قائمة الصرف قبل الحفظ ──
+function editDspItem(i){
+  const it = _dspList[i]; if(!it) return;
+  const setVal=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v==null?'':v); };
+  setVal('dsp-code', it.code);
+  setVal('dsp-name', it.name);
+  setVal('dsp-unit', it.unit);
+  setVal('dsp-qty',  it.qty);
+  if(it.ref!=null) setVal('dsp-ref', it.ref);
+  if(it.notes!=null) setVal('dsp-notes', it.notes);
+  _dspList.splice(i,1);
+  renderDspList();
+  if(typeof lookupItem==='function') lookupItem('dsp');
+  const c=document.getElementById('dsp-code'); if(c) c.focus();
+  toast('تم تحميل المادة للتعديل — عدّل ثم اضغط إضافة');
 }
 function clearDspList(){ _dspList=[]; renderDspList(); }
 async function saveAllDispatch(){
   if(!currentUser){ toast('يجب تسجيل الدخول','error'); return; }
+  if(_hasPendingItem('dsp')){ toast('يوجد كود مادة وكمية بالأعلى لم يُضافا للقائمة — اضغط "إضافة" أولاً أو امسح الحقول','error'); return; }
   if(_dspList.length===0){ toast('القائمة فارغة، أضف مواد أولاً','error'); return; }
 
   // 1. Validate: السبب إلزامي
@@ -4511,7 +4607,7 @@ async function saveAllDispatch(){
 
     const cnt=_dspList.length;
     _writeAuditLog('dispatch', newRecords.map(r=>({...r, wo:r.workorder})));
-    clearDspList(); clearDispatch(); _currentDspId = null; initDispatch(); renderDspRecent(); renderDashboard();
+    clearDspList(); clearDispatch(); _fullClearAfterSave('dsp'); _currentDspId = null; initDispatch(); renderDspRecent(); renderDashboard();
     toast('تم حفظ '+cnt+' مادة بنجاح ✓ — جاري توليد PDF...');
     setTimeout(()=> generateDispatchPDF(newRecords, wo, serial), 400);
   } catch(err){
@@ -5302,7 +5398,9 @@ function saveItem(){
 }
 
 function clearItemForm(){
-  ['item-code','item-name','item-min','item-opening','item-notes'].forEach(id=>document.getElementById(id).value='');
+  ['item-code','item-name','item-min','item-opening','item-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const u=document.getElementById('item-unit'); if(u) u.value='';
+  toast('تم مسح الحقول');
 }
 
 function deleteItem(code){
@@ -6166,6 +6264,10 @@ async function doLogin() {
 
       currentUser = dbUser;
       dbUser.lastLogin = new Date().toLocaleString('ar-SA');
+      // كتابة آخر دخول في مسار مستقل يسمح لأي مستخدم بالكتابة (يظهر للجميع)
+      try {
+        if(firebaseDB) firebaseDB.ref('erpdata/lastLogins/' + dbUser.username).set(dbUser.lastLogin).catch(()=>{});
+      } catch(e){ console.warn('lastLogin write:', e); }
       saveDB();
       _markSessionActive(); // تفعيل علامة الجلسة
       document.getElementById('login-modal').style.display = 'none';
@@ -6484,7 +6586,9 @@ async function saveUser() {
 }
 
 function clearUserForm() {
-  ['u-username','u-fullname','u-email','u-password'].forEach(id=>document.getElementById(id).value='');
+  ['u-username','u-fullname','u-email','u-password'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const r=document.getElementById('u-role'); if(r) r.value='';
+  toast('تم مسح الحقول');
 }
 
 function toggleUserActive(username) {
@@ -7972,12 +8076,34 @@ function renderRrcvList(){
     <td>${i+1}</td><td><span class="code-chip">${esc(it.code)}</span></td><td>${esc(it.name)}</td>
     <td>${esc(it.unit)}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
     <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${esc(it.notes)||'—'}</td>
-    <td><button class="btn btn-sm btn-danger" onclick="_rrcvList.splice(${i},1);renderRrcvList()">🗑</button></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-sm" onclick="editRrcvItem(${i})">✏️</button>
+      <button class="btn btn-sm btn-danger" style="margin-right:4px" onclick="_rrcvList.splice(${i},1);renderRrcvList()">🗑</button>
+    </td>
   </tr>`).join('');
+}
+
+// ── تعديل مادة من قائمة إرجاع الإدخال قبل الحفظ ──
+function editRrcvItem(i){
+  const it = _rrcvList[i]; if(!it) return;
+  const setVal=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v==null?'':v); };
+  setVal('rrcv-code', it.code);
+  setVal('rrcv-name', it.name);
+  setVal('rrcv-unit', it.unit);
+  setVal('rrcv-qty',  it.qty);
+  if(it.ref!=null)  setVal('rrcv-ref', it.ref);
+  if(it.dept!=null) setVal('rrcv-dept', it.dept);
+  if(it.notes!=null) setVal('rrcv-notes', it.notes);
+  _rrcvList.splice(i,1);
+  renderRrcvList();
+  if(typeof lookupItem==='function') lookupItem('rrcv');
+  const c=document.getElementById('rrcv-code'); if(c) c.focus();
+  toast('تم تحميل المادة للتعديل — عدّل ثم اضغط إضافة');
 }
 function clearRrcvList(){ _rrcvList=[]; renderRrcvList(); }
 async function saveAllReturnReceive(){
   if(!currentUser){ toast('يجب تسجيل الدخول','error'); return; }
+  if(_hasPendingItem('rrcv')){ toast('يوجد كود مادة وكمية بالأعلى لم يُضافا للقائمة — اضغط "إضافة" أولاً أو امسح الحقول','error'); return; }
   if(_rrcvList.length===0){ toast('القائمة فارغة','error'); return; }
 
   // 1. السبب إلزامي
@@ -8062,7 +8188,7 @@ async function saveAllReturnReceive(){
 
     const cnt=_rrcvList.length;
     _writeAuditLog('return_receive', newRecords.map(r=>({...r, wo:r.workorder})));
-    clearRrcvList(); clearReturnReceive(); _currentRrcvId = null; initReturnReceive(); renderReturnRcvRecent(); renderDashboard();
+    clearRrcvList(); clearReturnReceive(); _fullClearAfterSave('rrcv'); _currentRrcvId = null; initReturnReceive(); renderReturnRcvRecent(); renderDashboard();
     toast('تم حفظ إرجاع إدخال '+cnt+' مادة ✓ — جاري توليد PDF...');
     setTimeout(()=> generateReturnReceivePDF(newRecords, wo, serial), 400);
   } catch(err){
@@ -8095,12 +8221,34 @@ function renderRdspList(){
     <td>${i+1}</td><td><span class="code-chip">${esc(it.code)}</span></td><td>${esc(it.name)}</td>
     <td>${esc(it.unit)}</td><td><strong>${it.qty.toLocaleString()}</strong></td>
     <td style="font-size:11px;color:var(--text3);max-width:180px;word-break:break-word">${esc(it.notes)||'—'}</td>
-    <td><button class="btn btn-sm btn-danger" onclick="_rdspList.splice(${i},1);renderRdspList()">🗑</button></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-sm" onclick="editRdspItem(${i})">✏️</button>
+      <button class="btn btn-sm btn-danger" style="margin-right:4px" onclick="_rdspList.splice(${i},1);renderRdspList()">🗑</button>
+    </td>
   </tr>`).join('');
+}
+
+// ── تعديل مادة من قائمة إرجاع الصرف قبل الحفظ ──
+function editRdspItem(i){
+  const it = _rdspList[i]; if(!it) return;
+  const setVal=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v==null?'':v); };
+  setVal('rdsp-code', it.code);
+  setVal('rdsp-name', it.name);
+  setVal('rdsp-unit', it.unit);
+  setVal('rdsp-qty',  it.qty);
+  if(it.ref!=null)  setVal('rdsp-ref', it.ref);
+  if(it.dept!=null) setVal('rdsp-dept', it.dept);
+  if(it.notes!=null) setVal('rdsp-notes', it.notes);
+  _rdspList.splice(i,1);
+  renderRdspList();
+  if(typeof lookupItem==='function') lookupItem('rdsp');
+  const c=document.getElementById('rdsp-code'); if(c) c.focus();
+  toast('تم تحميل المادة للتعديل — عدّل ثم اضغط إضافة');
 }
 function clearRdspList(){ _rdspList=[]; renderRdspList(); }
 async function saveAllReturnDispatch(){
   if(!currentUser){ toast('يجب تسجيل الدخول','error'); return; }
+  if(_hasPendingItem('rdsp')){ toast('يوجد كود مادة وكمية بالأعلى لم يُضافا للقائمة — اضغط "إضافة" أولاً أو امسح الحقول','error'); return; }
   if(_rdspList.length===0){ toast('القائمة فارغة','error'); return; }
 
   // 1. السبب إلزامي
@@ -8185,7 +8333,7 @@ async function saveAllReturnDispatch(){
 
     const cnt=_rdspList.length;
     _writeAuditLog('return_dispatch', newRecords.map(r=>({...r, wo:r.workorder})));
-    clearRdspList(); clearReturnDispatch(); _currentRdspId = null; initReturnDispatch(); renderReturnDspRecent(); renderDashboard();
+    clearRdspList(); clearReturnDispatch(); _fullClearAfterSave('rdsp'); _currentRdspId = null; initReturnDispatch(); renderReturnDspRecent(); renderDashboard();
     toast('تم حفظ إرجاع صرف '+cnt+' مادة ✓ — جاري توليد PDF...');
     setTimeout(()=> generateReturnDispatchPDF(newRecords, wo, serial), 400);
   } catch(err){
@@ -8381,6 +8529,28 @@ function clearReturnDispatch(){
     document.getElementById('rdsp-dept').value = savedDept;
   }
 }
+
+// ══ تفريغ كامل لكل خانات الصفحة بعد الحفظ الناجح (بما فيها أمر العمل والمرجع) ══
+// prefix: 'rcv' | 'dsp' | 'rrcv' | 'rdsp'
+function _fullClearAfterSave(prefix){
+  const setVal = (id,v='')=>{ const el=document.getElementById(id); if(el) el.value=v; };
+  const setTxt = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  // أمر العمل + الهيدر
+  setVal(prefix+'-workorder');
+  setTxt(prefix+'-wo-header','—');
+  // المرجع
+  setVal(prefix+'-ref');
+  // باقي الخانات المشتركة
+  ['-code','-name','-unit','-qty','-balance','-supplier','-dept','-receiver',
+   '-notes','-serial','-region','-booknum','-pagenum'].forEach(s=>setVal(prefix+s));
+  // نتيجة البحث والرصيد
+  const lk=document.getElementById(prefix+'-lookup'); if(lk) lk.className='lookup-result';
+  const bal=document.getElementById(prefix+'-balance'); if(bal && bal.tagName!=='INPUT') bal.textContent='—';
+  // إخفاء رسالة خطأ الملاحظات وإعادة لون الحدود
+  const er=document.getElementById(prefix+'-notes-err'); if(er) er.style.display='none';
+  const nf=document.getElementById(prefix+'-notes'); if(nf) nf.style.borderColor='';
+}
+
 function renderReturnDspRecent(){
   const tb=document.getElementById('rdsp-recent');
   const isAdmin  = currentUser && currentUser.role === 'admin';
@@ -9912,16 +10082,37 @@ const _REPRINT_CFG = {
   'ret-out':  { arr:'returnDispatches',label:'إرجاع صرف',   color:'var(--purple-l)', pdf:'generateReturnDispatchPDF', prefix:'RDSP' },
 };
 
+// ألوان الرأس الديناميكية لكل نوع سند (accent + tint خفيف)
+const _REPRINT_HEADER_COLORS = {
+  'dispatch': { accent:'#e74c3c', tint:'rgba(231,76,60,0.10)'  },
+  'receive':  { accent:'#27ae60', tint:'rgba(39,174,96,0.10)'  },
+  'ret-in':   { accent:'#d4ac0d', tint:'rgba(212,172,13,0.10)' },
+  'ret-out':  { accent:'#8e44ad', tint:'rgba(142,68,173,0.10)' },
+  'custody':  { accent:'#3BA4F7', tint:'rgba(59,164,247,0.10)' },
+  'ext-req':  { accent:'#3BA4F7', tint:'rgba(59,164,247,0.10)' },
+};
+
+function _applyReprintHeaderColor(t){
+  const h = document.getElementById('reprint-header');
+  if(!h) return;
+  const c = _REPRINT_HEADER_COLORS[t] || _REPRINT_HEADER_COLORS['dispatch'];
+  h.style.setProperty('--rp-accent', c.accent);
+  h.style.setProperty('--rp-tint', c.tint);
+}
+
 function initReprintPage(){
   _reprintTab = 'dispatch';
   document.querySelectorAll('.reprint-tab').forEach(b=>b.classList.toggle('active', b.dataset.rt==='dispatch'));
   const s = document.getElementById('reprint-search'); if(s) s.value='';
+  const d = document.getElementById('reprint-date'); if(d) d.value='';
+  _applyReprintHeaderColor('dispatch');
   renderReprintResults();
 }
 
 function switchReprintTab(t){
   _reprintTab = t;
   document.querySelectorAll('.reprint-tab').forEach(b=>b.classList.toggle('active', b.dataset.rt===t));
+  _applyReprintHeaderColor(t);
   renderReprintResults();
 }
 
@@ -9942,23 +10133,32 @@ function _groupReprintRecords(records){
 }
 
 function renderReprintResults(){
-  const cfg = _REPRINT_CFG[_reprintTab];
   const container = document.getElementById('reprint-results');
-  if(!cfg || !container) return;
+  if(!container) return;
+  // التبويبات الخاصة: العهدة والطلبات الخارجية لها بنية مختلفة
+  if(_reprintTab === 'custody')  { renderReprintCustody();  return; }
+  if(_reprintTab === 'ext-req')  { renderReprintExtReq();   return; }
+
+  const cfg = _REPRINT_CFG[_reprintTab];
+  if(!cfg) return;
 
   const term = (document.getElementById('reprint-search').value||'').trim().toLowerCase();
+  const dateF = (document.getElementById('reprint-date') ? document.getElementById('reprint-date').value : '') || '';
   let records = (DB[cfg.arr]||[]).slice();
   if(term){
     records = records.filter(r=> String(r.workorder||'').toLowerCase().includes(term) );
   }
+  if(dateF){
+    records = records.filter(r=> String(r.date||'')===dateF );
+  }
 
   let groups = _groupReprintRecords(records);
   // عند عدم وجود بحث: اعرض آخر 30 عملية فقط لتجنّب الإبطاء
-  if(!term) groups = groups.slice(0, 30);
+  if(!term && !dateF) groups = groups.slice(0, 30);
 
   if(groups.length===0){
     container.innerHTML = `<div class="form-panel" style="text-align:center;color:var(--text3);padding:34px">
-      ${term ? 'لا توجد عمليات '+cfg.label+' مطابقة لأمر العمل: '+_escapeHtml(term) : 'لا توجد عمليات '+cfg.label+' مسجّلة بعد'}
+      ${(term||dateF) ? 'لا توجد عمليات '+cfg.label+' مطابقة للبحث' : 'لا توجد عمليات '+cfg.label+' مسجّلة بعد'}
     </div>`;
     return;
   }
@@ -10014,11 +10214,115 @@ function reprintOperation(tab, groupIndex){
   const grp = _reprintCurrentGroups[groupIndex];
   if(!grp || !grp.length){ toast('تعذّر العثور على بيانات العملية','error'); return; }
   const woName = grp[0].workorder || '';
-  const serial = grp[0].operationRef || grp[0].serial || grp[0].id || '';
+  const serial = grp[0].serial || '';
   const fn = window[cfg.pdf];
   if(typeof fn !== 'function'){ toast('دالة الطباعة غير متاحة','error'); return; }
   fn(grp, woName, serial);
   toast('جاري توليد ملف الـ PDF ✓');
+}
+
+// ── إعادة طباعة العهدة ──
+function renderReprintCustody(){
+  const container = document.getElementById('reprint-results');
+  const term = (document.getElementById('reprint-search').value||'').trim().toLowerCase();
+  const dateF = (document.getElementById('reprint-date') ? document.getElementById('reprint-date').value : '') || '';
+  let list = (DB.custodies||[]).slice();
+  if(term){
+    list = list.filter(c =>
+      String(c.id||'').toLowerCase().includes(term) ||
+      String(c.receiver||'').toLowerCase().includes(term) ||
+      String(c.company||'').toLowerCase().includes(term)
+    );
+  }
+  if(dateF){ list = list.filter(c=> String(c.date||'')===dateF ); }
+  // الأحدث أولاً
+  list.sort((a,b)=> String(b.id||'').localeCompare(String(a.id||'')));
+  if(!term && !dateF) list = list.slice(0, 30);
+
+  if(list.length===0){
+    container.innerHTML = `<div class="form-panel" style="text-align:center;color:var(--text3);padding:34px">
+      ${(term||dateF) ? 'لا توجد عُهد مطابقة للبحث' : 'لا توجد عُهد مسجّلة بعد'}
+    </div>`;
+    return;
+  }
+
+  _reprintCustodyList = list;
+  container.innerHTML = list.map((c,ci)=>{
+    const status = c.status==='active'
+      ? '<span class="badge badge-amber">📤 في الخارج</span>'
+      : '<span class="badge badge-green">✓ مرجعة</span>';
+    const itemsCount = (c.items||[]).length;
+    return `<div class="reprint-op-card">
+      <div class="reprint-op-head">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:15px;font-weight:700;color:var(--blue-l)">🔑 عهدة: ${_escapeHtml(c.id||'—')}</div>
+          <div style="font-size:12px;color:var(--text3)">
+            المستلِم: <b style="color:var(--text2)">${_escapeHtml(c.receiver||'—')}</b> &nbsp;•&nbsp;
+            الشركة: <b style="color:var(--text2)">${_escapeHtml(c.company||'—')}</b> &nbsp;•&nbsp;
+            التاريخ: <b style="color:var(--text2)">${_escapeHtml(c.date||'—')}</b> &nbsp;•&nbsp;
+            عدد الأصناف: <b style="color:var(--text2)">${itemsCount}</b> &nbsp;•&nbsp; ${status}
+          </div>
+        </div>
+        <button class="btn" style="background:var(--blue-bg);border:1.5px solid var(--blue);color:var(--blue-l);font-weight:600;white-space:nowrap"
+          onclick="reprintCustody(${ci})">📄 معاينة وطباعة</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// مصفوفة تخزين عهد إعادة الطباعة الحالية + دالة وسيطة آمنة
+let _reprintCustodyList = [];
+function reprintCustody(i){
+  const c = _reprintCustodyList[i];
+  if(!c){ toast('تعذّر العثور على بيانات العهدة','error'); return; }
+  previewCustodyPDF(c);
+}
+
+// ── إعادة طباعة الطلبات الخارجية ──
+function renderReprintExtReq(){
+  const container = document.getElementById('reprint-results');
+  const term = (document.getElementById('reprint-search').value||'').trim().toLowerCase();
+  const dateF = (document.getElementById('reprint-date') ? document.getElementById('reprint-date').value : '') || '';
+  let list = (DB.extRequests||[]).slice();
+  if(term){
+    list = list.filter(r =>
+      String(r.company||'').toLowerCase().includes(term) ||
+      String(r.delegate||'').toLowerCase().includes(term) ||
+      (r.workOrders||[]).some(w=>String(w.woNum||'').toLowerCase().includes(term))
+    );
+  }
+  if(dateF){ list = list.filter(r=> String(r.date||'')===dateF ); }
+  list.sort((a,b)=> String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+  if(!term && !dateF) list = list.slice(0, 30);
+
+  if(list.length===0){
+    container.innerHTML = `<div class="form-panel" style="text-align:center;color:var(--text3);padding:34px">
+      ${(term||dateF) ? 'لا توجد طلبات خارجية مطابقة للبحث' : 'لا توجد طلبات خارجية مسجّلة بعد'}
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(r=>{
+    const wos = r.workOrders||[];
+    const woNums = wos.map(w=>_escapeHtml(w.woNum||'—')).join('، ');
+    const totalItems = wos.reduce((s,w)=>s+((w.items||[]).length),0);
+    const rid = String(r.id||'').replace(/'/g,"\\'");
+    return `<div class="reprint-op-card">
+      <div class="reprint-op-head">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:15px;font-weight:700;color:var(--blue-l)">📨 طلب خارجي — ${_escapeHtml(r.company||'—')}</div>
+          <div style="font-size:12px;color:var(--text3)">
+            المندوب: <b style="color:var(--text2)">${_escapeHtml(r.delegate||'—')}</b> &nbsp;•&nbsp;
+            التاريخ: <b style="color:var(--text2)">${_escapeHtml(r.date||'—')}</b> &nbsp;•&nbsp;
+            أوامر العمل: <b style="color:var(--text2)">${woNums||'—'}</b> &nbsp;•&nbsp;
+            عدد الأصناف: <b style="color:var(--text2)">${totalItems}</b>
+          </div>
+        </div>
+        <button class="btn" style="background:var(--blue-bg);border:1.5px solid var(--blue);color:var(--blue-l);font-weight:600;white-space:nowrap"
+          onclick="printExtRequestPDF('${rid}')">📄 توليد PDF للطلب</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // مساعد بسيط لتأمين النص داخل HTML
