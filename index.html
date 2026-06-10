@@ -294,6 +294,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .reprint-tab.active[data-rt="ret-out"]{background:var(--purple-bg);border-color:var(--purple);color:var(--purple-l)}
 .reprint-tab.active[data-rt="custody"]{background:var(--blue-bg);border-color:var(--blue);color:var(--blue-l)}
 .reprint-tab.active[data-rt="ext-req"]{background:var(--blue-bg);border-color:var(--blue);color:var(--blue-l)}
+.reprint-tab.active[data-rt="wot"]{background:rgba(184,134,11,.15);border-color:#B8860B;color:#B8860B}
 .reprint-op-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
 .reprint-op-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--bg3);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
 </style>
@@ -344,6 +345,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
       <button data-title="إرجاع إدخال" class="nav-item" onclick="navigate('return-receive')"><span class="icon">↩️</span> <span class="nav-text">إرجاع إدخال</span></button>
       <button data-title="إرجاع صرف" class="nav-item" onclick="navigate('return-dispatch')"><span class="icon">↪️</span> <span class="nav-text">إرجاع صرف</span></button>
       <button data-title="طلبات خارجية" class="nav-item" onclick="navigate('ext-requests')"><span class="icon">📨</span> <span class="nav-text">طلبات خارجية</span></button>
+      <button data-title="محوّل من الصانبي" class="nav-item" onclick="navigate('wot')"><span class="icon">🚚</span> <span class="nav-text">محوّل من الصانبي</span></button>
       <button data-title="إدارة العهد" class="nav-item" onclick="navigate('custody')"><span class="icon">🔑</span> <span class="nav-text">إدارة العهد</span><span class="nav-badge" id="nav-custody-badge" style="display:none">0</span>
       </button>
       <button data-title="أوامر العمل" class="nav-item" onclick="navigate('workorders')"><span class="icon">🔧</span> <span class="nav-text">أوامر العمل</span></button>
@@ -1012,7 +1014,8 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
             <option value="ret-in">↩ إرجاع إدخال</option>
             <option value="ret-out">↪ إرجاع صرف</option>
             <option value="custody">🔑 إدارة العهدة</option>
-            <option value="ext-req">📨 الطلبات الخارجية</option>
+            <option value="wot">🚚 محوّل من الصانبي</option>
+            <option value="ext-recv">📨 استلام طلب خارجي</option>
           </select>
           <input type="date" class="filter-select" id="mov-date-filter" onchange="filterMovements('')" title="تصفية بالتاريخ">
           <input type="text" class="filter-select" id="mov-code-filter" placeholder="🔍 كود المادة" oninput="renderMovements()" style="width:130px">
@@ -1265,7 +1268,9 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
               <select id="rpt-type">
                 <option value="all">جميع الحركات</option>
                 <option value="in">الإدخالات فقط</option>
+                <option value="ext-recv">استلام الطلبات الخارجية فقط</option>
                 <option value="out">الصرف فقط</option>
+                <option value="wot">محوّل من الصانبي فقط</option>
                 <option value="ret-in">إرجاع الإدخال فقط</option>
                 <option value="ret-out">إرجاع الصرف فقط</option>
                 <option value="stock">تقرير المخزون الحالي</option>
@@ -1465,6 +1470,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <button class="reprint-tab" data-rt="ret-in" onclick="switchReprintTab('ret-in')">إرجاع إدخال</button>
           <button class="reprint-tab" data-rt="ret-out" onclick="switchReprintTab('ret-out')">إرجاع صرف</button>
           <button class="reprint-tab" data-rt="custody" onclick="switchReprintTab('custody')">العهدة</button>
+          <button class="reprint-tab" data-rt="wot" onclick="switchReprintTab('wot')">محوّل من الصانبي</button>
           <button class="reprint-tab" data-rt="ext-req" onclick="switchReprintTab('ext-req')">الطلبات الخارجية</button>
         </div>
 
@@ -1539,6 +1545,65 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           </tr></thead>
           <tbody id="ext-requests-tbody">
             <tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">لا توجد طلبات بعد</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ WORK ORDER TRANSFER PAGE — محوّل من الصانبي ══ -->
+    <div class="page" id="page-wot">
+      <div class="form-panel" style="margin-bottom:20px">
+        <div class="panel-header">
+          <span class="panel-title">
+            <span class="dot" style="background:var(--blue)"></span>
+            <span id="wot-form-title">إنشاء تحويل جديد — محوّل من الصانبي</span>
+          </span>
+          <div id="wot-edit-badge" style="display:none;background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber-l);border-radius:6px;padding:3px 10px;font-size:12px">✏️ وضع التعديل</div>
+        </div>
+        <div class="panel-body">
+          <div class="form-grid">
+            <div class="field"><label><span class="required-mark">*</span>اسم الشركة المحوّل إليها</label><input type="text" id="wot-company" placeholder="مثال: شركة هدف الجزيرة"></div>
+            <div class="field"><label>مكتب الخدمات</label><input type="text" id="wot-office" placeholder="مثال: خدمات الشرق"></div>
+            <div class="field"><label>اسم المندوب (المستلم)</label><input type="text" id="wot-delegate" placeholder="اسم المندوب المستلم"></div>
+            <div class="field"><label>المهنة</label><input type="text" id="wot-job" placeholder="مثال: فني كهرباء"></div>
+            <div class="field"><label>رقم الإقامة</label><input type="text" id="wot-iqama" placeholder="مثال: 2605908009"></div>
+            <div class="field"><label>اسم المُسلِّم (يظهر في التوقيع)</label><input type="text" id="wot-deliverer" placeholder="اكتب اسمك"></div>
+            <div class="field"><label>التاريخ</label><input type="date" id="wot-date"></div>
+            <div class="field"><label>ملاحظات</label><input type="text" id="wot-notes" placeholder="ملاحظات إضافية"></div>
+          </div>
+          <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div style="font-size:13px;font-weight:600;color:var(--text2)">📋 أوامر العمل والمواد</div>
+              <button id="wot-add-wo-btn" class="btn btn-primary btn-sm" onclick="wotAddWorkOrder()">+ إضافة أمر عمل</button>
+            </div>
+            <div id="wot-workorders-wrap"></div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="wot-save-btn" class="btn btn-primary" onclick="saveWorkOrderTransfer()">💾 حفظ وخصم من المخزون + طباعة السند</button>
+          <button class="btn" onclick="clearWotForm()">↺ مسح الكل</button>
+        </div>
+      </div>
+
+      <!-- سجل التحويلات -->
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <span class="panel-title" style="font-size:13px;padding:0 4px">
+            <span class="dot" style="background:var(--blue);display:inline-block"></span>
+            سجل التحويلات
+          </span>
+          <div class="search-wrap" style="max-width:260px">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="بحث برقم أمر العمل أو الشركة..." oninput="renderWotTable(this.value)">
+          </div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>الشركة المحوّل إليها</th><th>التاريخ</th>
+            <th>أمر العمل</th><th>عدد المواد</th><th>الكمية</th><th>إجراءات</th>
+          </tr></thead>
+          <tbody id="wot-tbody">
+            <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">لا توجد تحويلات بعد</td></tr>
           </tbody>
         </table>
       </div>
@@ -2237,7 +2302,8 @@ let DB = {
   returnReceives:[],
   returnDispatches:[],
   extRequests:[],
-  workOrders:[]
+  workOrders:[],
+  workOrderTransfers:[]
 };
 
 // ══ FIREBASE CONFIG ══
@@ -3074,6 +3140,11 @@ async function loadSavedData() {
       if (saved.workOrders) {
         DB.workOrders = Array.isArray(saved.workOrders) ? saved.workOrders : Object.values(saved.workOrders);
       }
+      if (saved.workOrderTransfers) {
+        DB.workOrderTransfers = Array.isArray(saved.workOrderTransfers)
+          ? saved.workOrderTransfers
+          : Object.entries(saved.workOrderTransfers).map(([k,v])=>({...v,_fbKey:k}));
+      }
       }
       // items: object structure جديدة أو array قديمة
       if (saved.items) {
@@ -3157,7 +3228,8 @@ function navigate(page) {
     stock:'المخزون الحالي', lowstock:'المواد تحت الحد الأدنى', movements:'سجل الحركات', reports:'التقارير',
     items:'إدارة المواد', catalog:'كتالوج المواد', users:'المستخدمون والصلاحيات',
     audit:'سجل المراقبة — للمدير فقط', custody:'إدارة العهد', workorders:'أوامر العمل',
-    reprint:'إعادة طباعة السندات'
+    reprint:'إعادة طباعة السندات',
+    wot:'محوّل من الصانبي'
   };
   document.getElementById('pageTitle').textContent = titles[page]||page;
   currentPage = page;
@@ -3174,6 +3246,7 @@ function navigate(page) {
   if(page==='reports') renderReportPage();
   if(page==='users') { if(!hasPerm('manage_users')){ toast('ليس لديك صلاحية','error'); navigate('dashboard'); return; } renderUsers(); }
   if(page==='ext-requests') { initExtRequestForm(); renderExtRequests(); }
+  if(page==='wot') { if(currentUser && currentUser.role==='viewer'){ toast('ليس لديك صلاحية','error'); navigate('dashboard'); return; } initWotForm(); renderWotTable(); }
   if(page==='custody') { initCustodyPage(); renderCustodyTable(); }
   if(page==='workorders') { initWorkOrderPage(); renderWorkOrdersTable(); }
   if(page==='reprint') { initReprintPage(); }
@@ -3333,27 +3406,39 @@ async function _runInventoryTransaction(code, txnType, qty) {
  * @returns {Promise<{success:boolean, results:Array, failedOp:object|null}>}
  */
 async function _runInventoryTransactionBatch(ops) {
-  const completed = [];
-  for (const op of ops) {
-    const result = await _runInventoryTransaction(op.code, op.txnType, op.qty);
-    if (!result.success) {
-      // 🔄 Rollback: عكس العمليات المكتملة بالترتيب العكسي
-      const reverseType = {
-        'receive':        'return_receive',
-        'dispatch':       'return_dispatch',
-        'return_receive': 'receive',
-        'return_dispatch':'dispatch'
-      };
-      console.warn('Batch transaction failed at:', op, '— rolling back', completed.length, 'completed ops');
-      for (const done of [...completed].reverse()) {
-        await _runInventoryTransaction(done.code, reverseType[done.txnType], done.qty)
-          .catch(e => console.error('Rollback failed for:', done, e));
-      }
-      return { success: false, results: completed, failedOp: op, error: result.error };
-    }
-    completed.push(op);
+  const reverseType = {
+    'receive':        'return_receive',
+    'dispatch':       'return_dispatch',
+    'return_receive': 'receive',
+    'return_dispatch':'dispatch'
+  };
+
+  // نفّذ كل العمليات بالتوازي — كل مادة مستقلة (balances/{code} مختلف) فلا تداخل بينها
+  const settled = await Promise.all(
+    ops.map(op =>
+      _runInventoryTransaction(op.code, op.txnType, op.qty)
+        .then(result => ({ op, result }))
+        .catch(error => ({ op, result: { success: false, error: (error && error.message) || 'خطأ غير متوقع' } }))
+    )
+  );
+
+  const succeeded = settled.filter(s => s.result.success).map(s => s.op);
+  const failed    = settled.filter(s => !s.result.success);
+
+  if (failed.length === 0) {
+    return { success: true, results: succeeded, failedOp: null, error: null };
   }
-  return { success: true, results: completed, failedOp: null, error: null };
+
+  // 🔄 Rollback: اعكس كل العمليات التي نجحت (بالتوازي أيضاً)
+  console.warn('Batch transaction: فشل', failed.length, 'عملية — تراجع عن', succeeded.length, 'عملية ناجحة');
+  await Promise.all(
+    succeeded.map(done =>
+      _runInventoryTransaction(done.code, reverseType[done.txnType], done.qty)
+        .catch(e => console.error('Rollback failed for:', done, e))
+    )
+  );
+  const firstFail = failed[0];
+  return { success: false, results: succeeded, failedOp: firstFail.op, error: firstFail.result.error };
 }
 
 // ── ترحيل شامل: السجلات القديمة بدون fbKey → إضافة fbKey ومزامنة Firebase ──
@@ -3811,6 +3896,667 @@ function _downloadHTML(html, filename) {
 // ══════════════════════════════════════════════════════════════════
 //  PDF BUILDER — احترافي موحد لجميع السندات
 // ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// ██  محوّل من الصانبي — Work Order Transfers  ██
+// ══════════════════════════════════════════════
+let _wotWorkOrders = [];
+let _wotEditId = null;
+let _wotWoCounter = 0;
+let _pendingWot = null;
+
+function initWotForm() {
+  const today = new Date().toISOString().slice(0,10);
+  const el = document.getElementById('wot-date');
+  if(el && !el.value) el.value = today;
+  if(!_wotWorkOrders.length) wotAddWorkOrder();
+}
+
+function wotAddWorkOrder() {
+  _wotWorkOrders.push({ id: ++_wotWoCounter, woNum: '', items: [] });
+  renderWotWorkOrders();
+}
+
+function wotRemoveWorkOrder(id) {
+  _wotWorkOrders = _wotWorkOrders.filter(w => w.id !== id);
+  if(!_wotWorkOrders.length) wotAddWorkOrder();
+  else renderWotWorkOrders();
+}
+
+function wotUpdateWoNum(id, val) {
+  if(val.length > 9) val = val.slice(0,9);
+  const wo = _wotWorkOrders.find(w => w.id === id);
+  if(wo) wo.woNum = val;
+  const el = document.getElementById('wot-wonum-'+id);
+  if(el && el.value !== val) el.value = val;
+}
+
+function renderWotWorkOrders() {
+  const wrap = document.getElementById('wot-workorders-wrap');
+  if(!wrap) return;
+  wrap.innerHTML = _wotWorkOrders.map((wo, idx) => `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;background:var(--bg3)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="background:var(--blue);color:#fff;border-radius:6px;padding:3px 12px;font-size:12px;font-weight:700;white-space:nowrap">أمر عمل ${idx+1}</div>
+        <input type="text" id="wot-wonum-${wo.id}" value="${esc(wo.woNum||'')}"
+          oninput="wotUpdateWoNum(${wo.id},this.value)"
+          maxlength="9" placeholder="رقم أمر العمل (9 أرقام كحد أقصى)"
+          style="flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 12px">
+        ${_wotWorkOrders.length > 1 ? `<button class="btn btn-danger btn-sm" onclick="wotRemoveWorkOrder(${wo.id})">🗑 حذف</button>` : ''}
+      </div>
+      <div style="display:grid;grid-template-columns:1.1fr 2fr 1fr 1fr auto;gap:8px;align-items:flex-end;margin-bottom:8px">
+        <div class="field">
+          <label style="font-size:11px">كود المادة</label>
+          <div class="lookup-wrap">
+            <input type="text" id="wot-code-${wo.id}" placeholder="الكود"
+              oninput="wotWoAutoFill(${wo.id})"
+              style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px 32px 6px 10px;width:100%">
+            <button class="lookup-btn" onclick="wotWoAutoFill(${wo.id})">🔍</button>
+          </div>
+        </div>
+        <div class="field">
+          <label style="font-size:11px">اسم المادة <span style="color:var(--red-l)">*</span></label>
+          <input type="text" id="wot-name-${wo.id}" placeholder="يُملأ تلقائياً أو يدوي"
+            style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px 10px;width:100%">
+        </div>
+        <div class="field">
+          <label style="font-size:11px">الكمية <span style="color:var(--red-l)">*</span></label>
+          <input type="number" id="wot-qty-${wo.id}" placeholder="0" min="1"
+            style="-moz-appearance:textfield;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px 10px;width:100%">
+        </div>
+        <div class="field">
+          <label style="font-size:11px">الوحدة</label>
+          <input type="text" id="wot-unit-${wo.id}" placeholder="قطعة"
+            style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px 10px;width:100%">
+        </div>
+        <div><button class="btn btn-primary btn-sm" onclick="wotWoAddItem(${wo.id})" style="margin-top:18px">+ إضافة</button></div>
+      </div>
+      ${wo.items.length > 0 ? `
+      <div class="table-wrap" style="margin-top:8px">
+        <table>
+          <thead><tr style="background:var(--bg4)">
+            <th style="font-size:10px;width:36px">#</th>
+            <th style="font-size:10px">اسم المادة</th>
+            <th style="font-size:10px;width:110px">كود المادة</th>
+            <th style="font-size:10px;width:70px">الكمية</th>
+            <th style="font-size:10px;width:65px">الوحدة</th>
+            <th style="font-size:10px;width:46px">حذف</th>
+          </tr></thead>
+          <tbody>${wo.items.map((it,i) => `
+            <tr>
+              <td style="text-align:center">${i+1}</td>
+              <td><strong>${esc(it.name)}</strong></td>
+              <td style="font-family:monospace;font-size:11px">${esc(it.code)||'—'}</td>
+              <td style="text-align:center;font-weight:700">${it.qty}</td>
+              <td style="text-align:center">${esc(it.unit)||'—'}</td>
+              <td style="text-align:center">
+                <button class="btn btn-danger btn-sm" style="padding:2px 6px" onclick="wotWoRemoveItem(${wo.id},${i})">🗑</button>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : `<div style="font-size:12px;color:var(--text3);padding:4px 0">لا توجد مواد — أضف من الحقول أعلاه</div>`}
+      ${idx === _wotWorkOrders.length-1 ? `
+      <div style="margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;text-align:center">
+        <button class="btn btn-sm" style="background:var(--green-bg);border-color:var(--green);color:var(--green-l)" onclick="wotAddWorkOrder()">
+          + هل عندك أمر عمل آخر؟ أضفه هنا
+        </button>
+      </div>` : ''}
+    </div>`).join('');
+}
+
+function wotWoAutoFill(woid) {
+  const code = (document.getElementById('wot-code-'+woid)?.value||'').trim();
+  if(!code) return;
+  const item = DB.items.find(i => i.code.toLowerCase() === code.toLowerCase());
+  if(item) {
+    const n = document.getElementById('wot-name-'+woid); if(n) n.value = item.name;
+    const u = document.getElementById('wot-unit-'+woid); if(u) u.value = item.unit||'';
+  }
+}
+
+function wotWoAddItem(woid) {
+  const wo = _wotWorkOrders.find(w => w.id === woid); if(!wo) return;
+  const code = (document.getElementById('wot-code-'+woid)?.value||'').trim();
+  const name = (document.getElementById('wot-name-'+woid)?.value||'').trim();
+  const qty  = parseFloat(document.getElementById('wot-qty-'+woid)?.value)||0;
+  const unit = (document.getElementById('wot-unit-'+woid)?.value||'').trim();
+  if(!name){toast('يجب إدخال اسم المادة','error');return;}
+  if(qty<=0){toast('يجب إدخال كمية صحيحة','error');return;}
+  wo.items.push({name,code,qty,unit});
+  ['wot-code-','wot-name-','wot-qty-','wot-unit-'].forEach(p=>{
+    const el=document.getElementById(p+woid); if(el) el.value='';
+  });
+  renderWotWorkOrders();
+  toast('تمت الإضافة ✓');
+}
+
+function wotWoRemoveItem(woid,idx) {
+  const wo = _wotWorkOrders.find(w=>w.id===woid);
+  if(wo){wo.items.splice(idx,1);renderWotWorkOrders();}
+}
+
+function clearWotForm() {
+  ['wot-company','wot-date','wot-delegate','wot-iqama','wot-office','wot-notes','wot-job','wot-deliverer']
+    .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  _wotWorkOrders=[];_wotEditId=null;_wotWoCounter=0;_pendingWot=null;
+  document.getElementById('wot-form-title').textContent='إنشاء تحويل جديد — محوّل من الصانبي';
+  const b=document.getElementById('wot-edit-badge');if(b)b.style.display='none';
+  initWotForm();
+}
+
+// ── الحفظ: تحقق + معاينة قبل الخصم ──
+function saveWorkOrderTransfer() {
+  if(!currentUser){toast('يجب تسجيل الدخول أولاً','error');return;}
+  if(currentUser.role === 'viewer'){toast('ليس لديك صلاحية','error');return;}
+  const company=document.getElementById('wot-company').value.trim();
+  if(!company){toast('يجب إدخال اسم الشركة المحوّل إليها','error');return;}
+  const validWOs=_wotWorkOrders.filter(w=>w.items.length>0);
+  if(!validWOs.length){toast('يجب إضافة مادة واحدة على الأقل','error');return;}
+  for(const w of validWOs){
+    if(!(w.woNum||'').trim()){toast('يجب إدخال رقم لكل أمر عمل','error');return;}
+  }
+
+  // تحقق من كفاية الرصيد لكل المواد مجمّعة عبر كل أوامر العمل
+  const need={};
+  validWOs.forEach(w=>w.items.forEach(it=>{
+    if(it.code){ need[it.code]=(need[it.code]||0)+it.qty; }
+  }));
+  for(const code in need){
+    const s=getStock(code);
+    if(need[code]>s.balance){
+      const nm=(DB.items.find(i=>i.code===code)||{}).name||code;
+      toast('رصيد '+nm+' غير كافٍ ('+s.balance+' متاح، مطلوب '+need[code]+')','error');
+      return;
+    }
+  }
+
+  const now=new Date().toISOString();
+  const id=_wotEditId||('WT-'+Date.now());
+  _pendingWot={
+    id, company,
+    job:     document.getElementById('wot-job').value.trim(),
+    deliverer:document.getElementById('wot-deliverer').value.trim(),
+    date:    document.getElementById('wot-date').value || now.slice(0,10),
+    delegate:document.getElementById('wot-delegate').value.trim(),
+    iqama:   document.getElementById('wot-iqama').value.trim(),
+    office:  document.getElementById('wot-office').value.trim(),
+    notes:   document.getElementById('wot-notes').value.trim(),
+    workOrders:validWOs.map(w=>({woNum:w.woNum,items:JSON.parse(JSON.stringify(w.items))})),
+    createdBy:currentUser.fullname||currentUser.username,
+    createdAt:Date.now()
+  };
+
+  // معاينة السند قبل الخصم
+  window._wotIdPhoto = null;
+  document.getElementById('cust-pdf-modal-title').textContent = '👁 معاينة — ' + _pendingWot.company;
+  document.getElementById('cust-pdf-content').innerHTML = _buildWotVoucherHTML(_pendingWot);
+  document.getElementById('cust-pdf-modal-actions').innerHTML = `
+    <input type="file" id="wot-id-photo-input" accept="image/*" style="display:none" onchange="loadWotIdPhoto(this)">
+    <button class="btn btn-sm" onclick="document.getElementById('wot-id-photo-input').click()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2)">📷 <span id="wot-id-photo-label">صورة الهوية</span></button>
+    <button class="btn btn-success" onclick="confirmSaveWot()" style="font-size:14px;padding:8px 24px">✅ تأكيد الخصم من المخزون وحفظ</button>
+    <button class="btn btn-sm" onclick="closeCustodyPDF();_pendingWot=null;window._wotIdPhoto=null">✕ رجوع للتعديل</button>
+  `;
+  document.getElementById('cust-pdf-modal').classList.add('show');
+}
+
+// ── تحميل صورة الهوية (محلي فقط، لا يُحفظ في قاعدة البيانات) ──
+function loadWotIdPhoto(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    window._wotIdPhoto = e.target.result;
+    const lbl = document.getElementById('wot-id-photo-label');
+    if(lbl) lbl.textContent = '✓ تم تحميل الصورة';
+    // أعد بناء المعاينة بالصورة (سواء قبل الحفظ أو بعده)
+    const target = _pendingWot || window._wotPrintTarget;
+    if(target){
+      document.getElementById('cust-pdf-content').innerHTML = _buildWotVoucherHTML(target);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── التأكيد: خصم آمن + حفظ + طباعة ──
+async function confirmSaveWot() {
+  const t = _pendingWot;
+  if(!t){toast('لا توجد بيانات للحفظ','error');return;}
+  const isEdit = !!_wotEditId;
+  const actionsEl = document.getElementById('cust-pdf-modal-actions');
+  const btn = actionsEl ? actionsEl.querySelector('button') : null;
+  if(btn){btn.disabled=true;btn.textContent='⏳ جاري الخصم...';}
+
+  // وضع التعديل: احذف الحركات القديمة (يعيد المخزون) واحذف السجل القديم قبل إعادة الحفظ
+  if(isEdit){
+    const oldLinked=(DB.dispatches||[]).filter(d=>d._wotRef===t.id);
+    const oldFbKeys=oldLinked.map(d=>d._fbKey).filter(Boolean);
+    DB.dispatches=(DB.dispatches||[]).filter(d=>d._wotRef!==t.id);
+    const oldIdx=(DB.workOrderTransfers||[]).findIndex(x=>x.id===t.id);
+    let oldFbKey=null;
+    if(oldIdx>=0){ oldFbKey=DB.workOrderTransfers[oldIdx]._fbKey; DB.workOrderTransfers.splice(oldIdx,1); }
+    if(firebaseDB && initialSyncCompleted){
+      // احذف بالمفاتيح المعروفة
+      oldFbKeys.forEach(k=>firebaseDB.ref('erpdata/dispatches/'+k).remove().catch(()=>{}));
+      if(oldFbKey) firebaseDB.ref('erpdata/workOrderTransfers/'+oldFbKey).remove().catch(()=>{});
+      // ضمان إضافي: ابحث في Firebase عن أي حركة صرف مرتبطة بنفس التحويل واحذفها (حتى لو _fbKey مفقود محلياً)
+      try {
+        const snap = await firebaseDB.ref('erpdata/dispatches').orderByChild('_wotRef').equalTo(t.id).get();
+        if(snap && snap.exists()){
+          const updates={};
+          snap.forEach(ch=>{ updates[ch.key]=null; });
+          if(Object.keys(updates).length) await firebaseDB.ref('erpdata/dispatches').update(updates);
+        }
+      } catch(e){ console.warn('wot edit: fb cleanup',e); }
+    }
+    _wotEditId=null; // ننهي وضع التعديل بعد التراجع
+  }
+
+  // اجمع كل المواد كعمليات صرف
+  const ops=[];
+  t.workOrders.forEach(w=>w.items.forEach(it=>{
+    if(it.code) ops.push({code:it.code, txnType:'dispatch', qty:it.qty});
+  }));
+
+  try {
+    if (firebaseDB && initialSyncCompleted && !isEdit){
+      const res=await _runInventoryTransactionBatch(ops);
+      if(!res.success){
+        toast('فشل خصم المخزون: '+res.error,'error');
+        if(btn){btn.disabled=false;btn.textContent='✅ تأكيد الخصم من المخزون وحفظ';}
+        return;
+      }
+    } else {
+      // وضع محلي أو تعديل: تحقق من الرصيد فقط (الخصم يتم عبر تسجيل الحركات + إعادة ضبط العداد لاحقاً)
+      for(const op of ops){
+        const s=getStock(op.code);
+        if(op.qty>s.balance){
+          const nm=(DB.items.find(i=>i.code===op.code)||{}).name||op.code;
+          toast('رصيد '+nm+' غير كافٍ','error');
+          if(btn){btn.disabled=false;btn.textContent='✅ تأكيد الخصم من المخزون وحفظ';}
+          return;
+        }
+      }
+    }
+
+    // سجّل حركات الصرف (dispatches) مربوطة بأمر العمل
+    const _stamp = Date.now();
+    const dispRecs=[];
+    t.workOrders.forEach(w=>w.items.forEach(it=>{
+      dispRecs.push({
+        id:'DSP-WT-'+t.id+'-'+w.woNum+'-'+(it.code||'X')+'-'+_stamp,
+        date:t.date, code:it.code||'', name:it.name, unit:it.unit||'', qty:it.qty,
+        workorder:w.woNum, notes:'محوّل من الصانبي إلى '+t.company,
+        user:t.deliverer||t.createdBy, dept:t.company, warehouse:t.office||'',
+        serial:'', region:'', booknum:'', pagenum:'', _wotRef:t.id
+      });
+    }));
+    dispRecs.forEach(r=>DB.dispatches.push(r));
+
+    // في وضع التعديل: أعد ضبط عدّاد balances/ لكل مادة متأثرة ليطابق الرصيد المحسوب من الحركات
+    if(isEdit && firebaseDB && initialSyncCompleted){
+      const affected=new Set();
+      t.workOrders.forEach(w=>w.items.forEach(it=>{ if(it.code) affected.add(it.code); }));
+      affected.forEach(code=>{
+        try{ firebaseDB.ref('balances/'+_safeKey(code)).set(getStock(code).balance).catch(()=>{}); }catch(e){}
+      });
+    }
+
+    // حفظ التحويل
+    if(!DB.workOrderTransfers) DB.workOrderTransfers=[];
+    DB.workOrderTransfers.push(t);
+    saveLocal();
+
+    if (firebaseDB && initialSyncCompleted){
+      try {
+        const fbKey=firebaseDB.ref('erpdata/workOrderTransfers').push().key;
+        t._fbKey=fbKey;
+        const {_fbKey,...clean}=t;
+        // اكتب سجل التحويل وكل حركات الصرف بالتوازي
+        await Promise.all([
+          firebaseDB.ref('erpdata/workOrderTransfers/'+fbKey).set(clean),
+          ...dispRecs.map(r=>{const k=firebaseDB.ref('erpdata/dispatches').push().key;const{_fbKey,...cr}={...r,_fbKey:k};return firebaseDB.ref('erpdata/dispatches/'+k).set(cr);})
+        ]);
+        saveLocal();
+      } catch(e){ console.warn('wot firebase sync:',e); }
+    }
+
+    if(typeof _writeAuditLog==='function'){
+      _writeAuditLog('wot_transfer',[{id:t.id,company:t.company,workOrders:t.workOrders.map(w=>w.woNum)}]);
+    }
+
+    // بعد الحفظ: أبقِ المعاينة مفتوحة مع زر رفع صورة الهوية وزر طباعة منفصل (مثل العهدة)
+    const savedId = t.id;
+    window._wotPrintTarget = {...t};
+    clearWotForm();
+    renderWotTable();
+    if(typeof renderDashboard==='function') renderDashboard();
+    // أعد بناء المعاينة وأزرارها
+    document.getElementById('cust-pdf-modal-title').textContent = '✓ تم الحفظ — ' + t.company;
+    document.getElementById('cust-pdf-content').innerHTML = _buildWotVoucherHTML(window._wotPrintTarget);
+    document.getElementById('cust-pdf-modal-actions').innerHTML = `
+      <input type="file" id="wot-id-photo-input" accept="image/*" style="display:none" onchange="loadWotIdPhoto(this)">
+      <button class="btn btn-sm" onclick="document.getElementById('wot-id-photo-input').click()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2)">📷 <span id="wot-id-photo-label">${window._wotIdPhoto?'✓ تم تحميل الصورة':'رفع صورة الهوية'}</span></button>
+      <button class="btn btn-success" onclick="_printWotVoucher(window._wotPrintTarget)" style="font-size:14px;padding:8px 24px">🖨️ طباعة / حفظ PDF</button>
+      <button class="btn btn-sm" onclick="closeCustodyPDF();window._wotIdPhoto=null;window._wotPrintTarget=null">✕ إغلاق</button>
+    `;
+    _pendingWot=null;
+    toast('✓ تم الخصم وحفظ التحويل '+savedId+' — يمكنك رفع صورة الهوية ثم الطباعة');
+  } catch(e){
+    console.error('confirmSaveWot error:',e);
+    toast('خطأ: '+(e.message||e),'error');
+    if(btn){btn.disabled=false;btn.textContent='✅ تأكيد الخصم من المخزون وحفظ';}
+  }
+}
+
+// ── الحصول على لوجو الصانبي (مستخرج من قالب العهدة) ──
+function _getSanibiLogo(){
+  try {
+    const s = _buildCustodyPDFHTML.toString();
+    const m = s.match(/LOGO\s*=\s*'(data:image\/jpeg;base64,[^']+)'/);
+    if(m) return m[1];
+  } catch(e){}
+  return '';
+}
+
+// ── بناء سند التحويل: كل أمر عمل في صفحة (أو أكثر لو تجاوز 7 مواد) ──
+function _buildWotVoucherHTML(t) {
+  const ITEMS_PER_PAGE = 7;
+  // أنشئ قائمة الصفحات: لكل أمر عمل، قسّم مواده إلى دفعات من 8
+  const pages = [];
+  (t.workOrders||[]).forEach(wo => {
+    const items = wo.items || [];
+    const chunks = [];
+    for (let i = 0; i < items.length; i += ITEMS_PER_PAGE) {
+      chunks.push(items.slice(i, i + ITEMS_PER_PAGE));
+    }
+    if (chunks.length === 0) chunks.push([]);
+    chunks.forEach((chunk, ci) => {
+      pages.push({ wo, chunk, partNo: ci + 1, partTotal: chunks.length });
+    });
+  });
+  const totalPages = pages.length;
+  return pages.map((pg, i) =>
+    _buildWotPageHTML(t, pg.wo, i, totalPages, pg.chunk, pg.partNo, pg.partTotal)
+  ).join('');
+}
+
+function _buildWotPageHTML(t, wo, idx, totalPages, chunkItems, partNo, partTotal) {
+  const GOLD='#B8860B', DARK='#1A1A2E', LIGHT='#F8F4E8';
+  const LOGO = _getSanibiLogo();
+  const allItems = wo.items||[];
+  const items = chunkItems || allItems;          // مواد هذه الصفحة
+  const ITEMS_PER_PAGE = 7;
+  const startIndex = (partNo ? (partNo-1) : 0) * ITEMS_PER_PAGE; // للترقيم المتسلسل
+  const isLastPart = !partTotal || partNo === partTotal;          // آخر صفحة في أمر العمل
+  const itemCount = allItems.length;
+
+  const itemRows = items.map((it,i)=>`
+    <tr style="background:${(startIndex+i)%2===0?'#fff':'#fafafa'}">
+      <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;color:#666;font-size:14px">${startIndex+i+1}</td>
+      <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;font-family:monospace;font-size:13px;color:#1A1A2E">${esc(it.code)||'—'}</td>
+      <td style="padding:10px 12px;border:1px solid #e0e0e0;font-weight:500;font-size:14px">${esc(it.name)}</td>
+      <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;color:#555;font-size:14px">${esc(it.unit)||'—'}</td>
+      <td style="padding:10px;text-align:center;border:1px solid #e0e0e0;font-weight:700;font-size:16px;color:${DARK}">${it.qty}</td>
+    </tr>`).join('');
+
+  return `
+  <div style="${idx>0?'page-break-before:always;':''}font-family:Arial,sans-serif;direction:rtl;color:#111">
+
+  <!-- هيدر الشركة بلوجو -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid ${GOLD};margin-bottom:14px">
+    <div style="flex:1">
+      <div style="font-size:20px;font-weight:700;color:${DARK};margin-bottom:4px">شركة محمد محسن سالم الصانبي وشركاه للمقاولات</div>
+      <div style="font-size:12px;color:#888;letter-spacing:.5px">Al-Sanibi & Partners Contracting Co.</div>
+    </div>
+    ${LOGO?`<img src="${LOGO}" style="width:80px;height:80px;object-fit:contain;margin-right:8px" alt="ALSANIBI">`:''}
+  </div>
+
+  <!-- العنوان -->
+  <div style="text-align:center;margin-bottom:12px">
+    <div style="font-size:28px;font-weight:700;color:${GOLD};letter-spacing:1px">سند مواد محوّلة</div>
+    <div style="font-size:11px;color:#aaa;margin-top:3px">Work Order Transfer Document${partTotal>1?` — جزء ${partNo} من ${partTotal}`:''}</div>
+  </div>
+
+  <!-- بيانات السند -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px">
+    <tr>
+      <td style="background:${DARK};color:#fff;padding:10px 14px;font-size:14px;font-weight:700;width:22%;border:1px solid #ccc;text-align:center">رقم أمر العمل</td>
+      <td style="padding:6px 12px;font-weight:700;color:${GOLD};font-size:15px;border:1px solid #ccc;width:28%;text-align:center;font-family:monospace">${esc(wo.woNum)||'—'}</td>
+      <td style="background:${DARK};color:#fff;padding:10px 14px;font-size:14px;font-weight:700;width:22%;border:1px solid #ccc;text-align:center">التاريخ</td>
+      <td style="padding:6px 12px;font-size:13px;border:1px solid #ccc;width:28%;text-align:center">${esc(t.date)||''}</td>
+    </tr>
+    <tr>
+      <td style="background:${LIGHT};padding:6px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">الشركة المحوّل إليها</td>
+      <td style="padding:6px 12px;font-size:14px;font-weight:600;border:1px solid #ccc">${esc(t.company)||''}</td>
+      <td style="background:${LIGHT};padding:6px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">مكتب خدمات</td>
+      <td style="padding:6px 12px;font-size:13px;border:1px solid #ccc">${esc(t.office)||'—'}</td>
+    </tr>
+    <tr>
+      <td style="background:${LIGHT};padding:6px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">اسم المندوب</td>
+      <td style="padding:6px 12px;font-size:14px;font-weight:600;border:1px solid #ccc">${esc(t.delegate)||'—'}</td>
+      <td style="background:${LIGHT};padding:6px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">المهنة</td>
+      <td style="padding:6px 12px;font-size:13px;border:1px solid #ccc">${esc(t.job)||'—'}</td>
+    </tr>
+    <tr>
+      <td style="background:${LIGHT};padding:6px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">رقم الإقامة</td>
+      <td style="padding:6px 12px;font-size:13px;text-align:center;border:1px solid #ccc">${esc(t.iqama)||'—'}</td>
+      <td style="background:${LIGHT};padding:6px 12px;font-size:13px;font-weight:700;border:1px solid #ccc;text-align:center">صورة الهوية</td>
+      <td style="padding:6px 10px;border:1px solid #ccc;text-align:center;vertical-align:middle">
+        ${window._wotIdPhoto
+          ? `<img src="${window._wotIdPhoto}" style="max-height:${itemCount<=6?'180':'140'}px;max-width:${itemCount<=6?'140':'110'}px;border-radius:4px;border:1px solid #ddd;object-fit:contain" alt="صورة الهوية">`
+          : `<span style="font-size:11px;color:#aaa">—</span>`}
+      </td>
+    </tr>
+  </table>
+
+  <!-- جدول المواد -->
+  <div style="font-size:14px;font-weight:700;color:${DARK};margin-bottom:5px;border-right:5px solid ${GOLD};padding-right:10px">المواد المحوّلة</div>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px">
+    <thead>
+      <tr style="background:${DARK};color:#fff">
+        <th style="padding:6px 8px;text-align:center;border:1px solid #333;width:5%;font-size:14px">م</th>
+        <th style="padding:6px 8px;text-align:center;border:1px solid #333;width:18%;font-size:14px">كود المادة</th>
+        <th style="padding:6px 12px;text-align:right;border:1px solid #333;font-size:14px">اسم المادة</th>
+        <th style="padding:6px 8px;text-align:center;border:1px solid #333;width:10%;font-size:14px">الوحدة</th>
+        <th style="padding:6px 8px;text-align:center;border:1px solid #333;width:10%;font-size:14px">الكمية</th>
+      </tr>
+    </thead>
+    <tbody>${itemRows}</tbody>
+  </table>
+
+  <!-- نص الإقرار -->
+  <div style="border:1px solid #e0d0a0;background:#fffdf5;border-radius:5px;padding:7px 12px;margin-bottom:8px">
+    <div style="font-size:15px;font-weight:700;color:${DARK};margin-bottom:5px;border-bottom:1px solid #e8d88a;padding-bottom:4px">إقرار المستلم</div>
+    <div style="font-size:13px;line-height:1.8;color:#222">
+      استلمت أنا السيد/ <strong>${esc(t.delegate)||'____________'}</strong> المواد الموضحة أعلاه من مستودع شركة محمد محسن سالم الصانبي وشركاه للمقاولات، وذلك على <strong>أمر عمل رقم ( ${esc(wo.woNum)||'____'} ) محوّل إلى شركة ( ${esc(t.company)||'____'} )</strong>.
+    </div>
+  </div>
+
+  <!-- التوقيعات -->
+  <div style="font-size:14px;font-weight:700;color:${DARK};margin-bottom:5px;border-right:5px solid ${GOLD};padding-right:10px">التوقيعات</div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">
+    <thead>
+      <tr style="background:#f0f0f0">
+        <th style="padding:6px 14px;text-align:center;border:1px solid #ccc;font-size:13px;font-weight:700;width:50%">اسم وتوقيع المُسلِّم</th>
+        <th style="padding:6px 14px;text-align:center;border:1px solid #ccc;font-size:13px;font-weight:700;width:50%">اسم وتوقيع المُستلِم</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #ccc;text-align:center;padding:6px 12px"><div style="font-size:13px;color:#1A1A2E;padding:3px 8px">${esc(t.deliverer)||''}</div><div style="margin-top:22px;border-top:1px solid #999;font-size:9px;color:#aaa;padding-top:4px">التوقيع</div></td>
+        <td style="border:1px solid #ccc;text-align:center;padding:6px 12px"><div style="font-size:13px;color:#1A1A2E;padding:3px 8px">${esc(t.delegate)||''}</div><div style="margin-top:22px;border-top:1px solid #999;font-size:9px;color:#aaa;padding-top:4px">التوقيع</div></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- الفوتر -->
+  <div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid ${GOLD};padding-top:8px;margin-top:6px;font-size:11px;color:#999">
+    <span>تاريخ الإصدار: ${esc(t.date)||''}</span>
+    ${t.notes?`<span>ملاحظات: ${esc(t.notes)}</span>`:''}
+    <span style="font-weight:600;color:${GOLD}">${esc(wo.woNum)||''}</span>
+  </div>
+  </div>`;
+}
+function _printWotVoucher(t) {
+  const win = window.open('','_blank','width=900,height=700');
+  if(!win){toast('من فضلك اسمح بالنوافذ المنبثقة للطباعة','error');return;}
+  // اسم ملف الـ PDF: اسم الشركة + رقم/أرقام أوامر العمل
+  const woNums = (t.workOrders||[]).map(w=>w.woNum).filter(Boolean).join('-');
+  const docTitle = ('سند محوّل - ' + (t.company||'') + (woNums ? ' - أمر عمل ' + woNums : '')).trim();
+  win.document.open();
+  win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+    <meta charset="UTF-8"><title>${esc(docTitle)}</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box}@page{size:A4 portrait;margin:10mm}body{font-family:Arial,sans-serif;direction:rtl;padding:10mm;color:#111}@media print{html,body{padding:0;margin:0}.no-print{display:none!important}}</style>
+  </head><body>${_buildWotVoucherHTML(t)}
+  <div class="no-print" style="text-align:center;padding:24px">
+    <button onclick="window.print()" style="padding:10px 32px;font-size:15px;background:#1A1A2E;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ طباعة / حفظ PDF</button>
+    <button onclick="window.close()" style="padding:10px 22px;font-size:14px;background:#eee;color:#333;border:1px solid #ccc;border-radius:6px;cursor:pointer;margin-right:10px">إغلاق</button>
+  </div>
+  <scr`+`ipt>window.onload=function(){setTimeout(function(){window.print();},500);};<\/scr`+`ipt>
+  </body></html>`);
+  win.document.close();
+}
+
+// ── سجل التحويلات — الأحدث (حسب التاريخ) فوق ──
+function renderWotTable(filter='') {
+  const tbody=document.getElementById('wot-tbody'); if(!tbody)return;
+  const all=(DB.workOrderTransfers||[]).slice().sort((a,b)=>{
+    const dc=String(b.date||'').localeCompare(String(a.date||''));
+    return dc!==0?dc:String(b.createdAt||'').localeCompare(String(a.createdAt||''));
+  });
+  const f=(filter||'').toLowerCase();
+  const filtered=f?all.filter(t=>
+    (t.company||'').toLowerCase().includes(f)||
+    (t.delegate||'').toLowerCase().includes(f)||
+    (t.workOrders||[]).some(w=>(w.woNum||'').includes(f))
+  ):all;
+
+  if(!filtered.length){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">لا توجد تحويلات</td></tr>';
+    return;
+  }
+  const canDelete=currentUser&&(currentUser.role==='admin'||currentUser.role==='supervisor');
+  const rows=[];
+  filtered.forEach(t=>{
+    const wos=t.workOrders||[];
+    wos.forEach((wo,wi)=>{
+      const items=wo.items||[];
+      const totalQty=items.reduce((s,it)=>s+(it.qty||0),0);
+      const isFirst=wi===0;
+      rows.push(`<tr>
+        ${isFirst?`<td rowspan="${wos.length}" style="vertical-align:middle;border-right:3px solid var(--blue)">
+          <strong>${esc(t.company)}</strong><br>
+          <small style="color:var(--text3)">${esc(t.delegate||'')} ${t.office?'| '+esc(t.office):''}</small>
+        </td>
+        <td rowspan="${wos.length}" style="vertical-align:middle;text-align:center">${esc(t.date)||'—'}</td>`:''}
+        <td style="font-family:monospace;font-weight:700;text-align:center">${esc(wo.woNum)||'—'}</td>
+        <td style="text-align:center">${items.length}</td>
+        <td style="text-align:center;font-weight:700">${totalQty}</td>
+        ${isFirst?`<td rowspan="${wos.length}" style="white-space:nowrap;text-align:center">
+          <button class="btn btn-sm" style="background:var(--blue-bg);border-color:var(--blue);color:var(--blue-l);padding:2px 8px" onclick="reprintWot('${t.id}')">📄</button>
+          ${canDelete?`<button class="btn btn-sm" style="background:var(--amber-bg);border-color:var(--amber);color:var(--amber-l);padding:2px 8px" onclick="editWot('${t.id}')">✏️</button>`:''}
+          ${canDelete?`<button class="btn btn-sm btn-danger" style="padding:2px 8px" onclick="deleteWot('${t.id}')">🗑</button>`:''}
+        </td>`:''}
+      </tr>`);
+    });
+    rows.push('<tr style="height:4px;background:var(--bg3)"><td colspan="6"></td></tr>');
+  });
+  tbody.innerHTML=rows.join('');
+}
+
+function reprintWot(id) {
+  const t=(DB.workOrderTransfers||[]).find(x=>x.id===id);
+  if(!t){toast('لم يُعثر على التحويل','error');return;}
+  _printWotVoucher(t);
+}
+
+function editWot(id) {
+  if(!currentUser||(currentUser.role!=='admin'&&currentUser.role!=='supervisor')){toast('التعديل متاح للمدير والمشرف فقط','error');return;}
+  const t=(DB.workOrderTransfers||[]).find(x=>x.id===id);
+  if(!t){toast('لم يُعثر على التحويل','error');return;}
+  document.getElementById('wot-company').value=t.company||'';
+  document.getElementById('wot-office').value=t.office||'';
+  document.getElementById('wot-delegate').value=t.delegate||'';
+  document.getElementById('wot-job').value=t.job||'';
+  document.getElementById('wot-iqama').value=t.iqama||'';
+  document.getElementById('wot-deliverer').value=t.deliverer||'';
+  document.getElementById('wot-date').value=t.date||'';
+  document.getElementById('wot-notes').value=t.notes||'';
+  _wotWoCounter=0;
+  _wotWorkOrders=(t.workOrders||[]).map(w=>({
+    id:++_wotWoCounter, woNum:w.woNum||'',
+    items:JSON.parse(JSON.stringify(w.items||[]))
+  }));
+  if(!_wotWorkOrders.length){ _wotWorkOrders=[]; wotAddWorkOrder(); }
+  _wotEditId=id;
+  document.getElementById('wot-form-title').textContent='تعديل التحويل — محوّل من الصانبي';
+  const b=document.getElementById('wot-edit-badge');if(b)b.style.display='';
+  renderWotWorkOrders();
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('جاهز للتعديل ✓');
+}
+
+function deleteWot(id) {
+  requireDeletePIN(() => _deleteWotCore(id));
+}
+
+function _deleteWotCore(id) {
+  const idx=(DB.workOrderTransfers||[]).findIndex(x=>x.id===id);
+  const t = idx>=0 ? DB.workOrderTransfers[idx] : null;
+  // الحركات المرتبطة (الصرف الذي خصم من المخزون)
+  const linked=(DB.dispatches||[]).filter(d=>d._wotRef===id);
+  if(!t && !linked.length){ toast('لم يُعثر على التحويل أو حركاته','error'); return; }
+  const totalQty=linked.reduce((s,d)=>s+(d.qty||0),0);
+  const companyTxt = t ? t.company : (linked[0] ? (linked[0].dept||'') : '');
+  if(!confirm(
+    '⚠️ تأكيد حذف '+(t?('التحويل إلى '+companyTxt):'حركات التحويل')+'\n\n'+
+    'سيتم حذف '+linked.length+' حركة صرف مرتبطة، '+
+    'وإرجاع '+totalQty.toLocaleString()+' وحدة للمخزون.\n\n'+
+    'هل أنت متأكد؟'
+  )) return;
+
+  // 1) احذف حركات الصرف المرتبطة → الرصيد يعود تلقائياً (getStock يجمع الحركات)
+  const fbDispatchKeys=linked.map(d=>d._fbKey).filter(Boolean);
+  DB.dispatches=(DB.dispatches||[]).filter(d=>d._wotRef!==id);
+
+  // 2) احذف سجل التحويل نفسه (إن وُجد)
+  if(idx>=0) DB.workOrderTransfers.splice(idx,1);
+
+  saveLocal();
+
+  // 3) مزامنة Firebase: حذف الصرف + حذف التحويل + إعادة ضبط العدّاد
+  if(firebaseDB&&initialSyncCompleted){
+    fbDispatchKeys.forEach(k=>firebaseDB.ref('erpdata/dispatches/'+k).remove().catch(()=>{}));
+    if(t && t._fbKey) firebaseDB.ref('erpdata/workOrderTransfers/'+t._fbKey).remove().catch(()=>{});
+    // ضمان إضافي: امسح أي حركة بنفس المرجع من Firebase حتى لو _fbKey مفقود محلياً
+    try {
+      firebaseDB.ref('erpdata/dispatches').orderByChild('_wotRef').equalTo(id).get().then(snap=>{
+        if(snap && snap.exists()){
+          const updates={}; snap.forEach(ch=>{ updates[ch.key]=null; });
+          if(Object.keys(updates).length) firebaseDB.ref('erpdata/dispatches').update(updates).catch(()=>{});
+        }
+      }).catch(()=>{});
+    } catch(e){}
+    // أعد ضبط عدّاد balances/ للمواد المتأثرة ليطابق الرصيد بعد الإرجاع
+    const affected=new Set(linked.map(d=>d.code).filter(Boolean));
+    affected.forEach(code=>{
+      try{ firebaseDB.ref('balances/'+_safeKey(code)).set(getStock(code).balance).catch(()=>{}); }catch(e){}
+    });
+  }
+  if(typeof _writeAuditLog==='function'){
+    _writeAuditLog('wot_delete',[{id:(t?t.id:id),company:companyTxt,restoredQty:totalQty}]);
+  }
+  renderWotTable();
+  if(typeof renderMovements==='function' && currentPage==='movements') renderMovements();
+  if(typeof renderDashboard==='function') renderDashboard();
+  toast('تم حذف التحويل وإرجاع المواد للمخزون ✓');
+}
+
+// حذف تحويل من سجل الحركات (يعيد المخزون أيضاً)
+function deleteWotFromMovements(id){
+  requireDeletePIN(() => _deleteWotCore(id));
+}
+
 function _buildProfessionalPDF(opts) {
   const colorMap = {
     'receive':         { accent:'#1a6e3c', light:'#eaf7ef', headBg:'#1a6e3c', badge:'#27ae60', label:'إيصال إدخال مواد',  labelEn:'GOODS RECEIPT',         icon:'📥', borderTop:'#27ae60' },
@@ -3884,103 +4630,52 @@ function _buildProfessionalPDF(opts) {
     ]);
   }
 
-  const colWidths = opts.docType === 'receive' || opts.docType === 'dispatch'
-    ? ['28px','90px','80px','auto','55px','45px','90px','80px','72px','120px']
-    : ['28px','90px','80px','auto','55px','45px','90px','80px','80px','72px','120px'];
+  let colWidths;
+  if(opts.docType === 'receive') {
+    // 11 أعمدة: #، رقم السند، كود، اسم، كمية، وحدة، المورد، أمر العمل، المستودع، التاريخ، ملاحظات
+    colWidths = ['4%','9%','9%','19%','6%','5%','11%','9%','9%','9%','10%'];
+  } else if(opts.docType === 'dispatch') {
+    // 10 أعمدة: #، رقم السند، كود، اسم، كمية، وحدة، الجهة، المستودع، التاريخ، ملاحظات
+    colWidths = ['4%','10%','10%','22%','7%','6%','13%','10%','9%','9%'];
+  } else {
+    // 11 أعمدة (إرجاعات)
+    colWidths = ['4%','9%','9%','19%','6%','5%','11%','9%','9%','9%','10%'];
+  }
 
   const theadHTML = '<tr>' + theadCols.map((c,i)=>`<th style="width:${colWidths[i]||'auto'}">${c}</th>`).join('') + '</tr>';
-  const tbodyHTML = tbodyRows.map((cols,i)=>`<tr class="${i%2===1?'alt':''}">`+cols.map((c,ci)=>`<td class="${ci===0?'ctr':ci===4||ci===5?'ctr':''}">${c}</td>`).join('')+'</tr>').join('');
 
   const totalColspan = (opts.docType === 'receive' || opts.docType === 'dispatch') ? 4 : 5;
   // صف الإجمالي
   const totalRow = `<tr class="total-row">
     <td colspan="${totalColspan}" style="text-align:right;font-weight:700;padding-left:12px">الإجمالي الكلي</td>
-    <td class="ctr" style="font-size:14px;font-weight:800;color:${C.accent}">${totalQty.toLocaleString()}</td>
-    <td colspan="${(opts.docType === 'receive' || opts.docType === 'dispatch') ? 6 : 7}" style="text-align:right;font-size:10px;color:#666">${records.length} صنف</td>
+    <td class="ctr" style="font-size:12px;font-weight:800;color:${C.accent}">${totalQty.toLocaleString()}</td>
+    <td colspan="${(opts.docType === 'receive' || opts.docType === 'dispatch') ? 6 : 7}" style="text-align:right;font-size:9px;color:#666">${records.length} صنف</td>
   </tr>`;
 
-  return `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>${C.label} — ${wo}</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;font-size:11.5px;color:#1a1a1a;background:#fff;padding:16px 20px;direction:rtl}
-@page{margin:12mm 10mm;size:A4 landscape}
+  // ── تقسيم المواد على صفحات: 10 مواد لكل صفحة ──
+  const ROWS_PER_PAGE = 15;
+  const pageChunks = [];
+  for (let i = 0; i < tbodyRows.length; i += ROWS_PER_PAGE) {
+    pageChunks.push(tbodyRows.slice(i, i + ROWS_PER_PAGE));
+  }
+  if (pageChunks.length === 0) pageChunks.push([]); // ضمان صفحة واحدة حتى لو لا توجد مواد
+  const totalPages = pageChunks.length;
 
-/* ══ PAGE TOP STRIPE ══ */
-.top-stripe{height:5px;background:linear-gradient(90deg,${C.accent},${C.badge});margin:-16px -20px 0;margin-bottom:14px}
+  // يبني صفوف دفعة معينة مع الحفاظ على الترقيم المتسلسل وتبادل ألوان الصفوف
+  function _buildChunkRows(chunk, startIndex){
+    return chunk.map((cols, j) => {
+      const globalIndex = startIndex + j; // للترقيم المتسلسل وتبادل اللون عبر الصفحات
+      return `<tr class="${globalIndex%2===1?'alt':''}">` +
+        cols.map((c,ci)=>`<td class="${ci===0?'ctr':ci===4||ci===5?'ctr':''}">${c}</td>`).join('') +
+        '</tr>';
+    }).join('');
+  }
 
-/* ══ HEADER ══ */
-.header{display:flex;justify-content:space-between;align-items:stretch;margin-bottom:14px;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.header-main{background:${C.headBg};color:#fff;padding:14px 18px;display:flex;align-items:center;gap:14px;flex:1}
-.header-icon{font-size:32px;line-height:1;opacity:.95}
-.header-texts{}
-.header-type-en{font-size:9px;font-weight:500;letter-spacing:1.5px;opacity:.75;text-transform:uppercase;margin-bottom:2px}
-.header-type-ar{font-size:19px;font-weight:700;letter-spacing:.2px;line-height:1.1}
-.header-sys{font-size:10px;opacity:.75;margin-top:4px}
-.header-meta{background:#fff;padding:14px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;min-width:340px}
-.hm-item{display:flex;flex-direction:column;gap:2px}
-.hm-label{font-size:8.5px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px}
-.hm-val{font-size:11.5px;font-weight:600;color:#1a1a1a}
-.hm-val.big{font-size:14px;font-weight:700;color:${C.accent}}
-.hm-val.mono{font-family:monospace;font-size:11px}
-
-/* ══ INFO BAND ══ */
-.info-band{display:flex;gap:0;margin-bottom:14px;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden}
-.info-cell{flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:3px;border-left:1px solid #eee}
-.info-cell:last-child{border-left:none}
-.info-cell-lbl{font-size:8.5px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px}
-.info-cell-val{font-size:11px;font-weight:600;color:#222}
-
-/* ══ SECTION TITLE ══ */
-.sec-title{font-size:11px;font-weight:700;color:${C.accent};margin-bottom:7px;display:flex;align-items:center;gap:7px}
-.sec-title::before{content:'';display:inline-block;width:3px;height:16px;background:${C.accent};border-radius:2px}
-
-/* ══ TABLE ══ */
-.table-wrap{border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:14px}
-table{width:100%;border-collapse:collapse;font-size:10.5px}
-thead tr{background:${C.headBg};color:#fff}
-th{padding:9px 8px;text-align:right;font-weight:600;font-size:10px;letter-spacing:.2px;white-space:nowrap;border-left:1px solid rgba(255,255,255,.15)}
-th:last-child{border-left:none}
-td{padding:7px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle;text-align:right;border-left:1px solid #f5f5f5}
-td:last-child{border-left:none}
-tr.alt td{background:${C.light}}
-tr.total-row td{background:#f7f7f7;border-top:2px solid ${C.accent};font-size:11px}
-.ctr{text-align:center!important}
-.chip{font-family:'Courier New',monospace;font-size:9.5px;background:#f0f4ff;color:#1a3e6e;padding:2px 6px;border-radius:3px;border:1px solid #d0d8f0;white-space:nowrap;display:inline-block}
-.chip.code{background:#fff8e8;color:#7d4800;border-color:#f0d890}
-.qty-val{font-weight:700;font-size:12px}
-.note-cell{font-size:9.5px;color:#555;display:block;max-width:130px;word-break:break-word;line-height:1.4}
-
-/* ══ SIGNATURE ══ */
-.sig-section{margin-bottom:14px}
-.sig-row{display:flex;gap:12px}
-.sig-box{flex:1;border:1px solid #ddd;border-radius:6px;padding:10px 14px 28px;background:#fafafa}
-.sig-box-title{font-size:9.5px;font-weight:700;color:#555;margin-bottom:4px;padding-bottom:6px;border-bottom:1px dashed #ddd}
-.sig-name{font-size:10px;color:#888;margin-top:4px}
-
-/* ══ FOOTER ══ */
-.doc-footer{border-top:2px solid ${C.accent};padding-top:8px;display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#aaa;margin-top:4px}
-.footer-left{line-height:1.6}
-.footer-right{text-align:left;line-height:1.6}
-.footer-brand{font-size:11px;font-weight:700;color:${C.accent}}
-
-/* ══ PRINT ══ */
-@media print{
-  body{padding:0}
-  .top-stripe{margin:0 0 14px}
-  .no-print{display:none}
-}
-</style>
-</head>
-<body>
-
+  // ── كتلة الترويسة + شريط المعلومات (تتكرر في كل صفحة) ──
+  function _headerBlock(pageNo, pages){
+    return `
 <div class="top-stripe"></div>
 
-<!-- ══ HEADER ══ -->
 <div class="header">
   <div class="header-main">
     <div class="header-icon">${C.icon}</div>
@@ -4022,7 +4717,6 @@ tr.total-row td{background:#f7f7f7;border-top:2px solid ${C.accent};font-size:11
   </div>
 </div>
 
-<!-- ══ INFO BAND ══ -->
 <div class="info-band">
   <div class="info-cell">
     <span class="info-cell-lbl">المنطقة</span>
@@ -4054,18 +4748,11 @@ tr.total-row td{background:#f7f7f7;border-top:2px solid ${C.accent};font-size:11
   </div>
 </div>
 
-<!-- ══ MAIN TABLE ══ -->
-<div class="sec-title">تفاصيل المواد</div>
-<div class="table-wrap">
-  <table>
-    <thead>${theadHTML}</thead>
-    <tbody>${tbodyHTML}${totalRow}</tbody>
-  </table>
-</div>
+<div class="page-indicator">صفحة ${pageNo} من ${pages}</div>`;
+  }
 
-${opts.extraRows || ''}
-
-<!-- ══ SIGNATURES ══ -->
+  // ── كتلة التوقيعات (في آخر صفحة فقط) ──
+  const signaturesBlock = `
 <div class="sig-section">
   <div class="sig-row">
     <div class="sig-box">
@@ -4085,9 +4772,10 @@ ${opts.extraRows || ''}
       <div class="sig-name">الاسم: ________________________</div>
     </div>
   </div>
-</div>
+</div>`;
 
-<!-- ══ FOOTER ══ -->
+  // ── الفوتر (في آخر صفحة فقط) ──
+  const footerBlock = `
 <div class="doc-footer">
   <div class="footer-left">
     <div>IMS Pro &copy; ${now.getFullYear()} — تم الإنشاء تلقائياً: ${printDate}</div>
@@ -4097,10 +4785,121 @@ ${opts.extraRows || ''}
     <div class="footer-brand">محمود حوم — مصمم النظام</div>
     <div>&#128222; 0580344530</div>
   </div>
-</div>
+</div>`;
+
+  // ── تجميع الصفحات: كل صفحة لها ترويسة كاملة + جزء جدولها، والإجمالي/التوقيعات/الفوتر في الأخيرة فقط ──
+  const pagesHTML = pageChunks.map((chunk, p) => {
+    const isLast = (p === totalPages - 1);
+    const isFirst = (p === 0);
+    const startIndex = p * ROWS_PER_PAGE;
+    const rowsHTML = _buildChunkRows(chunk, startIndex);
+    return `
+<div class="doc-page${isFirst?'':' page-break'}">
+  ${_headerBlock(p+1, totalPages)}
+
+  <div class="sec-title">تفاصيل المواد</div>
+  <div class="table-wrap">
+    <table>
+      <thead>${theadHTML}</thead>
+      <tbody>${rowsHTML}${isLast?totalRow:''}</tbody>
+    </table>
+  </div>
+
+  ${isLast ? (opts.extraRows || '') : ''}
+  ${isLast ? signaturesBlock : ''}
+  ${isLast ? footerBlock : ''}
+</div>`;
+  }).join('');
 
 
 
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>${C.label} — ${wo}</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;font-size:11.5px;color:#1a1a1a;background:#fff;padding:16px 20px;direction:rtl}
+@page{margin:10mm 8mm;size:A4 portrait}
+
+/* ══ PAGE TOP STRIPE ══ */
+.top-stripe{height:5px;background:linear-gradient(90deg,${C.accent},${C.badge});margin:-16px -20px 0;margin-bottom:14px}
+
+/* ══ HEADER ══ */
+.header{display:flex;justify-content:space-between;align-items:stretch;margin-bottom:14px;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.header-main{background:${C.headBg};color:#fff;padding:14px 18px;display:flex;align-items:center;gap:14px;flex:1}
+.header-icon{font-size:32px;line-height:1;opacity:.95}
+.header-texts{}
+.header-type-en{font-size:9px;font-weight:500;letter-spacing:1.5px;opacity:.75;text-transform:uppercase;margin-bottom:2px}
+.header-type-ar{font-size:19px;font-weight:700;letter-spacing:.2px;line-height:1.1}
+.header-sys{font-size:10px;opacity:.75;margin-top:4px}
+.header-meta{background:#fff;padding:14px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;min-width:340px}
+.hm-item{display:flex;flex-direction:column;gap:2px}
+.hm-label{font-size:8.5px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px}
+.hm-val{font-size:11.5px;font-weight:600;color:#1a1a1a}
+.hm-val.big{font-size:14px;font-weight:700;color:${C.accent}}
+.hm-val.mono{font-family:monospace;font-size:11px}
+
+/* ══ INFO BAND ══ */
+.info-band{display:flex;gap:0;margin-bottom:14px;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden}
+.info-cell{flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:3px;border-left:1px solid #eee}
+.info-cell:last-child{border-left:none}
+.info-cell-lbl{font-size:8.5px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px}
+.info-cell-val{font-size:11px;font-weight:600;color:#222}
+
+/* ══ SECTION TITLE ══ */
+.sec-title{font-size:11px;font-weight:700;color:${C.accent};margin-bottom:7px;display:flex;align-items:center;gap:7px}
+.sec-title::before{content:'';display:inline-block;width:3px;height:16px;background:${C.accent};border-radius:2px}
+
+/* ══ TABLE ══ */
+.table-wrap{border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:9px;table-layout:fixed}
+thead tr{background:${C.headBg};color:#fff}
+th{padding:6px 4px;text-align:right;font-weight:600;font-size:8.5px;letter-spacing:.1px;white-space:normal;line-height:1.3;border-left:1px solid rgba(255,255,255,.15)}
+th:last-child{border-left:none}
+td{padding:5px 4px;border-bottom:1px solid #f0f0f0;vertical-align:middle;text-align:right;border-left:1px solid #f5f5f5;word-break:break-word;overflow-wrap:break-word}
+td:last-child{border-left:none}
+tr.alt td{background:${C.light}}
+tr.total-row td{background:#f7f7f7;border-top:2px solid ${C.accent};font-size:10px}
+.ctr{text-align:center!important}
+.chip{font-family:'Courier New',monospace;font-size:8px;background:#f0f4ff;color:#1a3e6e;padding:1px 4px;border-radius:3px;border:1px solid #d0d8f0;white-space:nowrap;display:inline-block}
+.chip.code{background:#fff8e8;color:#7d4800;border-color:#f0d890}
+.qty-val{font-weight:700;font-size:10px}
+.note-cell{font-size:8px;color:#555;display:block;word-break:break-word;line-height:1.35}
+
+/* ══ SIGNATURE ══ */
+.sig-section{margin-bottom:14px}
+.sig-row{display:flex;gap:12px}
+.sig-box{flex:1;border:1px solid #ddd;border-radius:6px;padding:10px 14px 28px;background:#fafafa}
+.sig-box-title{font-size:9.5px;font-weight:700;color:#555;margin-bottom:4px;padding-bottom:6px;border-bottom:1px dashed #ddd}
+.sig-name{font-size:10px;color:#888;margin-top:4px}
+
+/* ══ FOOTER ══ */
+.doc-footer{border-top:2px solid ${C.accent};padding-top:8px;display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#aaa;margin-top:4px}
+.footer-left{line-height:1.6}
+.footer-right{text-align:left;line-height:1.6}
+.footer-brand{font-size:11px;font-weight:700;color:${C.accent}}
+
+/* ══ MULTI-PAGE ══ */
+.doc-page{position:relative}
+.doc-page.page-break{margin-top:22px;padding-top:22px;border-top:2px dashed #ccc}
+.page-indicator{text-align:center;font-size:8.5px;color:#999;margin-bottom:8px;font-weight:600;letter-spacing:.3px}
+
+/* ══ PRINT ══ */
+@media print{
+  html,body{padding:0;margin:0}
+  .top-stripe{margin:0 0 14px}
+  .no-print{display:none}
+  .doc-page.page-break{page-break-before:always;break-before:page;margin-top:0;padding-top:0;border-top:none}
+  .doc-page{page-break-inside:auto;page-break-after:auto;break-after:auto}
+  tr{page-break-inside:avoid;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+${pagesHTML}
 </body>
 </html>`;
 }
@@ -4778,6 +5577,8 @@ const MOV_TYPE_LABELS = {
   'ret-in':  '<span class="badge badge-amber">↩ إرجاع إدخال</span>',
   'ret-out': '<span class="badge badge-purple">↪ إرجاع صرف</span>',
   'custody': '<span class="badge badge-blue">🔑 عهدة</span>',
+  'wot':     '<span class="badge" style="background:rgba(184,134,11,.15);color:#B8860B;border:1px solid rgba(184,134,11,.4)">🚚 محوّل من الصانبي</span>',
+  'ext-recv':'<span class="badge" style="background:var(--amber-bg);color:var(--amber-l);border:1px solid rgba(245,158,11,.3)">📨 استلام طلب خارجي</span>',
   'ext-req': '<span class="badge" style="background:var(--amber-bg);color:var(--amber-l);border:1px solid rgba(245,158,11,.3)">📨 طلب خارجي</span>'
 };
 
@@ -4919,20 +5720,8 @@ function deleteCustodyFromMovements(custodyId){
   if(!currentUser||(currentUser.role!=='admin'&&currentUser.role!=='supervisor')){ toast('الحذف متاح للمدير والمشرف فقط','error'); return; }
   const c=(DB.custodies||[]).find(x=>x.id===custodyId);
   if(!c){ toast('العهدة غير موجودة','error'); return; }
-  const itemsCount = (c.items||[]).length;
   requireDeletePIN(() => {
-    const confirmed = confirm(
-      '⚠️ تحذير مهم — حذف العهدة\n\n' +
-      'العهدة: ' + custodyId + '\n' +
-      'المستلم: ' + (c.receiver||'—') + '\n' +
-      'عدد الأصناف: ' + itemsCount + ' صنف\n\n' +
-      '❌ الكميات المصروفة على هذه العهدة لن تعود للمخزون تلقائياً.\n' +
-      'يجب إدخالها يدوياً إذا أردت تصحيح الرصيد.\n\n' +
-      'هل أنت متأكد من الحذف النهائي؟'
-    );
-    if(!confirmed) return;
     _deleteCustodyCore(custodyId);
-    renderMovements();
   });
 }
 
@@ -5066,13 +5855,15 @@ function renderMovements(){
 
   // ── بناء قائمة الحركات العادية ──
   let all = [
-    ...DB.receives.map(r=>({...r, type:'in'})),
+    ...DB.receives.map(r=>({...r, type: (String(r.id||'').startsWith('RCV-EXT-') ? 'ext-recv' : 'in')})),
     ...DB.dispatches.map(d=>({
       ...d,
-      type: d._custodyRef ? 'custody' : 'out',
-      _displayCompany: d._custodyRef
-        ? ((DB.custodies||[]).find(c=>c.id===d._custodyRef)||{}).company || ''
-        : ''
+      type: d._wotRef ? 'wot' : (d._custodyRef ? 'custody' : 'out'),
+      _displayCompany: d._wotRef
+        ? ((DB.workOrderTransfers||[]).find(w=>w.id===d._wotRef)||{}).company || d.dept || ''
+        : (d._custodyRef
+          ? ((DB.custodies||[]).find(c=>c.id===d._custodyRef)||{}).company || ''
+          : '')
     })),
     ...DB.returnReceives.map(r=>({...r, type:'ret-in'})),
     ...DB.returnDispatches.map(r=>({
@@ -5084,29 +5875,9 @@ function renderMovements(){
     }))
   ];
 
-  // ── إضافة الطلبات الخارجية كحركات ──
-  (DB.extRequests||[]).forEach(req => {
-    (req.workOrders||[]).forEach(wo => {
-      (wo.items||[]).forEach(it => {
-        all.push({
-          id: req.id,
-          type: 'ext-req',
-          date: req.date || req.createdAt?.slice(0,10) || '—',
-          code: it.code || '—',
-          name: it.name || '—',
-          qty: it.qty || 0,
-          unit: it.unit || '',
-          workorder: wo.woNum || '—',
-          serial: '',
-          ref: '',
-          _displayCompany: req.company || '',
-          user: req.createdBy || '—',
-          dept: '',
-          supplier: ''
-        });
-      });
-    });
-  });
+  // ملاحظة: الطلبات الخارجية لا تُضاف هنا كحركة مستقلة.
+  // فقط الكميات التي تم تأكيد استلامها فعلياً تظهر — وهي مسجّلة في DB.receives
+  // بمعرّفات RCV-EXT- (نوع "in")، فتظهر تلقائياً ضمن الحركات أعلاه.
 
   all.sort((a,b) => {
     const dc = (b.date||'').localeCompare(a.date||'');
@@ -5139,9 +5910,9 @@ function renderMovements(){
     }
 
     let btns = '—';
-    if (m.type==='in' || m.type==='out') {
+    if (m.type==='in' || m.type==='out' || m.type==='ext-recv') {
       if (canEdit) {
-        const t = m.type==='in'?'in':'out';
+        const t = (m.type==='out')?'out':'in';
         btns = `<button class="btn btn-sm" onclick="openTxnEdit('${t}','${m.id}')">✏️</button>
          <button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red);margin-right:4px" onclick="deleteTxn('${t}','${m.id}')">🗑</button>`;
       }
@@ -5156,6 +5927,12 @@ function renderMovements(){
         const cId = m._custodyRef || m.id;
         btns = `<button class="btn btn-sm" style="color:var(--blue-l);border-color:var(--blue)" onclick="viewCustodyFromMovements('${cId}')" title="عرض العهدة">👁</button>
          <button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red);margin-right:4px" onclick="deleteCustodyFromMovements('${cId}')" title="حذف العهدة">🗑</button>`;
+      }
+    } else if (m.type==='wot') {
+      if (canEdit) {
+        const wId = m._wotRef || m.id;
+        btns = `<button class="btn btn-sm" style="color:#B8860B;border-color:#B8860B" onclick="reprintWot('${wId}')" title="عرض/طباعة السند">👁</button>
+         <button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red);margin-right:4px" onclick="deleteWotFromMovements('${wId}')" title="حذف التحويل">🗑</button>`;
       }
     } else if (m.type==='ext-req') {
       if (isAdmin) {
@@ -6084,11 +6861,11 @@ function printMovementsOnly(){
       : (dateF ? 'حركات بتاريخ: ' + dateF : 'سجل الحركات');
 
   // نبني البيانات من DB مباشرة بدل سحب innerHTML
-  const MOV_LABELS = { in:'📥 إدخال', out:'📤 صرف', 'ret-in':'↩ إرجاع إدخال', 'ret-out':'↪ إرجاع صرف' };
-  const TYPE_COLORS = { in:'#2E7D32', out:'#c62828', 'ret-in':'#f57f17', 'ret-out':'#7B1FA2' };
+  const MOV_LABELS = { in:'📥 إدخال', out:'📤 صرف', 'ret-in':'↩ إرجاع إدخال', 'ret-out':'↪ إرجاع صرف', wot:'🚚 محوّل من الصانبي', 'ext-recv':'📨 استلام طلب خارجي' };
+  const TYPE_COLORS = { in:'#2E7D32', out:'#c62828', 'ret-in':'#f57f17', 'ret-out':'#7B1FA2', wot:'#B8860B', 'ext-recv':'#d97706' };
   let all = [
-    ...DB.receives.map(r=>({...r, type:'in'})),
-    ...DB.dispatches.map(d=>({...d, type:'out'})),
+    ...DB.receives.map(r=>({...r, type: (String(r.id||'').startsWith('RCV-EXT-') ? 'ext-recv' : 'in')})),
+    ...DB.dispatches.map(d=>({...d, type: (d._wotRef ? 'wot' : 'out')})),
     ...DB.returnReceives.map(r=>({...r, type:'ret-in'})),
     ...DB.returnDispatches.map(r=>({...r, type:'ret-out'}))
   ].sort((a,b) => { const dc = b.date.localeCompare(a.date); return dc !== 0 ? dc : b.id.localeCompare(a.id); });
@@ -6362,30 +7139,38 @@ function _startIdleTracking() {
 
 function _stopIdleTracking() {
   if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+  // أزل مستمعي النشاط فعلياً حتى لا يُعاد تفعيل الجلسة بعد الخروج
+  if (_idleListenersBound) {
+    ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(function(ev){
+      document.removeEventListener(ev, _resetIdleTimer, { passive: true });
+    });
+    _idleListenersBound = false;
+  }
 }
 
 async function _doIdleLogout() {
+  currentUser = null;
   _stopIdleTracking();
   _clearSessionMark();
-  if (firebaseAuth) { try { await firebaseAuth.signOut(); } catch(e) {} }
-  currentUser = null;
   document.getElementById('sidebar-footer').style.display = 'none';
   document.getElementById('login-modal').style.display = 'flex';
   document.getElementById('login-username').value = '';
   document.getElementById('login-password').value = '';
+  if (firebaseAuth) { try { await firebaseAuth.signOut(); } catch(e) {} }
   toast('تم تسجيل الخروج تلقائياً بعد 15 دقيقة من الخمول', 'info');
 }
 
 async function doLogout() {
   if(!confirm('تأكيد تسجيل الخروج؟')) return;
+  // امسح الحالة فوراً قبل أي عملية async حتى لا يُعاد تفعيل الجلسة
+  currentUser = null;
   _stopIdleTracking();
   _clearSessionMark();
-  if(firebaseAuth) { try { await firebaseAuth.signOut(); } catch(e) {} }
-  currentUser = null;
   document.getElementById('sidebar-footer').style.display = 'none';
   document.getElementById('login-modal').style.display = 'flex';
   document.getElementById('login-username').value = '';
   document.getElementById('login-password').value = '';
+  if(firebaseAuth) { try { await firebaseAuth.signOut(); } catch(e) {} }
 }
 
 function applyRoleUI() {
@@ -6438,7 +7223,7 @@ function applyRoleUI() {
   // 🛡️ المراقب (viewer): يستطيع رؤية صفحات العُهد/الطلبات/أوامر العمل والطباعة منها،
   // لكن تُخفى أزرار الإضافة/الحفظ لأنه ممنوع من الكتابة (الصفحات تبقى للعرض والطباعة فقط).
   const isViewer = currentUser && currentUser.role === 'viewer';
-  ['cust-save-btn','extreq-save-btn','wo-save-btn','ext-add-wo-btn'].forEach(function(btnId){
+  ['cust-save-btn','extreq-save-btn','wo-save-btn','ext-add-wo-btn','wot-save-btn','wot-add-wo-btn'].forEach(function(btnId){
     const b = document.getElementById(btnId);
     if(b) b.style.display = isViewer ? 'none' : '';
   });
@@ -7054,8 +7839,11 @@ async function confirmSaveCustody(){
         const fbKey=firebaseDB.ref('erpdata/custodies').push().key;
         custody._fbKey=fbKey;
         const{_fbKey,...clean}=custody;
-        await firebaseDB.ref('erpdata/custodies/'+fbKey).set(clean);
-        await Promise.all(dispRecs.map(r=>{const k=firebaseDB.ref('erpdata/dispatches').push().key;const{_fbKey,...cr}={...r,_fbKey:k};return firebaseDB.ref('erpdata/dispatches/'+k).set(cr);}));
+        // اكتب سجل العهدة وكل حركات الصرف بالتوازي
+        await Promise.all([
+          firebaseDB.ref('erpdata/custodies/'+fbKey).set(clean),
+          ...dispRecs.map(r=>{const k=firebaseDB.ref('erpdata/dispatches').push().key;const{_fbKey,...cr}={...r,_fbKey:k};return firebaseDB.ref('erpdata/dispatches/'+k).set(cr);})
+        ]);
         saveLocal();
       } catch(e){console.warn('custody firebase sync:',e);}
     }
@@ -7153,12 +7941,32 @@ function deleteCustody(custodyId){
 function _deleteCustodyCore(custodyId){
   const c=(DB.custodies||[]).find(x=>x.id===custodyId);
   if(!c) return;
-  if(!confirm('⚠️ حذف العهدة '+custodyId+'؟\nالمستلم: '+c.receiver+'\n\nتحذير: لن يتم إرجاع الكميات للمخزون تلقائياً.\nهل أنت متأكد؟')) return;
+  // حركات الصرف المرتبطة بالعهدة
+  const linked=(DB.dispatches||[]).filter(d=>d._custodyRef===custodyId);
+  const totalQty=linked.reduce((s,d)=>s+(d.qty||0),0);
+  if(!confirm('⚠️ تأكيد حذف العهدة '+custodyId+'\nالمستلم: '+(c.receiver||'—')+'\n\nسيتم حذف '+linked.length+' حركة صرف مرتبطة، وإرجاع '+totalQty.toLocaleString()+' وحدة للمخزون.\n\nهل أنت متأكد؟')) return;
+  // 1) احذف حركات الصرف المرتبطة → الرصيد يعود تلقائياً
+  const fbDispatchKeys=linked.map(d=>d._fbKey).filter(Boolean);
+  DB.dispatches=(DB.dispatches||[]).filter(d=>d._custodyRef!==custodyId);
+  // 2) احذف العهدة
   DB.custodies=DB.custodies.filter(x=>x.id!==custodyId);
   saveLocal();
-  if(firebaseDB&&initialSyncCompleted&&c._fbKey){firebaseDB.ref('erpdata/custodies/'+c._fbKey).remove().catch(()=>{});}
+  // 3) مزامنة Firebase
+  if(firebaseDB&&initialSyncCompleted){
+    fbDispatchKeys.forEach(k=>firebaseDB.ref('erpdata/dispatches/'+k).remove().catch(()=>{}));
+    if(c._fbKey) firebaseDB.ref('erpdata/custodies/'+c._fbKey).remove().catch(()=>{});
+    const affected=new Set(linked.map(d=>d.code).filter(Boolean));
+    affected.forEach(code=>{
+      try{ firebaseDB.ref('balances/'+_safeKey(code)).set(getStock(code).balance).catch(()=>{}); }catch(e){}
+    });
+  }
+  if(typeof _writeAuditLog==='function'){
+    _writeAuditLog('custody_delete',[{id:custodyId,receiver:c.receiver,restoredQty:totalQty}]);
+  }
   updateCustodyBadge(); renderCustodyTable();
-  toast('تم حذف العهدة '+custodyId,'error');
+  if(typeof renderMovements==='function' && currentPage==='movements') renderMovements();
+  if(typeof renderDashboard==='function') renderDashboard();
+  toast('تم حذف العهدة وإرجاع المواد للمخزون ✓');
 }
 
 let _custodyPage=1;
@@ -7473,7 +8281,7 @@ function printCustodyPDF(){
   const LOGO_SRC = window._warehouseLogo || _getCustodyLogo();
 
   // دالة بناء صفحة واحدة كاملة
-  function buildPage(pageItems, pageNum, startIdx){
+  function buildPage(pageItems, pageNum, startIdx, isFirst){
     const GOLD='#C8960C'; const DARK='#1A1A2E'; const LIGHT='#F8F4E8';
     const LOGO = LOGO_SRC;
     const statusMap={'active':'نشطة','returned':'مُرجَعة','partial':'مُرجَعة جزئياً'};
@@ -7497,7 +8305,7 @@ function printCustodyPDF(){
 
     return `
     <!-- ════ صفحة ${pageNum} ════ -->
-    <div class="page-wrap">
+    <div class="page-wrap"${isFirst?'':' style="page-break-before:always;break-before:page"'}>
 
       <!-- هيدر الشركة -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid ${GOLD};margin-bottom:12px">
@@ -7639,7 +8447,7 @@ function printCustodyPDF(){
   for(let p=0; p<totalPages; p++){
     const start = p * ITEMS_PER_PAGE;
     const chunk = allItems.slice(start, start + ITEMS_PER_PAGE);
-    allPagesHTML += (p>0 ? '<div style="page-break-before:always"></div>' : '') + buildPage(chunk, p+1, start);
+    allPagesHTML += buildPage(chunk, p+1, start, p===0);
   }
 
   const win = window.open('','_blank','width=900,height=700');
@@ -7847,13 +8655,13 @@ function exportAllCustodyPDF(){
   if(!all.length){toast('لا توجد عهد مسجلة','error');return;}
   const win = window.open('','_blank','width=900,height=700');
   const pages = all.map((c,i)=>`
-    <div style="${i>0?'page-break-before:always':''}; font-family:Arial;direction:rtl;padding:32px 40px;color:#111">
+    <div style="${i>0?'page-break-before:always;break-before:page;':''} font-family:Arial;direction:rtl;color:#111">
       ${_buildCustodyPDFHTML(c, window._showAdminSig||false)}
     </div>`).join('');
   win.document.open();
   win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head>
     <meta charset="UTF-8"><title>كل العهد</title>
-    <style>*{margin:0;padding:0;box-sizing:border-box}@page{size:A4;margin:12mm}@media print{.no-print{display:none!important}}</style>
+    <style>*{margin:0;padding:0;box-sizing:border-box}@page{size:A4;margin:10mm}@media print{html,body{margin:0;padding:0}.no-print{display:none!important}}</style>
   </head><body>${pages}
   <div class="no-print" style="text-align:center;padding:24px;position:sticky;bottom:0;background:#fff;border-top:1px solid #ddd">
     <button onclick="window.print()" style="padding:10px 32px;font-size:15px;background:#1A1A2E;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ طباعة / حفظ الكل PDF</button>
@@ -8649,8 +9457,10 @@ function generateReport(){
     return d;
   };
 
-  if(type==='all'||type==='in')      data=data.concat(applyFilters(DB.receives,'📥 إدخال'));
-  if(type==='all'||type==='out')     data=data.concat(applyFilters(DB.dispatches,'📤 صرف'));
+  if(type==='all'||type==='in')      data=data.concat(applyFilters((DB.receives||[]).filter(r=>!String(r.id||'').startsWith('RCV-EXT-')),'📥 إدخال'));
+  if(type==='all'||type==='ext-recv')data=data.concat(applyFilters((DB.receives||[]).filter(r=>String(r.id||'').startsWith('RCV-EXT-')),'📨 استلام طلب خارجي'));
+  if(type==='all'||type==='out')     data=data.concat(applyFilters((DB.dispatches||[]).filter(d=>!d._wotRef),'📤 صرف'));
+  if(type==='all'||type==='wot')     data=data.concat(applyFilters((DB.dispatches||[]).filter(d=>d._wotRef),'🚚 محوّل من الصانبي'));
   if(type==='all'||type==='ret-in')  data=data.concat(applyFilters(DB.returnReceives,'↩ إرجاع إدخال'));
   if(type==='all'||type==='ret-out') data=data.concat(applyFilters(DB.returnDispatches,'↪ إرجاع صرف'));
 
@@ -8675,9 +9485,9 @@ function generateReport(){
   data.sort((a,b)=>b.date.localeCompare(a.date));
   _reportData=data;
 
-  // summary
-  const totalIn  = data.filter(d=>d._type==='📥 إدخال').reduce((s,r)=>s+r.qty,0);
-  const totalOut = data.filter(d=>d._type==='📤 صرف').reduce((s,r)=>s+r.qty,0);
+  // summary (التحويل يُحسب ضمن الصرف، استلام الطلب الخارجي يُحسب ضمن الإدخال)
+  const totalIn  = data.filter(d=>d._type==='📥 إدخال'||d._type==='📨 استلام طلب خارجي').reduce((s,r)=>s+r.qty,0);
+  const totalOut = data.filter(d=>d._type==='📤 صرف'||d._type==='🚚 محوّل من الصانبي').reduce((s,r)=>s+r.qty,0);
   const totalRI  = data.filter(d=>d._type==='↩ إرجاع إدخال').reduce((s,r)=>s+r.qty,0);
   const totalRO  = data.filter(d=>d._type==='↪ إرجاع صرف').reduce((s,r)=>s+r.qty,0);
 
@@ -8709,12 +9519,14 @@ function generateReport(){
     // جمع البيانات لكل مادة
     const itemMap = {};
     data.forEach(r=>{
-      if(!itemMap[r.code]) itemMap[r.code]={code:r.code,name:r.name,unit:r.unit,qtyIn:0,retIn:0,qtyOut:0,retOut:0};
+      if(!itemMap[r.code]) itemMap[r.code]={code:r.code,name:r.name,unit:r.unit,qtyIn:0,retIn:0,qtyOut:0,retOut:0,fromExt:0,fromWot:0};
       const m=itemMap[r.code];
-      if(r._type==='📥 إدخال')       m.qtyIn  += r.qty;
-      if(r._type==='↩ إرجاع إدخال') m.retIn  += r.qty;
-      if(r._type==='📤 صرف')         m.qtyOut += r.qty;
-      if(r._type==='↪ إرجاع صرف')   m.retOut += r.qty;
+      if(r._type==='📥 إدخال')                 m.qtyIn  += r.qty;
+      if(r._type==='📨 استلام طلب خارجي'){      m.qtyIn  += r.qty; m.fromExt += r.qty; }
+      if(r._type==='↩ إرجاع إدخال')           m.retIn  += r.qty;
+      if(r._type==='📤 صرف')                   m.qtyOut += r.qty;
+      if(r._type==='🚚 محوّل من الصانبي'){      m.qtyOut += r.qty; m.fromWot += r.qty; }
+      if(r._type==='↪ إرجاع صرف')             m.retOut += r.qty;
     });
     const grouped = Object.values(itemMap);
 
@@ -8727,9 +9539,11 @@ function generateReport(){
     document.getElementById('report-thead').innerHTML=`<tr>
       <th>#</th><th>الكود</th><th>المادة</th><th>الوحدة</th>
       <th style="color:var(--green-l)">كمية الإدخال</th>
+      <th style="color:#d97706">منها طلب خارجي</th>
       <th style="color:var(--amber-l)">إرجاع إدخال</th>
       <th style="color:var(--green-l);font-weight:800">صافي الإدخال</th>
       <th style="color:var(--red-l)">كمية الصرف</th>
+      <th style="color:#B8860B">منها محوّل</th>
       <th style="color:var(--purple-l)">إرجاع صرف</th>
       <th style="color:var(--red-l);font-weight:800">صافي المسحوب</th>
       <th style="color:var(--blue-l);font-weight:800">الكمية المخططة</th>
@@ -8745,9 +9559,11 @@ function generateReport(){
         <td><strong>${esc(m.name)}</strong></td>
         <td>${esc(m.unit)}</td>
         <td style="color:var(--green-l)">${m.qtyIn.toLocaleString()}</td>
+        <td style="color:#d97706">${m.fromExt>0?'📨 '+m.fromExt.toLocaleString():'—'}</td>
         <td style="color:var(--amber-l)">${m.retIn>0?'<span style="color:var(--amber-l)">↩ -'+m.retIn.toLocaleString()+'</span>':'—'}</td>
         <td><strong style="font-size:14px;color:var(--green-l)">${netIn.toLocaleString()}</strong></td>
         <td style="color:var(--red-l)">${m.qtyOut.toLocaleString()}</td>
+        <td style="color:#B8860B">${m.fromWot>0?'🚚 '+m.fromWot.toLocaleString():'—'}</td>
         <td style="color:var(--purple-l)">${m.retOut>0?'<span style="color:var(--purple-l)">↪ -'+m.retOut.toLocaleString()+'</span>':'—'}</td>
         <td><strong style="font-size:14px;color:var(--red-l)">${netOut.toLocaleString()}</strong></td>
         <td><strong style="font-size:14px;color:var(--blue-l)">${planned>0?planned.toLocaleString():'—'}</strong></td>
@@ -8757,12 +9573,16 @@ function generateReport(){
     // صف الإجمالي
     const totNetIn  = grouped.reduce((s,m)=>s+(m.qtyIn-m.retIn),0);
     const totNetOut = grouped.reduce((s,m)=>s+(m.qtyOut-m.retOut),0);
+    const totFromExt = grouped.reduce((s,m)=>s+m.fromExt,0);
+    const totFromWot = grouped.reduce((s,m)=>s+m.fromWot,0);
     document.getElementById('report-tbody').innerHTML += `<tr style="background:var(--bg3);font-weight:700;border-top:2px solid var(--border2)">
       <td colspan="4" style="text-align:center;color:var(--text2)">الإجمالي</td>
       <td style="color:var(--green-l)">${totalIn.toLocaleString()}</td>
+      <td style="color:#d97706">${totFromExt>0?'📨 '+totFromExt.toLocaleString():'—'}</td>
       <td style="color:var(--amber-l)">${totalRI>0?'↩ -'+totalRI.toLocaleString():'—'}</td>
       <td style="color:var(--green-l);font-size:15px">${totNetIn.toLocaleString()}</td>
       <td style="color:var(--red-l)">${totalOut.toLocaleString()}</td>
+      <td style="color:#B8860B">${totFromWot>0?'🚚 '+totFromWot.toLocaleString():'—'}</td>
       <td style="color:var(--purple-l)">${totalRO>0?'↪ -'+totalRO.toLocaleString():'—'}</td>
       <td style="color:var(--red-l);font-size:15px">${totNetOut.toLocaleString()}</td>
       <td style="color:var(--blue-l);font-size:15px">${Object.values(plannedMap).reduce((s,v)=>s+v,0)>0?Object.values(plannedMap).reduce((s,v)=>s+v,0).toLocaleString():'—'}</td>
@@ -9639,7 +10459,10 @@ function saveExtRequest() {
 // ── سجل الطلبات — كل أمر عمل صف مستقل ──
 function renderExtRequests(filter='') {
   const tbody=document.getElementById('ext-requests-tbody'); if(!tbody)return;
-  const all=(DB.extRequests||[]).slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const all=(DB.extRequests||[]).slice().sort((a,b)=>{
+    const dc=String(b.date||'').localeCompare(String(a.date||''));
+    return dc!==0?dc:String(b.createdAt||'').localeCompare(String(a.createdAt||''));
+  });
   const f=filter.toLowerCase();
   const filtered=f?all.filter(r=>
     (r.company||'').toLowerCase().includes(f)||
@@ -9973,9 +10796,11 @@ body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;background:#fff;color:#
   width:794px;margin:0 auto;
   min-height:1122px;
   page-break-before:always;
+  break-before:page;
   position:relative;display:flex;flex-direction:column;
 }
-.sheet:first-child{page-break-before:auto}
+.sheet:first-child{page-break-before:auto;break-before:auto}
+.sheet:last-child{page-break-after:auto;break-after:auto}
 /* خلفية اللوجو */
 .bg-logo{
   position:absolute;inset:0;z-index:0;
@@ -9999,9 +10824,14 @@ body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;background:#fff;color:#
   justify-content:flex-start;
   padding:14px 0 0;
 }
+@page{size:A4;margin:0}
 @media print{
-  .sheet{margin:0}
-  .content{padding:16px 24px 16px;min-height:100vh}
+  html,body{margin:0;padding:0}
+  .sheet{margin:0;width:100%;height:297mm;min-height:0;overflow:hidden;page-break-inside:avoid;break-inside:avoid}
+  .content{padding:14px 22px 12px;min-height:0;height:100%}
+  .letter-body{flex:1 1 auto}
+  .sheet:first-child{page-break-before:auto;break-before:auto}
+  .sheet:last-child{page-break-after:auto;break-after:auto}
 }`;
 
   const html = `<!DOCTYPE html>
@@ -10025,7 +10855,7 @@ body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;background:#fff;color:#
         <div style="font-size:13px;color:#333">تحية طيبة وبعد ...............</div>
       </div>
       <div style="font-size:14px;font-weight:700;line-height:2.1;text-align:center;border:1px solid #e8eaf6;border-radius:8px;padding:16px 20px;background:rgba(26,35,126,0.03);margin-bottom:6px">
-        بناءاً على توجيهات الشركة السعودية للكهرباء بتحويل عدد ${wos.length} مقايسة المرفقة<br>
+        بناءاً على توجيهات الشركة السعودية للطاقة بتحويل عدد ${wos.length} مقايسة المرفقة<br>
         الى شركة الصانبي للمقاولات${officeText} برجاء تسليم المواد المرفقة للطالبات<br>
         المذكورة ${delegateText}.
       </div>
@@ -10089,6 +10919,7 @@ const _REPRINT_HEADER_COLORS = {
   'ret-in':   { accent:'#d4ac0d', tint:'rgba(212,172,13,0.10)' },
   'ret-out':  { accent:'#8e44ad', tint:'rgba(142,68,173,0.10)' },
   'custody':  { accent:'#3BA4F7', tint:'rgba(59,164,247,0.10)' },
+  'wot':      { accent:'#B8860B', tint:'rgba(184,134,11,0.12)' },
   'ext-req':  { accent:'#3BA4F7', tint:'rgba(59,164,247,0.10)' },
 };
 
@@ -10135,9 +10966,10 @@ function _groupReprintRecords(records){
 function renderReprintResults(){
   const container = document.getElementById('reprint-results');
   if(!container) return;
-  // التبويبات الخاصة: العهدة والطلبات الخارجية لها بنية مختلفة
+  // التبويبات الخاصة: العهدة والطلبات الخارجية والتحويل لها بنية مختلفة
   if(_reprintTab === 'custody')  { renderReprintCustody();  return; }
   if(_reprintTab === 'ext-req')  { renderReprintExtReq();   return; }
+  if(_reprintTab === 'wot')      { renderReprintWot();      return; }
 
   const cfg = _REPRINT_CFG[_reprintTab];
   if(!cfg) return;
@@ -10145,6 +10977,8 @@ function renderReprintResults(){
   const term = (document.getElementById('reprint-search').value||'').trim().toLowerCase();
   const dateF = (document.getElementById('reprint-date') ? document.getElementById('reprint-date').value : '') || '';
   let records = (DB[cfg.arr]||[]).slice();
+  // استبعاد حركات التحويل (محوّل من الصانبي) من تبويب الصرف العادي
+  if(_reprintTab === 'dispatch') records = records.filter(r=>!r._wotRef);
   if(term){
     records = records.filter(r=> String(r.workorder||'').toLowerCase().includes(term) );
   }
@@ -10276,6 +11110,64 @@ function reprintCustody(i){
   const c = _reprintCustodyList[i];
   if(!c){ toast('تعذّر العثور على بيانات العهدة','error'); return; }
   previewCustodyPDF(c);
+}
+
+// ── إعادة طباعة التحويلات (محوّل من الصانبي) ──
+let _reprintWotList = [];
+function renderReprintWot(){
+  const container = document.getElementById('reprint-results');
+  const term = (document.getElementById('reprint-search').value||'').trim().toLowerCase();
+  const dateF = (document.getElementById('reprint-date') ? document.getElementById('reprint-date').value : '') || '';
+  let list = (DB.workOrderTransfers||[]).slice();
+  if(term){
+    list = list.filter(t =>
+      String(t.company||'').toLowerCase().includes(term) ||
+      String(t.delegate||'').toLowerCase().includes(term) ||
+      (t.workOrders||[]).some(w=>String(w.woNum||'').toLowerCase().includes(term))
+    );
+  }
+  if(dateF){ list = list.filter(t=> String(t.date||'')===dateF ); }
+  list.sort((a,b)=>{
+    const dc=String(b.date||'').localeCompare(String(a.date||''));
+    return dc!==0?dc:String(b.createdAt||'').localeCompare(String(a.createdAt||''));
+  });
+  if(!term && !dateF) list = list.slice(0, 30);
+
+  if(list.length===0){
+    container.innerHTML = `<div class="form-panel" style="text-align:center;color:var(--text3);padding:34px">
+      ${(term||dateF) ? 'لا توجد تحويلات مطابقة للبحث' : 'لا توجد تحويلات مسجّلة بعد'}
+    </div>`;
+    return;
+  }
+
+  _reprintWotList = list;
+  container.innerHTML = list.map((t,ti)=>{
+    const wos = t.workOrders||[];
+    const woNums = wos.map(w=>w.woNum).filter(Boolean).join('، ') || '—';
+    const totalItems = wos.reduce((s,w)=>s+(w.items||[]).length,0);
+    const totalQty = wos.reduce((s,w)=>(w.items||[]).reduce((ss,it)=>ss+(it.qty||0),s),0);
+    return `<div class="reprint-op-card">
+      <div class="reprint-op-head">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:15px;font-weight:700;color:#B8860B">🚚 محوّل إلى: ${_escapeHtml(t.company||'—')}</div>
+          <div style="font-size:12px;color:var(--text3)">
+            أوامر العمل: <b style="color:var(--text2)">${_escapeHtml(woNums)}</b> &nbsp;•&nbsp;
+            المندوب: <b style="color:var(--text2)">${_escapeHtml(t.delegate||'—')}</b> &nbsp;•&nbsp;
+            التاريخ: <b style="color:var(--text2)">${_escapeHtml(t.date||'—')}</b> &nbsp;•&nbsp;
+            عدد الأصناف: <b style="color:var(--text2)">${totalItems}</b> &nbsp;•&nbsp;
+            إجمالي الكمية: <b style="color:var(--text2)">${totalQty.toLocaleString()}</b>
+          </div>
+        </div>
+        <button class="btn" style="background:rgba(184,134,11,.12);border:1.5px solid #B8860B;color:#B8860B;font-weight:600;white-space:nowrap"
+          onclick="reprintWotByIndex(${ti})">📄 معاينة وطباعة</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function reprintWotByIndex(i){
+  const t = _reprintWotList[i];
+  if(!t){ toast('تعذّر العثور على بيانات التحويل','error'); return; }
+  _printWotVoucher(t);
 }
 
 // ── إعادة طباعة الطلبات الخارجية ──
