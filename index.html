@@ -348,7 +348,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
       <button data-title="محوّل من الصانبي" class="nav-item" onclick="navigate('wot')"><span class="icon">🚚</span> <span class="nav-text">محوّل من الصانبي</span></button>
       <button data-title="إدارة العهد" class="nav-item" onclick="navigate('custody')"><span class="icon">🔑</span> <span class="nav-text">إدارة العهد</span><span class="nav-badge" id="nav-custody-badge" style="display:none">0</span>
       </button>
-      <button data-title="أوامر العمل" class="nav-item" onclick="navigate('workorders')"><span class="icon">🔧</span> <span class="nav-text">أوامر العمل</span></button>
+      <button data-title="معلومات أوامر العمل" class="nav-item" onclick="navigate('workorders')"><span class="icon">🔧</span> <span class="nav-text">معلومات أوامر العمل</span></button>
       <button data-title="إعادة طباعة السندات" class="nav-item" onclick="navigate('reprint')"><span class="icon">🖨️</span> <span class="nav-text">إعادة طباعة السندات</span></button>
     </div>
     <div class="nav-section">
@@ -722,7 +722,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <div class="form-grid">
             <div class="field">
               <label>أمر العمل</label>
-              <input type="text" id="rrcv-workorder" placeholder="123456789" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);document.getElementById('rrcv-wo-header').textContent=this.value||'—';if(document.getElementById('rrcv-dept'))document.getElementById('rrcv-dept').value='';if(typeof renderRrcvList==='function')renderRrcvList()">
+              <input type="text" id="rrcv-workorder" placeholder="123456789" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);document.getElementById('rrcv-wo-header').textContent=this.value||'—';if(document.getElementById('rrcv-dept'))document.getElementById('rrcv-dept').value='';if(typeof renderRrcvList==='function')renderRrcvList();if(typeof _updateRrcvInfoBox==='function')_updateRrcvInfoBox()">
             </div>
             <div class="field">
               <label>رقم المسلسل</label>
@@ -797,6 +797,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <button class="btn btn-primary" style="background:var(--amber-bg);border-color:var(--amber);color:var(--amber-l)" onclick="addItemToRrcvList()">+ إضافة للقائمة</button>
           <button class="btn" onclick="_fullClearAfterSave('rrcv');toast('تم مسح الحقول')">↺ مسح</button>
         </div>
+        <div id="rrcv-info-box" style="display:none;margin:0 16px 16px;padding:12px 16px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius)"></div>
       </div>
       <!-- Multi-item list return-receive -->
       <div class="form-panel" style="margin-bottom:20px;border-color:var(--amber)">
@@ -836,7 +837,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <div class="form-grid">
             <div class="field">
               <label>أمر العمل</label>
-              <input type="text" id="rdsp-workorder" placeholder="123456789" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);document.getElementById('rdsp-wo-header').textContent=this.value||'—';if(document.getElementById('rdsp-dept'))document.getElementById('rdsp-dept').value='';if(typeof renderRdspList==='function')renderRdspList()">
+              <input type="text" id="rdsp-workorder" placeholder="123456789" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);document.getElementById('rdsp-wo-header').textContent=this.value||'—';if(document.getElementById('rdsp-dept'))document.getElementById('rdsp-dept').value='';if(typeof renderRdspList==='function')renderRdspList();if(typeof _updateRdspInfoBox==='function')_updateRdspInfoBox()">
             </div>
             <div class="field">
               <label>رقم المسلسل</label>
@@ -911,8 +912,8 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <button class="btn" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple-l)" onclick="addItemToRdspList()">+ إضافة للقائمة</button>
           <button class="btn" onclick="_fullClearAfterSave('rdsp');toast('تم مسح الحقول')">↺ مسح</button>
         </div>
+        <div id="rdsp-info-box" style="display:none;margin:0 16px 16px;padding:12px 16px;background:var(--purple-bg);border:1px solid var(--purple);border-radius:var(--radius)"></div>
       </div>
-      <!-- Multi-item list return-dispatch -->
       <div class="form-panel" style="margin-bottom:20px;border-color:var(--purple)">
         <div class="panel-header" style="background:var(--purple-bg)">
           <span class="panel-title" style="color:var(--purple-l)"><span class="dot dot-purple"></span>قائمة المواد المراد إرجاع صرفها</span>
@@ -3812,12 +3813,16 @@ function lookupItem(prefix) {
       document.getElementById('rcv-balance').textContent = bal.toLocaleString()+' '+item.unit;
     }
     if(lookup){ lookup.textContent = '✓  '+item.name+'  |  وحدة: '+item.unit+'  |  رصيد: '+bal.toLocaleString(); lookup.className = 'lookup-result show'; }
+    if(prefix==='rdsp' && typeof _updateRdspInfoBox==='function') _updateRdspInfoBox();
+    if(prefix==='rrcv' && typeof _updateRrcvInfoBox==='function') _updateRrcvInfoBox();
   } else {
     setVal(prefix+'-name', '');
     setVal(prefix+'-unit', '');
     if(prefix==='dsp') setVal('dsp-balance', '');
     else if(document.getElementById('rcv-balance')) document.getElementById('rcv-balance').textContent='—';
     if(lookup){ lookup.className='lookup-result'; lookup.classList.remove('show'); }
+    if(prefix==='rdsp' && typeof _updateRdspInfoBox==='function') _updateRdspInfoBox();
+    if(prefix==='rrcv' && typeof _updateRrcvInfoBox==='function') _updateRrcvInfoBox();
   }
 }
 
@@ -5061,14 +5066,16 @@ function _hasPendingItem(prefix){
   const qtyEl  = document.getElementById(prefix+'-qty');
   const code = codeEl ? codeEl.value.trim() : '';
   const qty  = qtyEl  ? qtyEl.value.trim()  : '';
-  return (code !== '' && qty !== '');
+  // 🛡️ امنع الحفظ لو أي خانة فيها قيمة (كود أو كمية) لم تُضف للقائمة بعد
+  // (الشرط OR وليس AND: حتى لو كتب الكود فقط أو الكمية فقط لا تضيع المادة)
+  return (code !== '' || qty !== '');
 }
 
 async function saveAllReceive(){
   // 0. Auth check
   if(!currentUser){ toast('يجب تسجيل الدخول','error'); return; }
   // منع الحفظ لو في مادة بالخانات العلوية لم تُضف للقائمة
-  if(_hasPendingItem('rcv')){ toast('يوجد كود مادة وكمية بالأعلى لم يُضافا للقائمة — اضغط "إضافة" أولاً أو امسح الحقول','error'); return; }
+  if(_hasPendingItem('rcv')){ toast('يوجد مادة في خانات الإدخال بالأعلى لم تُضف للقائمة — اضغط "إضافة للقائمة" أولاً أو امسح الحقول','error'); return; }
   if(_rcvList.length===0){ toast('القائمة فارغة، أضف مواد أولاً','error'); return; }
 
   // 1. Validate: "السبب" is mandatory
@@ -5332,7 +5339,7 @@ function editDspItem(i){
 function clearDspList(){ _dspList=[]; renderDspList(); }
 async function saveAllDispatch(){
   if(!currentUser){ toast('يجب تسجيل الدخول','error'); return; }
-  if(_hasPendingItem('dsp')){ toast('يوجد كود مادة وكمية بالأعلى لم يُضافا للقائمة — اضغط "إضافة" أولاً أو امسح الحقول','error'); return; }
+  if(_hasPendingItem('dsp')){ toast('يوجد مادة في خانات الإدخال بالأعلى لم تُضف للقائمة — اضغط "إضافة للقائمة" أولاً أو امسح الحقول','error'); return; }
   if(_dspList.length===0){ toast('القائمة فارغة، أضف مواد أولاً','error'); return; }
 
   // 1. Validate: السبب إلزامي
@@ -7487,22 +7494,6 @@ function _deleteUserCore(username) {
   toast('تم حذف المستخدم');
 }
 
-function changeUserRole(username, currentRole) {
-  if(!hasPerm('manage_users')){ toast('ليس لديك صلاحية','error'); return; }
-  const roles = ['admin','supervisor','storekeeper','viewer'];
-  const labels = {'admin':'مدير','supervisor':'مشرف','storekeeper':'أمين مستودع','viewer':'مراقب'};
-  const options = roles.map(r => r + ' = ' + labels[r]).join('\n');
-  const newRole = prompt('اختر الدور الجديد للمستخدم ' + username + ':\n\n' + options + '\n\nاكتب الدور بالإنجليزي:', currentRole);
-  if(!newRole) return;
-  if(!roles.includes(newRole.trim())){ toast('الدور غير صحيح','error'); return; }
-  const u = DB.users.find(u=>u.username===username);
-  if(!u) return;
-  u.role = newRole.trim();
-  saveDB();
-  renderUsers();
-  toast('تم تغيير دور ' + username + ' إلى ' + labels[newRole.trim()] + ' ✓');
-}
-
 async function resetPassword(username) {
   if(!hasPerm('manage_users')){ toast('ليس لديك صلاحية','error'); return; }
   const u = DB.users.find(u=>u.username===username);
@@ -7708,7 +7699,6 @@ let catalogSortDir = 1;
 let catalogPage = 1;
 const CATALOG_PER_PAGE = 30;
 
-function navigate_patch() {}
 
 function toggleSidebar() {
   var sb = document.querySelector('.sidebar');
@@ -8271,7 +8261,6 @@ function exportCustodyWord(custody){
   toast('✓ تم تنزيل Word');
 }
 
-function exportCustodyExcel(custody){ previewCustodyPDF(custody); }
 
 // ══ PDF معاينة ══
 let _pdfPrintCustody = null;
@@ -8763,14 +8752,7 @@ function exportAllCustodyPDF(){
   win.document.close();
 }
 
-function exportAllCustodyExcel(){ exportAllCustodyPDF(); }
 
-function _syncCustodiesFromFirebase(saved){
-  if(saved&&saved.custodies){
-    DB.custodies=Array.isArray(saved.custodies)?saved.custodies:Object.entries(saved.custodies).map(([k,v])=>({...v,_fbKey:k}));
-    saveLocal(); updateCustodyBadge();
-  }
-}
 
 
 function sortCatalog(key) {
@@ -9009,7 +8991,7 @@ function editRrcvItem(i){
 function clearRrcvList(){ _rrcvList=[]; renderRrcvList(); }
 async function saveAllReturnReceive(){
   if(!currentUser){ toast('يجب تسجيل الدخول','error'); return; }
-  if(_hasPendingItem('rrcv')){ toast('يوجد كود مادة وكمية بالأعلى لم يُضافا للقائمة — اضغط "إضافة" أولاً أو امسح الحقول','error'); return; }
+  if(_hasPendingItem('rrcv')){ toast('يوجد مادة في خانات الإدخال بالأعلى لم تُضف للقائمة — اضغط "إضافة للقائمة" أولاً أو امسح الحقول','error'); return; }
   if(_rrcvList.length===0){ toast('القائمة فارغة','error'); return; }
 
   // 1. السبب إلزامي
@@ -9160,6 +9142,73 @@ function editRdspItem(i){
 }
 function clearRdspList(){ _rdspList=[]; renderRdspList(); }
 // ── حساب الكمية المتصرّفة لمادة على أمر عمل معيّن (صافي = صادر − مرتجع سابق) ──
+// ── حساب الكميات لمادة على أمر عمل: المخطط/المُدخَل/المصروف/المرجّع ──
+function _woItemStats(code, wo){
+  const norm = v => String(v==null?'':v).trim();
+  const w = norm(wo);
+  // المخطط له من صفحة معلومات أوامر العمل (DB.workOrders)
+  let planned = 0;
+  (DB.workOrders||[]).forEach(woRec => {
+    if(norm(woRec.workorder)===w){
+      (woRec.items||[]).forEach(it => { if(it.code===code) planned += (Number(it.qty)||0); });
+    }
+  });
+  const received = DB.receives.filter(r=>r.code===code && norm(r.workorder)===w).reduce((s,r)=>s+(Number(r.qty)||0),0);
+  const dispatched = DB.dispatches.filter(d=>d.code===code && norm(d.workorder)===w).reduce((s,d)=>s+(Number(d.qty)||0),0);
+  const retReceived = DB.returnReceives.filter(r=>r.code===code && norm(r.workorder)===w).reduce((s,r)=>s+(Number(r.qty)||0),0);
+  const retDispatched = DB.returnDispatches.filter(r=>r.code===code && norm(r.workorder)===w).reduce((s,r)=>s+(Number(r.qty)||0),0);
+  return { planned, received, dispatched, retReceived, retDispatched,
+           availRetDispatch: dispatched - retDispatched,   // المتاح لإرجاع الصرف
+           availRetReceive:  received - retReceived };       // المتاح لإرجاع الإدخال
+}
+
+// ── تحديث صندوق معلومات إرجاع الصرف (المصروف + المرجّع سابقاً + المتاح) ──
+function _updateRdspInfoBox(){
+  const box = document.getElementById('rdsp-info-box');
+  if(!box) return;
+  const code = (document.getElementById('rdsp-code')||{}).value || '';
+  const wo   = (document.getElementById('rdsp-workorder')||{}).value || '';
+  const item = DB.items.find(i=>i.code===code || i.code.toUpperCase()===code.toUpperCase());
+  if(!item || !wo.trim()){ box.style.display='none'; box.innerHTML=''; return; }
+  const st = _woItemStats(item.code, wo.trim());
+  box.style.display='block';
+  const prevReturnNote = st.retDispatched > 0
+    ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--purple);font-size:12px;color:var(--purple-l);font-weight:700">⚠️ سبق إرجاع صرف لهذه المادة على نفس أمر العمل: <strong>'+st.retDispatched.toLocaleString()+'</strong></div>'
+    : '';
+  box.innerHTML =
+    '<div style="font-size:12px;color:var(--purple-l);font-weight:700;margin-bottom:8px">📊 '+esc(item.name)+' — على أمر العمل '+esc(wo.trim())+'</div>'
+    + '<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px">'
+    + '<span>المصروف: <strong style="color:var(--red-l)">'+st.dispatched.toLocaleString()+'</strong></span>'
+    + '<span>المرجّع سابقاً: <strong style="color:var(--amber-l)">'+st.retDispatched.toLocaleString()+'</strong></span>'
+    + '<span>المتاح للإرجاع: <strong style="color:var(--green-l)">'+st.availRetDispatch.toLocaleString()+'</strong></span>'
+    + '</div>'
+    + prevReturnNote;
+}
+
+// ── تحديث صندوق معلومات إرجاع الإدخال (المخطط + المُدخَل + المصروف + المتاح) ──
+function _updateRrcvInfoBox(){
+  const box = document.getElementById('rrcv-info-box');
+  if(!box) return;
+  const code = (document.getElementById('rrcv-code')||{}).value || '';
+  const wo   = (document.getElementById('rrcv-workorder')||{}).value || '';
+  const item = DB.items.find(i=>i.code===code || i.code.toUpperCase()===code.toUpperCase());
+  if(!item || !wo.trim()){ box.style.display='none'; box.innerHTML=''; return; }
+  const st = _woItemStats(item.code, wo.trim());
+  box.style.display='block';
+  const prevReturnNote = st.retReceived > 0
+    ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--amber);font-size:12px;color:var(--amber-l);font-weight:700">⚠️ سبق إرجاع إدخال لهذه المادة على نفس أمر العمل: <strong>'+st.retReceived.toLocaleString()+'</strong></div>'
+    : '';
+  box.innerHTML =
+    '<div style="font-size:12px;color:var(--amber-l);font-weight:700;margin-bottom:8px">📊 '+esc(item.name)+' — على أمر العمل '+esc(wo.trim())+'</div>'
+    + '<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px">'
+    + '<span>المخطط له: <strong style="color:var(--blue-l)">'+st.planned.toLocaleString()+'</strong></span>'
+    + '<span>المُدخَل: <strong style="color:var(--green-l)">'+st.received.toLocaleString()+'</strong></span>'
+    + '<span>المصروف: <strong style="color:var(--red-l)">'+st.dispatched.toLocaleString()+'</strong></span>'
+    + '<span>المتاح للإرجاع: <strong style="color:var(--amber-l)">'+st.availRetReceive.toLocaleString()+'</strong></span>'
+    + '</div>'
+    + prevReturnNote;
+}
+
 function _dispatchedQtyForWO(code, wo){
   const norm = v => String(v==null?'':v).trim();
   const w = norm(wo);
@@ -9193,7 +9242,7 @@ function _checkRdspOverrides(list, wo){
 
 async function saveAllReturnDispatch(){
   if(!currentUser){ toast('يجب تسجيل الدخول','error'); return; }
-  if(_hasPendingItem('rdsp')){ toast('يوجد كود مادة وكمية بالأعلى لم يُضافا للقائمة — اضغط "إضافة" أولاً أو امسح الحقول','error'); return; }
+  if(_hasPendingItem('rdsp')){ toast('يوجد مادة في خانات الإدخال بالأعلى لم تُضف للقائمة — اضغط "إضافة للقائمة" أولاً أو امسح الحقول','error'); return; }
   if(_rdspList.length===0){ toast('القائمة فارغة','error'); return; }
 
   // 1. السبب إلزامي
@@ -9588,6 +9637,9 @@ async function _deleteReturnDspCore(id){
 
 // ── Reports ──
 let _reportData = [];
+let _reportGrouped = [];        // الصفوف المجمّعة (وضع أمر العمل) للتصدير المطابق للشاشة
+let _reportWoMode = false;      // هل التقرير الحالي في وضع أمر عمل مجمّع؟
+let _reportGroupedMeta = {};
 let _woSummaryData = [];
 
 function renderReportPage(){
@@ -9700,6 +9752,10 @@ function generateReport(){
     });
     const grouped = Object.values(itemMap);
 
+    // ── تخزين البيانات المجمّعة لتصدير Excel/PDF مطابق لما يظهر على الشاشة ──
+    _reportWoMode = true;
+    _reportGroupedMeta = { wo };
+
     // بناء خريطة الكميات المخططة من DB.workOrders
     const plannedMap = {};
     (DB.workOrders||[])
@@ -9745,6 +9801,17 @@ function generateReport(){
     const totNetOut = grouped.reduce((s,m)=>s+(m.qtyOut-m.retOut),0);
     const totFromExt = grouped.reduce((s,m)=>s+m.fromExt,0);
     const totFromWot = grouped.reduce((s,m)=>s+m.fromWot,0);
+
+    // ── حفظ الصفوف المجمّعة للتصدير (نفس أعمدة الشاشة، بدون رموز) ──
+    _reportGrouped = grouped.map(m=>{
+      const planned = plannedMap[m.code] || 0;
+      return {
+        code:m.code, name:m.name, unit:m.unit,
+        qtyIn:m.qtyIn, fromExt:m.fromExt, retIn:m.retIn, netIn:m.qtyIn-m.retIn,
+        qtyOut:m.qtyOut, fromWot:m.fromWot, retOut:m.retOut, netOut:m.qtyOut-m.retOut,
+        planned
+      };
+    });
     document.getElementById('report-tbody').innerHTML += `<tr style="background:var(--bg3);font-weight:700;border-top:2px solid var(--border2)">
       <td colspan="4" style="text-align:center;color:var(--text2)">الإجمالي</td>
       <td style="color:var(--green-l)">${totalIn.toLocaleString()}</td>
@@ -9818,6 +9885,7 @@ function generateReport(){
 
   } else {
     // ── تقرير عادي بدون أمر عمل: اعرض تفاصيل السجلات ──
+    _reportWoMode = false;
     document.getElementById('report-thead').innerHTML=`<tr>
       <th>رقم العملية</th><th>النوع</th><th>التاريخ</th><th>أمر العمل</th><th>الرقم التسلسلي</th>
       <th>رقم الكتاب</th><th>رقم الصفحة</th><th>اسم الجهة/المورد</th>
@@ -9913,6 +9981,12 @@ function exportReportCSV(){
     rows=_reportData.map(d=>[d.code,d.name,d.unit,Number(d.totalIn)||0,Number(d.retIn)||0,Number(d.totalOut)||0,Number(d.retOut)||0,Number(d.balance)||0,d.status==='ok'?'متوفر':d.status==='low'?'تحت الحد':'نفد']);
     title='تقرير المخزون'; fill='1565C0'; qtyCol=undefined;
     fname='تقرير_المخزون_'+new Date().toISOString().slice(0,10)+'.xlsx';
+  } else if(_reportWoMode && _reportGrouped.length){
+    // ── وضع أمر العمل: صدّر الجدول المجمّع بنفس أعمدة الشاشة ──
+    headers=['الكود','المادة','الوحدة','كمية الإدخال','منها طلب خارجي','إرجاع إدخال','صافي الإدخال','كمية الصرف','منها محوّل','إرجاع صرف','صافي المسحوب','الكمية المخططة'];
+    rows=_reportGrouped.map(m=>[m.code,m.name,m.unit,Number(m.qtyIn)||0,Number(m.fromExt)||0,Number(m.retIn)||0,Number(m.netIn)||0,Number(m.qtyOut)||0,Number(m.fromWot)||0,Number(m.retOut)||0,Number(m.netOut)||0,Number(m.planned)||0]);
+    title='ملخص مواد أمر العمل '+(_reportGroupedMeta.wo||''); fill='1565C0'; qtyCol=undefined;
+    fname='تقرير_أمر_عمل_'+(_reportGroupedMeta.wo||'')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
   } else {
     headers=['رقم العملية','النوع','التاريخ','أمر العمل','الرقم التسلسلي','رقم الكتاب','رقم الصفحة','اسم الجهة/المورد','الكود','المادة','الكمية','الوحدة','المسؤول','ملاحظات'];
     rows=_reportData.map(r=>[r.id,r._type,r.date,r.workorder||'',r.serial||'',r.booknum||'',r.pagenum||'',r.dept||r.supplier||'',r.code,r.name,Number(r.qty)||0,r.unit,r.user||'',r.notes||'']);
@@ -12078,6 +12152,8 @@ function generatePlannedReport(filterWo) {
 
 function _setupWorkOrdersListener() {
   if(!firebaseDB||!initialSyncCompleted) return;
+  if(window._woListenerAttached) return; // 🛡️ منع تسجيل listener مكرر (تسريب ذاكرة/كتابات زائدة)
+  window._woListenerAttached = true;
   firebaseDB.ref('erpdata/workOrders').on('value', snap=>{
     if(!initialSyncCompleted||!snap) return;
     const val=snap.exists()?snap.val():null;
