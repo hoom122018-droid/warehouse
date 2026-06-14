@@ -1705,7 +1705,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <div id="cust-alert" class="alert"></div>
         </div>
         <div class="form-actions">
-          <button id="cust-save-btn" class="btn btn-primary" onclick="saveCustody()">🔑 إصدار العهدة (Word + PDF)</button>
+          <button id="cust-save-btn" class="btn btn-primary" onclick="saveCustody()">🔑 إصدار العهدة (PDF)</button>
           <button class="btn" onclick="custClearAll()">🗑 مسح الكل</button>
         </div>
       </div>
@@ -3149,6 +3149,7 @@ async function loadSavedData() {
       if (saved.returnDispatches) {
         const arr = Array.isArray(saved.returnDispatches) ? saved.returnDispatches : _txnObjToArray(saved.returnDispatches);
         if (arr) DB.returnDispatches = arr;
+      }
       // extRequests
       if (saved.extRequests) DB.extRequests = Array.isArray(saved.extRequests) ? saved.extRequests : Object.entries(saved.extRequests).map(([k,v])=>({...v,_fbKey:k}));
       // مزامنة العهد
@@ -3164,7 +3165,6 @@ async function loadSavedData() {
         DB.workOrderTransfers = Array.isArray(saved.workOrderTransfers)
           ? saved.workOrderTransfers
           : Object.entries(saved.workOrderTransfers).map(([k,v])=>({...v,_fbKey:k}));
-      }
       }
       // items: object structure جديدة أو array قديمة
       if (saved.items) {
@@ -3725,7 +3725,7 @@ function renderDashboard() {
       document.getElementById('low-stock-tbody').innerHTML = lowItems.map((it,i)=>{
         const s=getStock(it.code); const st=getStatus(s.balance,it.min);
         const badge=st==='out'?'<span class="badge badge-red">⛔ نفد</span>':'<span class="badge badge-amber">⚠ تحت الحد</span>';
-        return '<tr><td>'+(i+1)+'</td><td><span class="code-chip">'+it.code+'</span></td><td><strong>'+it.name+'</strong></td><td>'+it.unit+'</td><td style="color:var(--red-l);font-weight:700">'+s.balance.toLocaleString()+'</td><td>'+it.min.toLocaleString()+'</td><td>'+badge+'</td></tr>';
+        return '<tr><td>'+(i+1)+'</td><td><span class="code-chip">'+esc(it.code)+'</span></td><td><strong>'+esc(it.name)+'</strong></td><td>'+esc(it.unit)+'</td><td style="color:var(--red-l);font-weight:700">'+s.balance.toLocaleString()+'</td><td>'+it.min.toLocaleString()+'</td><td>'+badge+'</td></tr>';
       }).join('');
     } else { lp.style.display='none'; }
   }
@@ -4646,8 +4646,8 @@ function _buildProfessionalPDF(opts) {
 
   let colWidths;
   if(opts.docType === 'receive') {
-    // 11 أعمدة: #، رقم السند، كود، اسم، كمية، وحدة، المورد، أمر العمل، المستودع، التاريخ، ملاحظات
-    colWidths = ['4%','9%','9%','19%','6%','5%','11%','9%','9%','9%','10%'];
+    // 10 أعمدة: #، رقم السند، كود، اسم، كمية، وحدة، المورد، المستودع، التاريخ، ملاحظات
+    colWidths = ['4%','10%','10%','20%','7%','6%','12%','10%','9%','12%'];
   } else if(opts.docType === 'dispatch') {
     // 10 أعمدة: #، رقم السند، كود، اسم، كمية، وحدة، الجهة، المستودع، التاريخ، ملاحظات
     colWidths = ['4%','10%','10%','22%','7%','6%','13%','10%','9%','9%'];
@@ -4658,12 +4658,16 @@ function _buildProfessionalPDF(opts) {
 
   const theadHTML = '<tr>' + theadCols.map((c,i)=>`<th style="width:${colWidths[i]||'auto'}">${c}</th>`).join('') + '</tr>';
 
-  const totalColspan = (opts.docType === 'receive' || opts.docType === 'dispatch') ? 4 : 5;
-  // صف الإجمالي
+  // 🔧 محاذاة صف الإجمالي: الكمية دائماً في العمود رقم 5 (index 4) لكل الأنواع.
+  // إجمالي الأعمدة: إدخال/صرف = 10، إرجاعات = 11.
+  // التوزيع الصحيح = 4 (الاسم) + 1 (الكمية) + الباقي = إجمالي الأعمدة بالضبط.
+  const totalColspan = 4; // يغطي الأعمدة 0..3 قبل خانة الكمية
+  const isInOut = (opts.docType === 'receive' || opts.docType === 'dispatch');
+  const trailingColspan = isInOut ? 5 : 6; // 4+1+5=10 (إدخال/صرف) — 4+1+6=11 (إرجاعات)
   const totalRow = `<tr class="total-row">
     <td colspan="${totalColspan}" style="text-align:right;font-weight:700;padding-left:12px">الإجمالي الكلي</td>
     <td class="ctr" style="font-size:12px;font-weight:800;color:${C.accent}">${totalQty.toLocaleString()}</td>
-    <td colspan="${(opts.docType === 'receive' || opts.docType === 'dispatch') ? 6 : 7}" style="text-align:right;font-size:9px;color:#666">${records.length} صنف</td>
+    <td colspan="${trailingColspan}" style="text-align:right;font-size:9px;color:#666">${records.length} صنف</td>
   </tr>`;
 
   // ── تقسيم المواد على صفحات: 10 مواد لكل صفحة ──
@@ -5194,45 +5198,8 @@ async function saveAllReceive(){
   }
 }
 
-function saveReceive() {
-  if(!currentUser){ toast('يجب تسجيل الدخول أولاً','error'); return; }
-  const code = document.getElementById('rcv-code').value.trim();
-  const qty  = parseFloat(document.getElementById('rcv-qty').value);
-  if(!code){toast('يجب إدخال كود المادة','error'); return;}
-  const item = DB.items.find(i=>i.code===code||i.code.toUpperCase()===code.toUpperCase());
-  if(!item){toast('كود المادة غير موجود في قائمة المواد','error'); return;}
-  if(!qty||qty<=0){toast('يجب إدخال كمية صحيحة','error'); return;}
-  const wo = document.getElementById('rcv-workorder').value.trim();
-  if(wo && wo.length>9){ toast('أمر العمل يجب ألا يتجاوز 9 أرقام','error'); return; }
-  const n    = DB.receives.length+1;
-  const newRec = {
-    id:'RCV-'+String(n).padStart(4,'0'),
-    date:document.getElementById('rcv-date').value,
-    code:item.code, name:item.name, unit:item.unit, qty,
-    workorder:wo,
-    serial:document.getElementById('rcv-serial').value,
-    region:document.getElementById('rcv-region').value,
-    booknum:document.getElementById('rcv-booknum').value,
-    pagenum:document.getElementById('rcv-pagenum').value,
-    ref:document.getElementById('rcv-ref').value,
-    supplier:document.getElementById('rcv-supplier').value,
-    warehouse:document.getElementById('rcv-warehouse').value,
-    user:document.getElementById('rcv-receiver').value||'المستودعي',
-    notes:document.getElementById('rcv-notes').value
-  };
-  if(firebaseDB && initialSyncCompleted) {
-    const fbKey = firebaseDB.ref('erpdata/receives').push().key;
-    newRec._fbKey = fbKey;
-    const { _fbKey, ...clean } = newRec;
-    firebaseDB.ref('erpdata/receives/' + fbKey).set(clean)
-      .catch(e => console.warn('saveReceive push error:', e));
-  }
-  DB.receives.push(newRec);
-  _syncBalancesFromRecords([newRec.code]);
-  saveLocal();
-  toast('تم حفظ الإدخال بنجاح ✓');
-  clearReceive(); initReceive(); renderRcvRecent(); renderDashboard();
-}
+// ملاحظة: دالة saveReceive() القديمة (إدخال مادة واحدة بترقيم length+1 غير الذرّي)
+// حُذفت — المسار المعتمد هو saveAllReceive() الذي يستخدم عدّاد Firebase الذرّي _getNextSerial('RCV').
 
 function clearReceive(){
   // rcv-workorder و rcv-ref تبقى ثابتة بعد الحفظ
@@ -5256,14 +5223,14 @@ function renderRcvRecent(){
         + '<button class=\"btn btn-sm\" style=\"color:var(--red-l);border-color:var(--red);margin-right:4px\" onclick=\"deleteTxn(\'in\',\''+r.id+'\')\">🗑</button>'
       : '<span style="color:var(--text3);font-size:11px">—</span>';
     return '<tr>'
-      + '<td><span class="code-chip">'+r.id+'</span></td>'
-      + '<td>'+r.date+'</td>'
-      + '<td style="font-family:monospace;color:var(--blue-l)">'+(r.workorder||'—')+'</td>'
-      + '<td><span class="code-chip">'+r.code+'</span></td>'
-      + '<td>'+r.name+'</td>'
-      + '<td><strong>'+r.qty.toLocaleString()+'</strong> '+r.unit+'</td>'
-      + '<td>'+(r.supplier||'—')+'</td>'
-      + '<td>'+r.warehouse+'</td>'
+      + '<td><span class="code-chip">'+esc(r.id)+'</span></td>'
+      + '<td>'+esc(r.date)+'</td>'
+      + '<td style="font-family:monospace;color:var(--blue-l)">'+(esc(r.workorder)||'—')+'</td>'
+      + '<td><span class="code-chip">'+esc(r.code)+'</span></td>'
+      + '<td>'+esc(r.name)+'</td>'
+      + '<td><strong>'+r.qty.toLocaleString()+'</strong> '+esc(r.unit)+'</td>'
+      + '<td>'+(esc(r.supplier)||'—')+'</td>'
+      + '<td>'+esc(r.warehouse)+'</td>'
       + '<td style="white-space:nowrap">'+btns+'</td>'
       + '</tr>';
   }).join('');
@@ -5296,7 +5263,7 @@ function addItemToDspList(){
   const s = getStock(item.code);
   if(s.balance < 0){ toast('لا يوجد رصيد متاح لهذه المادة','error'); return; }
   if(qty+queued>s.balance){ toast('الكمية ('+qty+') تتجاوز الرصيد المتاح ('+s.balance+') — لا يمكن الصرف بالسالب','error'); return; }
-  _dspList.push({ code:item.code, name:item.name, unit:item.unit, qty, balance:s.balance, ref:document.getElementById('dsp-ref').value });
+  _dspList.push({ code:item.code, name:item.name, unit:item.unit, qty, balance:s.balance, ref:document.getElementById('dsp-ref').value, notes:(document.getElementById('dsp-notes')||{}).value||'' });
   renderDspList();
   ['dsp-code','dsp-name','dsp-balance','dsp-qty'].forEach(id=>document.getElementById(id).value='');
   // dsp-ref يبقى ثابتاً مشترك بين كل المواد في نفس السند
@@ -5443,47 +5410,8 @@ async function saveAllDispatch(){
   }
 }
 
-function saveDispatch(){
-  if(!currentUser){ toast('يجب تسجيل الدخول أولاً','error'); return; }
-  const code=document.getElementById('dsp-code').value.trim();
-  const qty=parseFloat(document.getElementById('dsp-qty').value);
-  if(!code){toast('يجب إدخال كود المادة','error'); return;}
-  const item=DB.items.find(i=>i.code===code||i.code.toUpperCase()===code.toUpperCase());
-  if(!item){toast('كود المادة غير موجود','error'); return;}
-  if(!qty||qty<=0){toast('يجب إدخال كمية صحيحة','error'); return;}
-  const s=getStock(item.code);
-  if(s.balance<0){toast('لا يوجد رصيد متاح لهذه المادة — لا يمكن الصرف بالسالب','error'); return;}
-  if(qty>s.balance){toast('الكمية ('+qty+') تتجاوز الرصيد المتاح ('+s.balance+') — لا يمكن الصرف بالسالب','error'); return;}
-  const wo=document.getElementById('dsp-workorder').value.trim();
-  if(wo && wo.length>9){ toast('أمر العمل يجب ألا يتجاوز 9 أرقام','error'); return; }
-  const n=DB.dispatches.length+1;
-  const newDsp = {
-    id:'DSP-'+String(n).padStart(4,'0'),
-    date:document.getElementById('dsp-date').value,
-    code, name:item.name, unit:item.unit, qty,
-    workorder:document.getElementById('dsp-workorder').value,
-    serial:document.getElementById('dsp-serial').value,
-    region:document.getElementById('dsp-region').value,
-    booknum:document.getElementById('dsp-booknum').value,
-    pagenum:document.getElementById('dsp-pagenum').value,
-    ref:document.getElementById('dsp-ref').value,
-    dept:document.getElementById('dsp-dept').value,
-    warehouse:document.getElementById('dsp-warehouse').value,
-    user:document.getElementById('dsp-receiver').value||'المستودعي',
-    notes:document.getElementById('dsp-notes').value
-  };
-  if(firebaseDB && initialSyncCompleted) {
-    const fbKey = firebaseDB.ref('erpdata/dispatches').push().key;
-    newDsp._fbKey = fbKey;
-    const { _fbKey, ...clean } = newDsp;
-    firebaseDB.ref('erpdata/dispatches/' + fbKey).set(clean)
-      .catch(e => console.warn('saveDispatch push error:', e));
-  }
-  DB.dispatches.push(newDsp);
-  saveLocal();
-  toast('تم حفظ الصرف بنجاح ✓');
-  _currentDspId = null; clearDispatch(); initDispatch(); renderDspRecent();
-}
+// ملاحظة: دالة saveDispatch() القديمة (صرف مادة واحدة بترقيم length+1 غير الذرّي)
+// حُذفت — المسار المعتمد هو saveAllDispatch() الذي يستخدم عدّاد Firebase الذرّي.
 
 function clearDispatch(){
   // dsp-workorder و dsp-ref تبقى ثابتة بعد الحفظ
@@ -5508,14 +5436,14 @@ function renderDspRecent(){
         + '<button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red);margin-right:4px" onclick="deleteTxn(\'out\',\''+d.id+'\')">🗑</button>'
       : '<span style="color:var(--text3);font-size:11px">—</span>';
     return '<tr>'
-      + '<td><span class="code-chip">'+d.id+'</span></td>'
-      + '<td>'+d.date+'</td>'
-      + '<td style="font-family:monospace;color:var(--blue-l)">'+(d.workorder||'—')+'</td>'
-      + '<td><span class="code-chip">'+d.code+'</span></td>'
-      + '<td>'+d.name+'</td>'
-      + '<td><strong>'+d.qty.toLocaleString()+'</strong> '+d.unit+'</td>'
-      + '<td>'+(d.dept||'—')+'</td>'
-      + '<td>'+d.warehouse+'</td>'
+      + '<td><span class="code-chip">'+esc(d.id)+'</span></td>'
+      + '<td>'+esc(d.date)+'</td>'
+      + '<td style="font-family:monospace;color:var(--blue-l)">'+(esc(d.workorder)||'—')+'</td>'
+      + '<td><span class="code-chip">'+esc(d.code)+'</span></td>'
+      + '<td>'+esc(d.name)+'</td>'
+      + '<td><strong>'+d.qty.toLocaleString()+'</strong> '+esc(d.unit)+'</td>'
+      + '<td>'+(esc(d.dept)||'—')+'</td>'
+      + '<td>'+esc(d.warehouse)+'</td>'
       + '<td style="white-space:nowrap">'+btns+'</td>'
       + '</tr>';
   }).join('');
@@ -7863,7 +7791,7 @@ function showCustodyPreview(custody){
   document.getElementById('cust-pdf-modal-title').textContent = '👁 معاينة — ' + custody.id + ' — ' + custody.receiver;
   document.getElementById('cust-pdf-content').innerHTML = _buildCustodyPDFHTML(custody, false);
   document.getElementById('cust-pdf-modal-actions').innerHTML = `
-    <button class="btn btn-success" onclick="confirmSaveCustody()" style="font-size:14px;padding:8px 24px">✅ تأكيد الحفظ + Word + PDF</button>
+    <button class="btn btn-success" onclick="confirmSaveCustody()" style="font-size:14px;padding:8px 24px">✅ تأكيد الحفظ وتوليد PDF</button>
     <button class="btn btn-primary btn-sm" onclick="printCustodyPDF()">🖨️ طباعة فقط</button>
     <button class="btn btn-sm" onclick="closeCustodyPDF();_pendingCustody=null">✕ رجوع للتعديل</button>
   `;
@@ -7883,7 +7811,7 @@ async function confirmSaveCustody(){
       const res=await _runInventoryTransactionBatch(batchOps);
       if (!res.success){
         toast('فشل خصم المخزون: '+res.error,'error');
-        if(confirmBtn){confirmBtn.disabled=false;confirmBtn.textContent='✅ تأكيد الحفظ + Word + PDF';}
+        if(confirmBtn){confirmBtn.disabled=false;confirmBtn.textContent='✅ تأكيد الحفظ وتوليد PDF';}
         return;
       }
     } else {
@@ -7891,7 +7819,7 @@ async function confirmSaveCustody(){
         const s=getStock(it.code);
         if(it.qty>s.balance){
           toast('رصيد '+it.name+' غير كافٍ ('+s.balance+' متاح)','error');
-          if(confirmBtn){confirmBtn.disabled=false;confirmBtn.textContent='✅ تأكيد الحفظ + Word + PDF';}
+          if(confirmBtn){confirmBtn.disabled=false;confirmBtn.textContent='✅ تأكيد الحفظ وتوليد PDF';}
           return;
         }
       }
@@ -7939,14 +7867,14 @@ async function confirmSaveCustody(){
     custClearAll();
     renderCustodyTable();
 
-    exportCustodyWord(custodyToExport);
+    // تم إلغاء تصدير Word (كان غير منظّم) — يُكتفى بالـ PDF النظيف
     setTimeout(()=>{ _pdfPrintCustody=custodyToExport; printCustodyPDF(); }, 700);
 
     toast('✓ تم حفظ العهدة '+custody.id);
   } catch(e){
     console.error('confirmSaveCustody error:',e);
     toast('خطأ: '+(e.message||e),'error');
-    if(confirmBtn){confirmBtn.disabled=false;confirmBtn.textContent='✅ تأكيد الحفظ + Word + PDF';}
+    if(confirmBtn){confirmBtn.disabled=false;confirmBtn.textContent='✅ تأكيد الحفظ وتوليد PDF';}
   }
 }
 
@@ -8083,7 +8011,6 @@ function renderCustodyTable(){
         <td>${badge}</td>
         <td>${c.returnDate ? esc(c.returnDate) : '<span style="color:var(--amber-l);font-size:12px">لم يتم الإرجاع</span>'}</td>
         <td style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="btn btn-sm" onclick="exportCustodyWord(${cJ})" title="تنزيل Word">📝 Word</button>
           <button class="btn btn-sm" style="background:var(--purple-bg);border-color:var(--purple);color:var(--purple-l)" onclick="previewCustodyPDF(${cJ})" title="معاينة وطباعة PDF">📄 PDF</button>
           ${c.status==='active'?`<button class="btn btn-success btn-sm" onclick="returnCustody('${c.id}')">↩ إرجاع</button>`:''}
           ${canEdit?`<button class="btn btn-sm" onclick="openCustodyEdit('${c.id}')" title="تعديل">✏️</button>`:''}
@@ -8102,6 +8029,9 @@ function renderCustodyTable(){
 function exportCustodyWord(custody){
   // تصدير Word بدون مكتبة خارجية عبر HTML→Word blob
   const GOLD='#B8860B', DARK='#1A1A2E', LIGHT='#F8F4E8';
+  // 🔧 إصلاح: كان LOGO غير معرّف هنا فيسبب ReferenceError ويكسر تصدير Word
+  const LOGO = (typeof _getCustodyLogo==='function' ? _getCustodyLogo()
+              : (typeof _getSanibiLogo==='function' ? _getSanibiLogo() : '')) || '';
   const salfaLine = custody.salfa
     ? ` وذلك على سبيل ${custody.salfa}.`
     : `.`;
@@ -9041,6 +8971,18 @@ async function saveAllReturnReceive(){
         toast('فشل إرجاع الإدخال: ' + batchResult.error, 'error');
         return;
       }
+    } else {
+      // 🔧 وضع offline: إرجاع الإدخال يقلّل الرصيد — تحقق محلياً ألا يصبح بالسالب
+      const need = {};
+      _rrcvList.forEach(it => { need[it.code] = (need[it.code]||0) + it.qty; });
+      for(const code in need){
+        const bal = getStock(code).balance;
+        if(need[code] > bal){
+          const nm = (DB.items.find(i=>i.code===code)||{}).name || code;
+          toast('رصيد '+nm+' غير كافٍ لإرجاع الإدخال ('+bal+' متاح)','error');
+          return;
+        }
+      }
     }
 
     const firstRrcvSerial = await _getNextSerial('RRCV');
@@ -9387,44 +9329,8 @@ function initReturnReceive(){
   const rrcvRcvr = document.getElementById('rrcv-receiver');
   if(rrcvRcvr && !rrcvRcvr.value && currentUser) rrcvRcvr.value = currentUser.fullname;
 }
-function saveReturnReceive(){
-  if(!currentUser){toast('يجب تسجيل الدخول','error');return;}
-  const code=document.getElementById('rrcv-code').value.trim();
-  const qty=parseFloat(document.getElementById('rrcv-qty').value);
-  if(!code){toast('يجب إدخال كود المادة','error');return;}
-  const item=DB.items.find(i=>i.code===code);
-  if(!item){toast('كود المادة غير موجود','error');return;}
-  if(!qty||qty<=0){toast('يجب إدخال كمية صحيحة','error');return;}
-  const rrcv_wo=document.getElementById('rrcv-workorder').value.trim();
-  if(rrcv_wo && rrcv_wo.length>9){ toast('أمر العمل يجب ألا يتجاوز 9 أرقام','error'); return; }
-  const n=DB.returnReceives.length+1;
-  const newRRcv = {
-    id:'RRCV-'+String(n).padStart(4,'0'),
-    date:document.getElementById('rrcv-date').value,
-    code,name:item.name,unit:item.unit,qty,
-    workorder:document.getElementById('rrcv-workorder').value,
-    serial:document.getElementById('rrcv-serial').value,
-    region:document.getElementById('rrcv-region').value,
-    booknum:document.getElementById('rrcv-booknum').value,
-    pagenum:document.getElementById('rrcv-pagenum').value,
-    ref:document.getElementById('rrcv-ref').value,
-    warehouse:document.getElementById('rrcv-warehouse').value,
-    user:document.getElementById('rrcv-receiver').value||currentUser.fullname,
-    notes:document.getElementById('rrcv-notes').value
-  };
-  // حفظ في Firebase كـ object مستقل بـ fbKey لضمان الحذف الصحيح لاحقاً
-  if(firebaseDB && initialSyncCompleted){
-    const fbKey = firebaseDB.ref('erpdata/returnReceives').push().key;
-    newRRcv._fbKey = fbKey;
-    const{_fbKey,...clean}=newRRcv;
-    firebaseDB.ref('erpdata/returnReceives/'+fbKey).set(clean)
-      .catch(e=>console.warn('saveReturnReceive Firebase error:',e));
-  }
-  DB.returnReceives.push(newRRcv);
-  saveLocal();
-  toast('تم حفظ إرجاع الإدخال ✓');
-  _currentRrcvId = null; clearReturnReceive();initReturnReceive();renderReturnRcvRecent();renderDashboard();
-}
+// ملاحظة: دالة saveReturnReceive() القديمة (مادة واحدة بترقيم length+1 غير الذرّي)
+// حُذفت — المسار المعتمد هو saveAllReturnReceive() الذي يستخدم عدّاد Firebase الذرّي.
 function clearReturnReceive(){
   const savedDept = document.getElementById('rrcv-dept') ? document.getElementById('rrcv-dept').value : '';
   const savedWo   = document.getElementById('rrcv-workorder') ? document.getElementById('rrcv-workorder').value : '';
@@ -9505,44 +9411,8 @@ function initReturnDispatch(){
   const rdspRcvr = document.getElementById('rdsp-receiver');
   if(rdspRcvr && !rdspRcvr.value && currentUser) rdspRcvr.value = currentUser.fullname;
 }
-function saveReturnDispatch(){
-  if(!currentUser){toast('يجب تسجيل الدخول','error');return;}
-  const code=document.getElementById('rdsp-code').value.trim();
-  const qty=parseFloat(document.getElementById('rdsp-qty').value);
-  if(!code){toast('يجب إدخال كود المادة','error');return;}
-  const item=DB.items.find(i=>i.code===code);
-  if(!item){toast('كود المادة غير موجود','error');return;}
-  if(!qty||qty<=0){toast('يجب إدخال كمية صحيحة','error');return;}
-  const rdsp_wo=document.getElementById('rdsp-workorder').value.trim();
-  if(rdsp_wo && rdsp_wo.length>9){ toast('أمر العمل يجب ألا يتجاوز 9 أرقام','error'); return; }
-  const n=DB.returnDispatches.length+1;
-  const newRDsp = {
-    id:'RDSP-'+String(n).padStart(4,'0'),
-    date:document.getElementById('rdsp-date').value,
-    code,name:item.name,unit:item.unit,qty,
-    workorder:document.getElementById('rdsp-workorder').value,
-    serial:document.getElementById('rdsp-serial').value,
-    region:document.getElementById('rdsp-region').value,
-    booknum:document.getElementById('rdsp-booknum').value,
-    pagenum:document.getElementById('rdsp-pagenum').value,
-    ref:document.getElementById('rdsp-ref').value,
-    warehouse:document.getElementById('rdsp-warehouse').value,
-    user:document.getElementById('rdsp-receiver').value||currentUser.fullname,
-    notes:document.getElementById('rdsp-notes').value
-  };
-  // حفظ في Firebase كـ object مستقل بـ fbKey لضمان الحذف الصحيح لاحقاً
-  if(firebaseDB && initialSyncCompleted){
-    const fbKey = firebaseDB.ref('erpdata/returnDispatches').push().key;
-    newRDsp._fbKey = fbKey;
-    const{_fbKey,...clean}=newRDsp;
-    firebaseDB.ref('erpdata/returnDispatches/'+fbKey).set(clean)
-      .catch(e=>console.warn('saveReturnDispatch Firebase error:',e));
-  }
-  DB.returnDispatches.push(newRDsp);
-  saveLocal();
-  toast('تم حفظ إرجاع الصرف ✓');
-  _currentRdspId = null; clearReturnDispatch();initReturnDispatch();renderReturnDspRecent();renderDashboard();
-}
+// ملاحظة: دالة saveReturnDispatch() القديمة (مادة واحدة بترقيم length+1 غير الذرّي)
+// حُذفت — المسار المعتمد هو saveAllReturnDispatch() الذي يستخدم عدّاد Firebase الذرّي.
 function clearReturnDispatch(){
   const savedDept = document.getElementById('rdsp-dept') ? document.getElementById('rdsp-dept').value : '';
   const savedWo   = document.getElementById('rdsp-workorder') ? document.getElementById('rdsp-workorder').value : '';
@@ -10917,7 +10787,9 @@ function confirmReceiveExt(reqId,woIndex,btn) {
     .finally(()=>{
       toast('تم الاستلام وإدخال المواد للمخزون ✓');
       document.querySelector('.modal-overlay[style*="10000"]')?.remove();
-      renderExtRequests();loadDB();
+      // 🔧 إصلاح: كانت loadDB() غير معرّفة (ReferenceError) — المقصود تحديث الواجهة
+      renderExtRequests();renderDashboard();
+      if(currentPage==='movements') renderMovements();
     });
 }
 
