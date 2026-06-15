@@ -600,7 +600,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
         <table><thead><tr>
           <th>رقم العملية</th><th>التاريخ</th><th>أمر العمل</th><th>الكود</th><th>المادة</th>
-          <th>الكمية</th><th>المورد</th><th>المستودع</th><th>الإجراءات</th>
+          <th>الكمية</th><th>المورد</th><th>المستخدم</th><th>الإجراءات</th>
         </tr></thead>
         <tbody id="rcv-recent"></tbody></table>
       </div>
@@ -720,7 +720,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
         <table><thead><tr>
           <th>رقم العملية</th><th>التاريخ</th><th>أمر العمل</th><th>الكود</th><th>المادة</th>
-          <th>الكمية</th><th>الجهة</th><th>المستودع</th><th>الإجراءات</th>
+          <th>الكمية</th><th>الجهة</th><th>المستخدم</th><th>الإجراءات</th>
         </tr></thead>
         <tbody id="dsp-recent"></tbody></table>
       </div>
@@ -836,7 +836,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <span class="panel-title"><span class="dot dot-amber"></span>آخر إرجاعات الإدخال</span>
         </div>
         <table><thead><tr>
-          <th>رقم العملية</th><th>التاريخ</th><th>أمر العمل</th><th>الكود</th><th>المادة</th><th>الكمية</th><th>المستودع</th><th>الإجراءات</th>
+          <th>رقم العملية</th><th>التاريخ</th><th>أمر العمل</th><th>الكود</th><th>المادة</th><th>الكمية</th><th>المستخدم</th><th>الإجراءات</th>
         </tr></thead><tbody id="rrcv-recent"></tbody></table>
       </div>
     </div>
@@ -950,7 +950,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           <span class="panel-title"><span class="dot dot-purple"></span>آخر إرجاعات الصرف</span>
         </div>
         <table><thead><tr>
-          <th>رقم العملية</th><th>التاريخ</th><th>أمر العمل</th><th>الكود</th><th>المادة</th><th>الكمية</th><th>المستودع</th><th>الإجراءات</th>
+          <th>رقم العملية</th><th>التاريخ</th><th>أمر العمل</th><th>الكود</th><th>المادة</th><th>الكمية</th><th>المستخدم</th><th>الإجراءات</th>
         </tr></thead><tbody id="rdsp-recent"></tbody></table>
       </div>
     </div>
@@ -1452,6 +1452,8 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
             <span class="search-icon">🔎</span>
             <input type="text" placeholder="بحث برقم أمر العمل أو الوصف..." id="wo-search" oninput="renderWorkOrdersTable()">
           </div>
+          <input type="date" id="wo-date-filter" class="filter-select" onchange="renderWorkOrdersTable()" title="تصفية بالتاريخ" style="max-width:160px">
+          <button class="btn btn-sm" onclick="document.getElementById('wo-date-filter').value='';renderWorkOrdersTable()" title="مسح فلتر التاريخ">✕ التاريخ</button>
           <button class="btn btn-sm" onclick="exportWoReport()">📊 تصدير Excel</button>
           <button class="btn btn-sm" onclick="exportWoPDF()">📄 PDF</button>
           <button class="btn btn-sm" onclick="printWoReport()">🖨 طباعة</button>
@@ -5327,7 +5329,7 @@ function renderRcvRecent(){
       + '<td>'+esc(r.name)+'</td>'
       + '<td><strong>'+r.qty.toLocaleString()+'</strong> '+esc(r.unit)+'</td>'
       + '<td>'+(esc(r.supplier)||'—')+'</td>'
-      + '<td>'+esc(r.warehouse)+'</td>'
+      + '<td>'+(esc(r.user)||'—')+'</td>'
       + '<td style="white-space:nowrap">'+btns+'</td>'
       + '</tr>';
   }).join('');
@@ -5540,7 +5542,7 @@ function renderDspRecent(){
       + '<td>'+esc(d.name)+'</td>'
       + '<td><strong>'+d.qty.toLocaleString()+'</strong> '+esc(d.unit)+'</td>'
       + '<td>'+(esc(d.dept)||'—')+'</td>'
-      + '<td>'+esc(d.warehouse)+'</td>'
+      + '<td>'+(esc(d.user)||'—')+'</td>'
       + '<td style="white-space:nowrap">'+btns+'</td>'
       + '</tr>';
   }).join('');
@@ -6039,8 +6041,11 @@ function renderMovements(){
          <button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red);margin-right:4px" onclick="deleteExtRequestFromMovements('${m.id}')" title="حذف الطلب">🗑</button>`;
       }
     }
+    // رقم نظيف للعرض: العهدة/المحوّل/الطلب الخارجي يظهر رقم السند فقط (بدون كود المادة)
+    const dispId = m._custodyRef || m._wotRef
+      || (m.type==='ext-recv' ? (String(m.serial||'').replace(/^EXT-/,'') || m.id) : m.id);
     return `<tr>
-      <td><span class="code-chip">${esc(m.id)}</span></td>
+      <td><span class="code-chip">${esc(dispId)}</span></td>
       <td>${badge}</td>
       <td>${esc(m.date)||'—'}</td>
       <td><span class="code-chip">${esc(m.code)}</span></td>
@@ -6572,7 +6577,6 @@ function printReceivePage(){
     <td style="font-weight:700;color:#2E7D32">${r.qty.toLocaleString()}</td>
     <td>${esc(r.workorder)||'—'}</td>
     <td>${esc(r.supplier)||'—'}</td>
-    <td>${r.warehouse||'—'}</td>
     <td>${r.user||'—'}</td>
   </tr>`).join('');
   const summary =
@@ -6580,7 +6584,7 @@ function printReceivePage(){
     `<div class="sum-card"><div class="lbl">إجمالي الكميات</div><div class="val" style="color:#2E7D32">${data.reduce((s,r)=>s+r.qty,0).toLocaleString()}</div></div>`;
   const table = `<table><thead><tr>
     <th>#</th><th>رقم السند</th><th>التاريخ</th><th>الكود</th><th>المادة</th><th>الوحدة</th>
-    <th>الكمية</th><th>أمر العمل</th><th>المورد</th><th>المستودع</th><th>المسؤول</th>
+    <th>الكمية</th><th>أمر العمل</th><th>المورد</th><th>المسؤول</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
   _openPrintWindow('سجل الإدخال', table, summary);
 }
@@ -6598,7 +6602,6 @@ function printDispatchPage(){
     <td style="font-weight:700;color:#c62828">${d.qty.toLocaleString()}</td>
     <td>${esc(d.workorder)||'—'}</td>
     <td>${esc(d.dept)||'—'}</td>
-    <td>${d.warehouse||'—'}</td>
     <td>${d.user||'—'}</td>
   </tr>`).join('');
   const summary =
@@ -6606,7 +6609,7 @@ function printDispatchPage(){
     `<div class="sum-card"><div class="lbl">إجمالي الكميات</div><div class="val" style="color:#c62828">${data.reduce((s,d)=>s+d.qty,0).toLocaleString()}</div></div>`;
   const table = `<table><thead><tr>
     <th>#</th><th>رقم السند</th><th>التاريخ</th><th>الكود</th><th>المادة</th><th>الوحدة</th>
-    <th>الكمية</th><th>أمر العمل</th><th>الجهة</th><th>المستودع</th><th>المسؤول</th>
+    <th>الكمية</th><th>أمر العمل</th><th>الجهة</th><th>المسؤول</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
   _openPrintWindow('سجل الصرف', table, summary);
 }
@@ -6624,7 +6627,6 @@ function printReturnReceivePage(){
     <td style="font-weight:700;color:#f57f17">${r.qty.toLocaleString()}</td>
     <td>${esc(r.workorder)||'—'}</td>
     <td>${esc(r.dept)||'—'}</td>
-    <td>${r.warehouse||'—'}</td>
     <td>${r.user||'—'}</td>
   </tr>`).join('');
   const summary =
@@ -6632,7 +6634,7 @@ function printReturnReceivePage(){
     `<div class="sum-card"><div class="lbl">إجمالي الكميات المرتجعة</div><div class="val" style="color:#f57f17">${data.reduce((s,r)=>s+r.qty,0).toLocaleString()}</div></div>`;
   const table = `<table><thead><tr>
     <th>#</th><th>رقم السند</th><th>التاريخ</th><th>الكود</th><th>المادة</th><th>الوحدة</th>
-    <th>الكمية</th><th>أمر العمل</th><th>الجهة/المورد</th><th>المستودع</th><th>المسؤول</th>
+    <th>الكمية</th><th>أمر العمل</th><th>الجهة/المورد</th><th>المسؤول</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
   _openPrintWindow('سجل إرجاع الإدخال', table, summary);
 }
@@ -6650,7 +6652,6 @@ function printReturnDispatchPage(){
     <td style="font-weight:700;color:#7B1FA2">${d.qty.toLocaleString()}</td>
     <td>${esc(d.workorder)||'—'}</td>
     <td>${esc(d.dept)||'—'}</td>
-    <td>${d.warehouse||'—'}</td>
     <td>${d.user||'—'}</td>
   </tr>`).join('');
   const summary =
@@ -6658,7 +6659,7 @@ function printReturnDispatchPage(){
     `<div class="sum-card"><div class="lbl">إجمالي الكميات</div><div class="val" style="color:#7B1FA2">${data.reduce((s,d)=>s+d.qty,0).toLocaleString()}</div></div>`;
   const table = `<table><thead><tr>
     <th>#</th><th>رقم السند</th><th>التاريخ</th><th>الكود</th><th>المادة</th><th>الوحدة</th>
-    <th>الكمية</th><th>أمر العمل</th><th>الجهة</th><th>المستودع</th><th>المسؤول</th>
+    <th>الكمية</th><th>أمر العمل</th><th>الجهة</th><th>المسؤول</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
   _openPrintWindow('سجل إرجاع الصرف', table, summary);
 }
@@ -6999,7 +7000,7 @@ function printMovementsOnly(){
   if(deptF)   all=all.filter(m=>(m.dept||m.supplier||'').toLowerCase().includes(deptF));
 
   const rows = all.map((m,i) => `<tr style="${i%2===1?'background:#f9f9f9':''}">
-    <td style="font-family:monospace;font-size:11px">${m.id}</td>
+    <td style="font-family:monospace;font-size:11px">${esc(m._custodyRef||m._wotRef||(m.type==='ext-recv'?(String(m.serial||'').replace(/^EXT-/,'')||m.id):m.id))}</td>
     <td style="color:${TYPE_COLORS[m.type]||'#333'};font-weight:600">${MOV_LABELS[m.type]||m.type}</td>
     <td>${m.date}</td>
     <td style="font-family:monospace;font-size:11px">${esc(m.code)}</td>
@@ -9587,7 +9588,7 @@ function renderReturnRcvRecent(){
     <td><span class="code-chip">${esc(r.code)}</span></td>
     <td>${esc(r.name)}</td>
     <td><strong>${r.qty.toLocaleString()}</strong> ${esc(r.unit)}</td>
-    <td>${r.warehouse||'—'}</td>
+    <td>${esc(r.user)||'—'}</td>
     <td style="white-space:nowrap">${btns}</td>
   </tr>`;
   }).join('');
@@ -9691,7 +9692,7 @@ function renderReturnDspRecent(){
     <td><span class="code-chip">${esc(d.code)}</span></td>
     <td>${esc(d.name)}</td>
     <td><strong>${d.qty.toLocaleString()}</strong> ${esc(d.unit)}</td>
-    <td>${d.warehouse||'—'}</td>
+    <td>${esc(d.user)||'—'}</td>
     <td style="white-space:nowrap">${btns}</td>
   </tr>`;
   }).join('');
@@ -9865,12 +9866,15 @@ function generateReport(){
       <th style="color:var(--purple-l)">إرجاع صرف</th>
       <th style="color:var(--red-l);font-weight:800">صافي المسحوب</th>
       <th style="color:var(--blue-l);font-weight:800">الكمية المخططة</th>
+      <th style="color:#38BDF8;font-weight:800">الفرق (المخطط − الصرف)</th>
     </tr>`;
 
     document.getElementById('report-tbody').innerHTML=grouped.map((m,i)=>{
       const netIn  = m.qtyIn  - m.retIn;
       const netOut = m.qtyOut - m.retOut;
       const planned = plannedMap[m.code] || 0;
+      const diff = planned - netOut; // الفرق = المخطط − المسحوب (الباقي من المخطط)
+      const diffColor = diff<0 ? 'var(--red-l)' : (diff>0 ? 'var(--amber-l)' : 'var(--green-l)');
       return `<tr>
         <td>${i+1}</td>
         <td><span class="code-chip">${esc(m.code)}</span></td>
@@ -9885,6 +9889,7 @@ function generateReport(){
         <td style="color:var(--purple-l)">${m.retOut>0?'<span style="color:var(--purple-l)">↪ -'+m.retOut.toLocaleString()+'</span>':'—'}</td>
         <td><strong style="font-size:14px;color:var(--red-l)">${netOut.toLocaleString()}</strong></td>
         <td><strong style="font-size:14px;color:var(--blue-l)">${planned>0?planned.toLocaleString():'—'}</strong></td>
+        <td><strong style="font-size:14px;color:${diffColor}">${diff>0?'+':''}${diff.toLocaleString()}</strong></td>
       </tr>`;
     }).join('');
 
@@ -9897,13 +9902,17 @@ function generateReport(){
     // ── حفظ الصفوف المجمّعة للتصدير (نفس أعمدة الشاشة، بدون رموز) ──
     _reportGrouped = grouped.map(m=>{
       const planned = plannedMap[m.code] || 0;
+      const netOut = m.qtyOut-m.retOut;
       return {
         code:m.code, name:m.name, unit:m.unit,
         qtyIn:m.qtyIn, fromExt:m.fromExt, retIn:m.retIn, netIn:m.qtyIn-m.retIn,
-        qtyOut:m.qtyOut, fromWot:m.fromWot, retOut:m.retOut, netOut:m.qtyOut-m.retOut,
-        planned
+        qtyOut:m.qtyOut, fromWot:m.fromWot, retOut:m.retOut, netOut,
+        planned, diff: netOut - planned
       };
     });
+    const totPlanned = Object.values(plannedMap).reduce((s,v)=>s+v,0);
+    const totDiff = totPlanned - totNetOut;
+    const totDiffColor = totDiff<0?'var(--red-l)':(totDiff>0?'var(--amber-l)':'var(--green-l)');
     document.getElementById('report-tbody').innerHTML += `<tr style="background:var(--bg3);font-weight:700;border-top:2px solid var(--border2)">
       <td colspan="4" style="text-align:center;color:var(--text2)">الإجمالي</td>
       <td style="color:var(--green-l)">${totalIn.toLocaleString()}</td>
@@ -9914,7 +9923,8 @@ function generateReport(){
       <td style="color:#B8860B">${totFromWot>0?'🚚 '+totFromWot.toLocaleString():'—'}</td>
       <td style="color:var(--purple-l)">${totalRO>0?'↪ -'+totalRO.toLocaleString():'—'}</td>
       <td style="color:var(--red-l);font-size:15px">${totNetOut.toLocaleString()}</td>
-      <td style="color:var(--blue-l);font-size:15px">${Object.values(plannedMap).reduce((s,v)=>s+v,0)>0?Object.values(plannedMap).reduce((s,v)=>s+v,0).toLocaleString():'—'}</td>
+      <td style="color:var(--blue-l);font-size:15px">${totPlanned>0?totPlanned.toLocaleString():'—'}</td>
+      <td style="color:${totDiffColor};font-size:15px">${totDiff>0?'+':''}${totDiff.toLocaleString()}</td>
     </tr>`;
 
     document.getElementById('rpt-count').textContent=grouped.length+' مادة';
@@ -10122,10 +10132,17 @@ function exportReportPDF(){
     const totalRO =_reportData.filter(d=>d._type==='↪ إرجاع صرف').reduce((s,r)=>s+r.qty,0);
     const totNetIn =grouped.reduce((s,m)=>s+(m.qtyIn-m.retIn),0);
     const totNetOut=grouped.reduce((s,m)=>s+(m.qtyOut-m.retOut),0);
+    const _plannedMap={};
+    (DB.workOrders||[]).filter(w=>(w.workorder||'').trim()===wo.trim()||(w.workorder||'').includes(wo))
+      .forEach(w=>{(w.items||[]).forEach(it=>{_plannedMap[it.code]=(_plannedMap[it.code]||0)+Number(it.qty||0);});});
+    const totPlanned=Object.values(_plannedMap).reduce((s,v)=>s+v,0);
+    const totDiff=totPlanned-totNetOut;
     const now=new Date().toLocaleString('ar-SA');
     const user=currentUser?currentUser.fullname:'—';
     let tbody=grouped.map((m,i)=>{
       const netIn=m.qtyIn-m.retIn, netOut=m.qtyOut-m.retOut;
+      const planned=_plannedMap[m.code]||0, diff=planned-netOut;
+      const diffClr=diff<0?'#c62828':(diff>0?'#f57f17':'#2E7D32');
       return '<tr style="'+(i%2===1?'background:#f9f9f9':'')+'">'
         +'<td style="text-align:center">'+(i+1)+'</td>'
         +'<td style="font-family:monospace;font-size:11px">'+m.code+'</td>'
@@ -10137,6 +10154,8 @@ function exportReportPDF(){
         +'<td style="color:#c62828;text-align:center">'+m.qtyOut.toLocaleString()+'</td>'
         +'<td style="color:#7B1FA2;text-align:center">'+(m.retOut>0?'↪ -'+m.retOut.toLocaleString():'—')+'</td>'
         +'<td style="color:#c62828;font-weight:700;text-align:center">'+netOut.toLocaleString()+'</td>'
+        +'<td style="color:#1565C0;font-weight:700;text-align:center">'+(planned>0?planned.toLocaleString():'—')+'</td>'
+        +'<td style="color:'+diffClr+';font-weight:700;text-align:center">'+(diff>0?'+':'')+diff.toLocaleString()+'</td>'
         +'</tr>';
     }).join('');
     tbody+='<tr style="background:#e8eaf6;font-weight:700;border-top:2px solid #3949AB">'
@@ -10147,6 +10166,8 @@ function exportReportPDF(){
       +'<td style="color:#c62828;text-align:center">'+totalOut.toLocaleString()+'</td>'
       +'<td style="color:#7B1FA2;text-align:center">'+(totalRO>0?'↪ -'+totalRO.toLocaleString():'—')+'</td>'
       +'<td style="color:#c62828;font-size:14px;text-align:center">'+totNetOut.toLocaleString()+'</td>'
+      +'<td style="color:#1565C0;font-size:14px;text-align:center">'+(totPlanned>0?totPlanned.toLocaleString():'—')+'</td>'
+      +'<td style="color:'+(totDiff<0?'#c62828':(totDiff>0?'#f57f17':'#2E7D32'))+';font-size:14px;text-align:center">'+(totDiff>0?'+':'')+totDiff.toLocaleString()+'</td>'
       +'</tr>';
     const html='<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">'
       +'<title>ملخص أمر العمل: '+wo+'</title>'
@@ -10178,6 +10199,7 @@ function exportReportPDF(){
       +'<th>#</th><th>الكود</th><th>المادة</th><th>الوحدة</th>'
       +'<th style="color:#c8e6c9">كمية الإدخال</th><th style="color:#ffe082">إرجاع إدخال</th><th style="color:#c8e6c9;font-weight:800">صافي الإدخال</th>'
       +'<th style="color:#ffcdd2">كمية الصرف</th><th style="color:#e1bee7">إرجاع صرف</th><th style="color:#ffcdd2;font-weight:800">صافي المسحوب</th>'
+      +'<th style="color:#bbdefb;font-weight:800">المخطط له</th><th style="color:#b3e5fc;font-weight:800">الفرق (المخطط − الصرف)</th>'
       +'</tr></thead><tbody>'+tbody+'</tbody></table>'
       +'<div class="footer">نظام إدارة المخزون — IMS Pro | تصميم: محمود حوم</div>'
       +'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},500);};<\/scr'+'ipt>'
@@ -10298,6 +10320,13 @@ function printReport(){
       <div class="sum-card"><div class="lbl">إجمالي الصرف</div><div class="val" style="color:#c62828">${totalOut.toLocaleString()}</div></div>
       <div class="sum-card"><div class="lbl">صافي المسحوب</div><div class="val" style="color:#c62828">${totNetOut.toLocaleString()}</div></div>`;
 
+    // خريطة المخطط له من أوامر العمل
+    const _plannedMap={};
+    (DB.workOrders||[]).filter(w=>(w.workorder||'').trim()===wo.trim()||(w.workorder||'').includes(wo))
+      .forEach(w=>{(w.items||[]).forEach(it=>{_plannedMap[it.code]=(_plannedMap[it.code]||0)+Number(it.qty||0);});});
+    const totPlanned=Object.values(_plannedMap).reduce((s,v)=>s+v,0);
+    const totDiff=totPlanned-totNetOut;
+
     theadHTML = `<tr>
       <th>#</th><th>الكود</th><th>المادة</th><th>الوحدة</th>
       <th style="color:#c8e6c9">كمية الإدخال</th>
@@ -10306,11 +10335,16 @@ function printReport(){
       <th style="color:#ffcdd2">كمية الصرف</th>
       <th style="color:#e1bee7">إرجاع صرف</th>
       <th style="color:#ffcdd2;font-weight:800">صافي المسحوب</th>
+      <th style="color:#bbdefb;font-weight:800">المخطط له</th>
+      <th style="color:#b3e5fc;font-weight:800">الفرق (المخطط − الصرف)</th>
     </tr>`;
 
     tbodyHTML = grouped.map((m,i)=>{
       const netIn  = m.qtyIn  - m.retIn;
       const netOut = m.qtyOut - m.retOut;
+      const planned=_plannedMap[m.code]||0;
+      const diff=planned-netOut;
+      const diffClr=diff<0?'#c62828':(diff>0?'#f57f17':'#2E7D32');
       return `<tr style="${i%2===1?'background:#f9f9f9':''}">
         <td style="text-align:center">${i+1}</td>
         <td style="font-family:monospace;font-size:11px">${esc(m.code)}</td>
@@ -10322,6 +10356,8 @@ function printReport(){
         <td style="color:#c62828;text-align:center">${m.qtyOut.toLocaleString()}</td>
         <td style="color:#7B1FA2;text-align:center">${m.retOut>0?'↪ -'+m.retOut.toLocaleString():'—'}</td>
         <td style="color:#c62828;font-weight:700;font-size:13px;text-align:center">${netOut.toLocaleString()}</td>
+        <td style="color:#1565C0;font-weight:700;text-align:center">${planned>0?planned.toLocaleString():'—'}</td>
+        <td style="color:${diffClr};font-weight:700;text-align:center">${diff>0?'+':''}${diff.toLocaleString()}</td>
       </tr>`;
     }).join('');
 
@@ -10333,6 +10369,8 @@ function printReport(){
       <td style="color:#c62828;text-align:center">${totalOut.toLocaleString()}</td>
       <td style="color:#7B1FA2;text-align:center">${totalRO>0?'↪ -'+totalRO.toLocaleString():'—'}</td>
       <td style="color:#c62828;font-size:14px;text-align:center">${totNetOut.toLocaleString()}</td>
+      <td style="color:#1565C0;font-size:14px;text-align:center">${totPlanned>0?totPlanned.toLocaleString():'—'}</td>
+      <td style="color:${totDiff<0?'#c62828':(totDiff>0?'#f57f17':'#2E7D32')};font-size:14px;text-align:center">${totDiff>0?'+':''}${totDiff.toLocaleString()}</td>
     </tr>`;
 
   } else if(type === 'stock'){
@@ -11505,8 +11543,12 @@ function renderReprintCustody(){
             عدد الأصناف: <b style="color:var(--text2)">${itemsCount}</b> &nbsp;•&nbsp; ${status}
           </div>
         </div>
-        <button class="btn" style="background:var(--blue-bg);border:1.5px solid var(--blue);color:var(--blue-l);font-weight:600;white-space:nowrap"
-          onclick="reprintCustody(${ci})">📄 معاينة وطباعة</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn" style="background:var(--blue-bg);border:1.5px solid var(--blue);color:var(--blue-l);font-weight:600;white-space:nowrap"
+            onclick="reprintCustody(${ci})">📄 سند التسليم</button>
+          ${c.status==='returned'?`<button class="btn" style="background:rgba(0,105,92,.14);border:1.5px solid #00695C;color:#26A69A;font-weight:600;white-space:nowrap"
+            onclick="reprintCustodyReturn(${ci})">↩ سند الإرجاع</button>`:''}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -11518,6 +11560,12 @@ function reprintCustody(i){
   const c = _reprintCustodyList[i];
   if(!c){ toast('تعذّر العثور على بيانات العهدة','error'); return; }
   previewCustodyPDF(c);
+}
+// إعادة طباعة سند الإرجاع للعهدة المرجعة
+function reprintCustodyReturn(i){
+  const c = _reprintCustodyList[i];
+  if(!c){ toast('تعذّر العثور على بيانات العهدة','error'); return; }
+  previewCustodyReturnPDF(c);
 }
 
 // ── إعادة طباعة التحويلات (محوّل من الصانبي) ──
@@ -11816,7 +11864,11 @@ function printSingleWorkOrder() {
 function renderWorkOrdersTable() {
   const tb=document.getElementById('wo-tbody'); if(!tb) return;
   const s=(document.getElementById('wo-search')||{}).value||'';
-  const list=(DB.workOrders||[]).filter(wo=>!s||(wo.workorder||'').includes(s)||(wo.desc||'').includes(s));
+  const dateF=(document.getElementById('wo-date-filter')||{}).value||'';
+  const list=(DB.workOrders||[]).filter(wo=>
+    (!s||(wo.workorder||'').includes(s)||(wo.desc||'').includes(s)) &&
+    (!dateF||(wo.date||'')===dateF)
+  );
   const pp=20, pages=Math.max(1,Math.ceil(list.length/pp));
   if(_woPage>pages) _woPage=1;
   const sl=list.slice((_woPage-1)*pp,_woPage*pp);
@@ -12073,6 +12125,15 @@ function generateWoSummaryReport(filterWo) {
     +'<td style="text-align:center;color:var(--purple-l)">'+sum('retOut')+'</td></tr>';
 }
 
+// فتح نافذة طباعة من HTML جاهز (للحفظ كـ PDF بدل تنزيل ملف HTML)
+function _printHTMLDoc(html){
+  const w=window.open('','_blank','width=1000,height=750');
+  if(!w){ toast('فعّل النوافذ المنبثقة للطباعة','error'); return false; }
+  w.document.open(); w.document.write(html); w.document.close();
+  w.onload=function(){ setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 500); };
+  return true;
+}
+
 function exportWoPDF(filterWoId) {
   const list = filterWoId
     ? (DB.workOrders||[]).filter(w=>w.id===filterWoId)
@@ -12130,14 +12191,7 @@ function exportWoPDF(filterWoId) {
     +'<div class="footer">IMS Pro — نظام إدارة المخزون | جميع الحقوق محفوظة</div>'
     +'\n</body></html>';
 
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = 'تقرير_أوامر_العمل_'+new Date().toISOString().slice(0,10)+'.html';
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(url), 3000);
-  toast('تم تصدير ملف HTML — افتحه ثم اطبع كـ PDF', 'success');
+  if(_printHTMLDoc(html)) toast('جاري فتح نافذة الطباعة — احفظ كـ PDF', 'success');
 }
 
 function exportWoPDF_byWo(woNum) {
@@ -12207,13 +12261,7 @@ function exportWoPDF_list(list, label) {
     +'<div class="footer">IMS Pro — نظام إدارة المخزون | جميع الحقوق محفوظة</div>'
     +'\n</body></html>';
 
-  const blob = new Blob([html],{type:'text/html;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'مواد_أمر_العمل_'+label+'_'+new Date().toISOString().slice(0,10)+'.html';
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
-  toast('تم التصدير — افتح الملف واطبع كـ PDF','success');
+  if(_printHTMLDoc(html)) toast('جاري فتح نافذة الطباعة — احفظ كـ PDF','success');
 }
 
 function generatePlannedReport(filterWo) {
