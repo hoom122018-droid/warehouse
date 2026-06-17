@@ -476,6 +476,7 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
       </button>
       <button data-title="سجل الحركات" class="nav-item" onclick="navigate('movements')"><span class="icon" style="color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v4H9z"/><path d="M8.5 11h7"/><path d="M8.5 15h7"/></svg></span> <span class="nav-text">سجل الحركات</span></button>
       <button data-title="التقارير" class="nav-item" onclick="navigate('reports')"><span class="icon" style="color:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></span> <span class="nav-text">التقارير</span></button>
+      <button data-title="مقارنة الفروقات" class="nav-item" onclick="navigate('compare')" id="nav-compare"><span class="icon" style="color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 7h14"/><path d="M5 7l-3 6a3 3 0 0 0 6 0z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0z"/></svg></span> <span class="nav-text">مقارنة الفروقات</span></button>
     </div>
     <div class="nav-section" id="nav-admin-section" style="display:none">
       <div class="nav-label">المدير</div>
@@ -1436,6 +1437,108 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
       </div>
     </div>
 
+
+    <!-- ══ COMPARE / VARIANCE PAGE ══ -->
+    <div class="page" id="page-compare">
+      <div class="form-panel" style="margin-bottom:16px">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot dot-blue"></span>⚖️ مقارنة أوامر العمل — الفروقات</span>
+          <span id="compare-count" style="font-size:12px;color:var(--text2);font-weight:600">—</span>
+        </div>
+        <div class="panel-body" style="padding:14px 20px">
+          <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <div class="field" style="flex:1;min-width:150px">
+              <label>اعرض / قارِن (القيمة الأولى)</label>
+              <select id="cmp-a" onchange="renderCompare()">
+                <option value="planned" selected>المخطط له</option>
+                <option value="received">الإدخال</option>
+                <option value="retReceived">إرجاع إدخال</option>
+                <option value="netIn">صافي الإدخال</option>
+                <option value="dispatched">الصرف</option>
+                <option value="retDispatched">إرجاع صرف</option>
+                <option value="netOut">صافي الصرف</option>
+              </select>
+            </div>
+            <div style="font-size:22px;font-weight:800;color:var(--text2);padding-bottom:6px">−</div>
+            <div class="field" style="flex:1;min-width:150px">
+              <label>القيمة الثانية (اختياري)</label>
+              <select id="cmp-b" onchange="renderCompare()">
+                <option value="">— بدون (قيمة واحدة) —</option>
+                <option value="planned">المخطط له</option>
+                <option value="received">الإدخال</option>
+                <option value="retReceived">إرجاع إدخال</option>
+                <option value="netIn">صافي الإدخال</option>
+                <option value="dispatched">الصرف</option>
+                <option value="retDispatched">إرجاع صرف</option>
+                <option value="netOut" selected>صافي الصرف</option>
+              </select>
+            </div>
+            <div class="field" style="flex:1;min-width:150px">
+              <label>نوع العملية</label>
+              <select id="cmp-optype" onchange="if(_compareSearched)renderCompare()">
+                <option value="all" selected>كل العمليات</option>
+                <option value="in">📥 إدخال فقط</option>
+                <option value="out">📤 صرف فقط</option>
+                <option value="ret-in">↩ إرجاع إدخال فقط</option>
+                <option value="ret-out">↪ إرجاع صرف فقط</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+            <div class="field"><label>🔍 أمر العمل</label><input type="text" id="cmp-wo" placeholder="رقم أمر العمل (فاضي = الكل)"></div>
+            <div class="field"><label>🏷️ المواد</label><input type="text" id="cmp-codes-display" readonly onclick="openCmpMaterials()" placeholder="اضغط لتحديد مواد..." style="cursor:pointer"></div>
+            <div class="field"><label>📍 المنطقة</label><select id="cmp-region"><option value="">الكل</option><option value="جنوب">جنوب</option><option value="شرق">شرق</option></select></div>
+            <div class="field"><label>🔀 أمر العمل</label><select id="cmp-womode"><option value="all">الكل</option><option value="with">بأمر عمل</option><option value="without">بدون أمر عمل</option></select></div>
+            <div class="field"><label>📅 من تاريخ</label><input type="date" id="cmp-from"></div>
+            <div class="field"><label>📅 إلى تاريخ</label><input type="date" id="cmp-to"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-primary" onclick="searchCompare()">🔍 بحث</button>
+            <button class="btn btn-sm" onclick="showAllCompare()">📋 عرض الكل</button>
+            <button class="btn btn-sm" onclick="clearCompareFilters()" style="color:var(--red-l);border-color:var(--red)">✕ مسح</button>
+            <button class="btn btn-sm" onclick="printCompare()">🖨 طباعة PDF</button>
+            <button class="btn btn-sm" onclick="exportCompare()">⬇ تصدير Excel (محوري)</button>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap sticky-thead">
+        <table>
+          <thead id="compare-thead"></thead>
+          <tbody id="compare-tbody"><tr><td style="text-align:center;padding:34px;color:var(--text3)">اختر القيم والفلاتر ثم اضغط 🔍 بحث — أو 📋 عرض الكل</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Compare materials modal -->
+    <div class="modal-overlay" id="cmp-materials-modal">
+      <div class="modal" style="width:460px">
+        <div class="modal-header">
+          <span class="modal-title">🏷️ تحديد المواد للبحث</span>
+          <button class="modal-close" onclick="closeCmpMaterials()">✕</button>
+        </div>
+        <div class="modal-body">
+          <label style="font-size:12px;font-weight:500;color:var(--text2)">أكواد المواد (حتى 9 مواد — كل كود في مربع)</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px" id="cmp-code-boxes">
+            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 1" style="font-family:monospace">
+            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 2" style="font-family:monospace">
+            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 3" style="font-family:monospace">
+            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 4" style="font-family:monospace">
+            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 5" style="font-family:monospace">
+            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 6" style="font-family:monospace">
+            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 7" style="font-family:monospace">
+            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 8" style="font-family:monospace">
+            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 9" style="font-family:monospace">
+          </div>
+          <datalist id="cmp-codes-dl"></datalist>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px">سيبها كلها فاضية للبحث في كل المواد. ابدأ تكتب الكود وهيقترحلك.</div>
+          <div id="cmp-codes-warn" style="display:none;margin-top:10px;padding:10px 12px;background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius);color:var(--red-l);font-size:12px;line-height:1.7"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" onclick="closeCmpMaterials()">إلغاء</button>
+          <button class="btn btn-primary" onclick="applyCmpMaterials()">تطبيق وبحث</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ══ WORK ORDERS PAGE ══ -->
     <div class="page" id="page-workorders">
@@ -3366,7 +3469,7 @@ function navigate(page) {
     dashboard:'لوحة التحكم', receive:'إدخال مواد', dispatch:'صرف مواد',
     'return-receive':'إرجاع إدخال', 'return-dispatch':'إرجاع صرف',
     stock:'المخزون الحالي', lowstock:'المواد تحت الحد الأدنى', movements:'سجل الحركات', reports:'التقارير',
-    items:'المواد', catalog:'المواد', users:'المستخدمون والصلاحيات',
+    items:'المواد', catalog:'المواد', compare:'مقارنة أوامر العمل — الفروقات', users:'المستخدمون والصلاحيات',
     audit:'سجل المراقبة — للمدير فقط', custody:'إدارة العهد', workorders:'أوامر العمل',
     reprint:'إعادة طباعة السندات',
     wot:'محوّل من الصانبي'
@@ -3384,6 +3487,7 @@ function navigate(page) {
   if(page==='return-dispatch') { if(!hasPerm('add_txn')){ toast('ليس لديك صلاحية','error'); navigate('dashboard'); return; } initReturnDispatch(); renderReturnDspRecent(); }
   if(page==='lowstock') renderLowStock();
   if(page==='reports') renderReportPage();
+  if(page==='compare') { if(currentUser && currentUser.role==='viewer'){ toast('ليس لديك صلاحية','error'); navigate('dashboard'); return; } _compareSearched=false; renderCompare(); }
   if(page==='users') { if(!hasPerm('manage_users')){ toast('ليس لديك صلاحية','error'); navigate('dashboard'); return; } renderUsers(); }
   if(page==='ext-requests') { initExtRequestForm(); renderExtRequests(); }
   if(page==='wot') { if(currentUser && currentUser.role==='viewer'){ toast('ليس لديك صلاحية','error'); navigate('dashboard'); return; } initWotForm(); renderWotTable(); }
@@ -6754,6 +6858,7 @@ function printPage(){
   if(currentPage === 'catalog')          { printCatalogPage();        return; }
   if(currentPage === 'users')            { printUsersPage();          return; }
   if(currentPage === 'reports')          { printReport();             return; }
+  if(currentPage === 'compare')          { printCompare();            return; }
   if(currentPage === 'ext-requests')     { previewExtRequestPDF();    return; }
   if(currentPage === 'custody')          { exportAllCustodyPDF();     return; }
   if(currentPage === 'workorders')       { printWoReport();           return; }
@@ -7556,6 +7661,9 @@ function applyRoleUI() {
     const b = document.getElementById(btnId);
     if(b) b.style.display = isViewer ? 'none' : '';
   });
+  // صفحة مقارنة الفروقات: لكل الأدوار ماعدا المراقب
+  const navCompare = document.getElementById('nav-compare');
+  if(navCompare) navCompare.style.display = isViewer ? 'none' : '';
 }
 
 // ── Users CRUD ──
@@ -9338,6 +9446,231 @@ function editRdspItem(i){
 }
 function clearRdspList(){ _rdspList=[]; renderRdspList(); }
 // ── حساب الكمية المتصرّفة لمادة على أمر عمل معيّن (صافي = صادر − مرتجع سابق) ──
+// ══════════════════════════════════════════════
+// ══ صفحة مقارنة أوامر العمل (الفروقات) ══
+// ══════════════════════════════════════════════
+const _CMP_METRICS = {
+  planned:'المخطط له', received:'الإدخال', retReceived:'إرجاع إدخال',
+  netIn:'صافي الإدخال', dispatched:'الصرف', retDispatched:'إرجاع صرف', netOut:'صافي الصرف'
+};
+let _cmpCodes = [];
+let _compareSearched = false;
+let _cmpWoSerials = {};
+
+function openCmpMaterials(){
+  // ملء قائمة الاقتراح بالأكواد الموجودة (مرة واحدة)
+  const dl=document.getElementById('cmp-codes-dl');
+  if(dl && !dl.dataset.filled){
+    dl.innerHTML=(DB.items||[]).map(it=>'<option value="'+esc(it.code)+'">'+esc(it.name)+'</option>').join('');
+    dl.dataset.filled='1';
+  }
+  // عبّي المربعات بالأكواد المختارة سابقًا
+  const boxes=document.querySelectorAll('.cmp-code-box');
+  boxes.forEach((bx,i)=>{ bx.value=_cmpCodes[i]||''; });
+  const warn=document.getElementById('cmp-codes-warn'); if(warn) warn.style.display='none';
+  document.getElementById('cmp-materials-modal').classList.add('show');
+}
+function closeCmpMaterials(){ document.getElementById('cmp-materials-modal').classList.remove('show'); }
+function applyCmpMaterials(){
+  const list=Array.from(document.querySelectorAll('.cmp-code-box')).map(bx=>bx.value.trim()).filter(Boolean);
+  const warn=document.getElementById('cmp-codes-warn');
+  // تحقق: كل كود لازم يكون موجود فعلًا في المواد
+  const itemCodes={}; DB.items.forEach(it=>{ itemCodes[String(it.code).toUpperCase()]=1; });
+  const invalid=list.filter(c=>!itemCodes[c.toUpperCase()]);
+  if(invalid.length){
+    if(warn){ warn.style.display='block'; warn.innerHTML='⚠️ أكواد غير موجودة في المواد: <strong>'+invalid.map(esc).join('، ')+'</strong><br>صحّحها أو احذفها قبل البحث.'; }
+    return;
+  }
+  if(warn) warn.style.display='none';
+  _cmpCodes=list;
+  const disp=document.getElementById('cmp-codes-display');
+  if(disp) disp.value=_cmpCodes.length?(_cmpCodes.length+' مادة محددة'):'';
+  closeCmpMaterials();
+  searchCompare();
+}
+
+function _compareData(){
+  const norm=v=>String(v==null?'':v).trim();
+  const woF=norm(document.getElementById('cmp-wo').value);
+  const codes=_cmpCodes.map(c=>c.toUpperCase());
+  const regionF=document.getElementById('cmp-region').value;
+  const womode=document.getElementById('cmp-womode').value;
+  const optype=document.getElementById('cmp-optype').value;
+  const fromF=document.getElementById('cmp-from').value;
+  const toF=document.getElementById('cmp-to').value;
+  _cmpWoSerials={};
+  function pass(rec){
+    const wo=norm(rec.workorder);
+    if(womode==='with' && !wo) return false;
+    if(womode==='without' && wo) return false;
+    if(woF && wo.indexOf(woF)===-1) return false;
+    if(regionF && norm(rec.region)!==regionF) return false;
+    const d=rec.date||'';
+    if(fromF && d<fromF) return false;
+    if(toF && d>toF) return false;
+    return true;
+  }
+  const map={};
+  function ens(wo,code,name,unit){ const c=norm(code); if(!c) return null; const k=norm(wo)+'||'+c; if(!map[k]) map[k]={workorder:norm(wo),code:c,name:name||c,unit:unit||'',received:0,retReceived:0,dispatched:0,retDispatched:0,planned:0}; return map[k]; }
+  function addSerial(wo,serial){ const w=norm(wo),s=norm(serial); if(!s) return; if(!_cmpWoSerials[w]) _cmpWoSerials[w]={}; _cmpWoSerials[w][s]=1; }
+  const incIn=optype==='all'||optype==='in';
+  const incRetIn=optype==='all'||optype==='ret-in';
+  const incOut=optype==='all'||optype==='out';
+  const incRetOut=optype==='all'||optype==='ret-out';
+  if(incIn) DB.receives.forEach(r=>{ if(pass(r)){ const m=ens(r.workorder,r.code,r.name,r.unit); if(m){ m.received+=Number(r.qty)||0; addSerial(r.workorder,r.serial);} }});
+  if(incRetIn) DB.returnReceives.forEach(r=>{ if(pass(r)){ const m=ens(r.workorder,r.code,r.name,r.unit); if(m){ m.retReceived+=Number(r.qty)||0; addSerial(r.workorder,r.serial);} }});
+  if(incOut) DB.dispatches.forEach(d=>{ if(pass(d)){ const m=ens(d.workorder,d.code,d.name,d.unit); if(m){ m.dispatched+=Number(d.qty)||0; addSerial(d.workorder,d.serial);} }});
+  if(incRetOut) DB.returnDispatches.forEach(r=>{ if(pass(r)){ const m=ens(r.workorder,r.code,r.name,r.unit); if(m){ m.retDispatched+=Number(r.qty)||0; addSerial(r.workorder,r.serial);} }});
+  if(womode!=='without'){
+    (DB.workOrders||[]).forEach(w=>{
+      const wn=norm(w.workorder);
+      if(womode==='with' && !wn) return;
+      if(woF && wn.indexOf(woF)===-1) return;
+      (w.items||[]).forEach(it=>{ const m=ens(w.workorder,it.code,it.name,it.unit); if(m) m.planned+=Number(it.qty)||0; });
+    });
+  }
+  let arr=Object.values(map);
+  if(codes.length) arr=arr.filter(m=>codes.some(c=>m.code.toUpperCase().indexOf(c)!==-1));
+  arr.forEach(m=>{ m.netIn=m.received-m.retReceived; m.netOut=m.dispatched-m.retDispatched; });
+  return arr;
+}
+
+function renderCompare(){
+  const thead=document.getElementById('compare-thead');
+  const tb=document.getElementById('compare-tbody');
+  if(!tb||!thead) return;
+  const cnt=document.getElementById('compare-count');
+  if(!_compareSearched){
+    thead.innerHTML='';
+    tb.innerHTML='<tr><td style="text-align:center;padding:34px;color:var(--text3)">اختر القيم والفلاتر ثم اضغط 🔍 بحث — أو 📋 عرض الكل</td></tr>';
+    if(cnt) cnt.textContent='—';
+    return;
+  }
+  const a=document.getElementById('cmp-a').value;
+  const b=document.getElementById('cmp-b').value;
+  const hasB=!!b;
+  let arr=_compareData();
+  if(hasB) arr.forEach(m=>m._diff=(Number(m[a])||0)-(Number(m[b])||0));
+  arr.sort((x,y)=>{
+    const w=String(x.workorder||'').localeCompare(String(y.workorder||''),'ar');
+    if(w!==0) return w;
+    return hasB?(Math.abs(y._diff)-Math.abs(x._diff)):((Number(y[a])||0)-(Number(x[a])||0));
+  });
+  let h='<tr><th>#</th><th>الكود</th><th>المادة</th><th>الوحدة</th><th style="color:var(--blue-l);font-weight:800">'+(_CMP_METRICS[a]||'')+'</th>';
+  if(hasB) h+='<th style="color:var(--purple-l);font-weight:800">'+(_CMP_METRICS[b]||'')+'</th><th style="color:#38BDF8;font-weight:800">الفرق</th>';
+  thead.innerHTML=h+'</tr>';
+  const cols=hasB?7:5;
+  if(!arr.length){ tb.innerHTML='<tr><td colspan="'+cols+'" style="text-align:center;padding:30px;color:var(--text3)">لا توجد بيانات مطابقة</td></tr>'; if(cnt) cnt.textContent='النتائج: 0'; return; }
+  let html=''; let curWo=null; let idx=0;
+  arr.forEach(m=>{
+    if(m.workorder!==curWo){
+      curWo=m.workorder; idx=0;
+      const ser=_cmpWoSerials[curWo]?Object.keys(_cmpWoSerials[curWo]).join('، '):'';
+      const woLabel=curWo?('🔧 أمر العمل: '+esc(curWo)):'— بدون أمر عمل —';
+      const serLabel=ser?('  •  مسلسل: '+esc(ser)):'';
+      html+='<tr style="background:var(--bg3)"><td colspan="'+cols+'" style="font-weight:700;color:var(--blue-l);padding:11px 16px">'+woLabel+serLabel+'</td></tr>';
+    }
+    idx++;
+    const va=Number(m[a])||0;
+    let row='<tr><td style="color:var(--text3)">'+idx+'</td><td><span class="code-chip">'+esc(m.code)+'</span></td><td><strong>'+esc(m.name)+'</strong></td><td>'+esc(m.unit)+'</td><td style="color:var(--blue-l);font-weight:600">'+va.toLocaleString()+'</td>';
+    if(hasB){ const vb=Number(m[b])||0; const diff=m._diff; const dc=diff<0?'var(--red-l)':(diff>0?'var(--amber-l)':'var(--green-l)'); row+='<td style="color:var(--purple-l);font-weight:600">'+vb.toLocaleString()+'</td><td style="font-weight:800;color:'+dc+'">'+(diff>0?'+':'')+diff.toLocaleString()+'</td>'; }
+    html+=row+'</tr>';
+  });
+  tb.innerHTML=html;
+  if(cnt) cnt.textContent='النتائج: '+arr.length.toLocaleString()+' صف';
+}
+
+function searchCompare(){ _compareSearched=true; renderCompare(); }
+function showAllCompare(){
+  document.getElementById('cmp-wo').value='';
+  _cmpCodes=[]; var d0=document.getElementById('cmp-codes-display'); if(d0) d0.value='';
+  document.getElementById('cmp-region').value='';
+  document.getElementById('cmp-womode').value='all';
+  document.getElementById('cmp-optype').value='all';
+  document.getElementById('cmp-from').value=''; document.getElementById('cmp-to').value='';
+  _compareSearched=true; renderCompare();
+}
+function clearCompareFilters(){
+  document.getElementById('cmp-wo').value='';
+  _cmpCodes=[]; var d1=document.getElementById('cmp-codes-display'); if(d1) d1.value='';
+  document.getElementById('cmp-region').value='';
+  document.getElementById('cmp-womode').value='all';
+  document.getElementById('cmp-optype').value='all';
+  document.getElementById('cmp-from').value=''; document.getElementById('cmp-to').value='';
+  _compareSearched=false; renderCompare();
+}
+// تصدير Excel — جدول محوري (Pivot): صفوف = أوامر العمل + المسلسل، أعمدة = المواد، الخلية = القيمة المختارة
+function exportCompare(){
+  if(!_compareSearched){ toast('اضغط 🔍 بحث أو 📋 عرض الكل أولاً','info'); return; }
+  const a=document.getElementById('cmp-a').value;
+  const arr=_compareData();
+  if(!arr.length){ toast('لا توجد بيانات للتصدير','error'); return; }
+  const matMap={}; arr.forEach(m=>{ matMap[m.code]=m.name||m.code; });
+  const codesList=Object.keys(matMap).sort();
+  const woMap={};
+  arr.forEach(m=>{ const w=m.workorder||'—'; if(!woMap[w]) woMap[w]={}; woMap[w][m.code]=Number(m[a])||0; });
+  const wos=Object.keys(woMap).sort((x,y)=>String(x).localeCompare(String(y),'ar'));
+  const header=['Work Order','Serial'].concat(codesList.map(c=> (matMap[c]&&matMap[c]!==c)?(c+' - '+matMap[c]):c));
+  const rows=wos.map(w=>{
+    const ser=_cmpWoSerials[w]?Object.keys(_cmpWoSerials[w]).join(', '):'';
+    return [w,ser].concat(codesList.map(c=> (woMap[w][c]!=null)?woMap[w][c]:''));
+  });
+  const fname='WO_Comparison_Pivot_'+new Date().toISOString().slice(0,10)+'.xlsx';
+  _xlRunStyledExport(function(XL){const wb=XL.utils.book_new();XL.utils.book_append_sheet(wb,_xlStyledSheet(XL,{title:'WO Comparison (Pivot)',header,rows,fill:'1565C0'}),'Pivot');XL.writeFile(wb,fname);toast('تم تصدير الجدول المحوري (إنجليزي) ✓');},function(){_xlCsvDownload(header,rows,fname);toast('تم تصدير CSV');});
+}
+
+// طباعة PDF — نافذة إنجليزية مستقلة (لهذه الصفحة فقط) بنفس شكل العرض الحالي
+const _CMP_METRICS_EN = {
+  planned:'Planned', received:'Received', retReceived:'Return-In',
+  netIn:'Net In', dispatched:'Dispatched', retDispatched:'Return-Out', netOut:'Net Out'
+};
+function printCompare(){
+  if(!_compareSearched){ toast('اضغط 🔍 بحث أو 📋 عرض الكل أولاً','info'); return; }
+  const a=document.getElementById('cmp-a').value;
+  const b=document.getElementById('cmp-b').value;
+  const hasB=!!b;
+  let arr=_compareData();
+  if(hasB) arr.forEach(m=>m._diff=(Number(m[a])||0)-(Number(m[b])||0));
+  arr.sort((x,y)=>{ const w=String(x.workorder||'').localeCompare(String(y.workorder||''),'ar'); if(w!==0) return w; return hasB?(Math.abs(y._diff)-Math.abs(x._diff)):((Number(y[a])||0)-(Number(x[a])||0)); });
+  if(!arr.length){ toast('لا توجد بيانات للطباعة','error'); return; }
+  const cols=hasB?7:5;
+  let head='<tr><th>#</th><th>Code</th><th>Material</th><th>Unit</th><th>'+(_CMP_METRICS_EN[a]||a)+'</th>';
+  if(hasB) head+='<th>'+(_CMP_METRICS_EN[b]||b)+'</th><th>Difference</th>';
+  head+='</tr>';
+  let bdy=''; let curWo=null; let idx=0;
+  arr.forEach(m=>{
+    if(m.workorder!==curWo){ curWo=m.workorder; idx=0;
+      const ser=_cmpWoSerials[curWo]?Object.keys(_cmpWoSerials[curWo]).join(', '):'';
+      const lbl=(curWo?('Work Order: '+esc(curWo)):'No Work Order')+(ser?('  •  Serial: '+esc(ser)):'');
+      bdy+='<tr><td colspan="'+cols+'" class="grp">'+lbl+'</td></tr>';
+    }
+    idx++;
+    const va=Number(m[a])||0;
+    let r='<tr><td>'+idx+'</td><td class="mono">'+esc(m.code)+'</td><td class="ar">'+esc(m.name)+'</td><td class="ar">'+esc(m.unit)+'</td><td>'+va.toLocaleString('en-US')+'</td>';
+    if(hasB){ const vb=Number(m[b])||0; const diff=m._diff; const col=diff<0?'#c62828':(diff>0?'#f57f17':'#2E7D32'); r+='<td>'+vb.toLocaleString('en-US')+'</td><td style="font-weight:700;color:'+col+'">'+(diff>0?'+':'')+diff.toLocaleString('en-US')+'</td>'; }
+    bdy+=r+'</tr>';
+  });
+  const cmpLabel=(_CMP_METRICS_EN[a]||a)+(hasB?(' − '+(_CMP_METRICS_EN[b]||b)):'');
+  const today=new Date().toLocaleString('en-GB');
+  const html='<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charset="UTF-8"><title>Work Orders Comparison</title>'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,Tahoma,sans-serif;padding:20px;color:#111}'
+    +'.hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1F6FEB;padding-bottom:10px;margin-bottom:14px}'
+    +'.tt{font-size:18px;font-weight:700;color:#1F6FEB}.mt{font-size:11px;color:#555;text-align:right;line-height:1.7}'
+    +'table{width:100%;border-collapse:collapse;font-size:12px}'
+    +'th{background:#1F6FEB;color:#fff;padding:8px 10px;text-align:left;border:1px solid #1a5ecc}'
+    +'td{padding:7px 10px;border:1px solid #ddd;text-align:left}'
+    +'.mono{font-family:monospace}.ar{direction:rtl;text-align:right}.grp{background:#e8f0fe;font-weight:700;color:#1F6FEB}'
+    +'@media print{body{padding:6px}}</style></head><body>'
+    +'<div class="hd"><div class="tt">Work Orders Comparison — Variances</div>'
+    +'<div class="mt">Compare: '+cmpLabel+'<br>Date: '+today+'<br>Rows: '+arr.length+'</div></div>'
+    +'<table><thead>'+head+'</thead><tbody>'+bdy+'</tbody></table>'
+    +'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},250);};<\/scr'+'ipt>'
+    +'</body></html>';
+  const w=window.open('','_blank','width=1000,height=720');
+  if(!w){ toast('يرجى السماح بالنوافذ المنبثقة','error'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
 // ── حساب الكميات لمادة على أمر عمل: المخطط/المُدخَل/المصروف/المرجّع ──
 function _woItemStats(code, wo){
   const norm = v => String(v==null?'':v).trim();
