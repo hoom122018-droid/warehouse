@@ -116,8 +116,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .gs-row:hover{background:var(--bg3)}
 @media(max-width:1100px){#global-search{width:160px}}
 @media(max-width:880px){#global-search-wrap{display:none}}
-@keyframes lowPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 9px rgba(239,68,68,0)}}
-#low-stock-float:hover{filter:brightness(1.08)}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--font)}
 .btn:hover{background:var(--bg4);border-color:var(--border2)}
 .btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
@@ -146,7 +144,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 /* ── Stats row ── */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:16px;margin-bottom:22px}
-.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 22px;position:relative;overflow:hidden;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 22px;position:relative;overflow:hidden;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s;cursor:pointer}
 .stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
 .stat-card::before{content:'';position:absolute;top:16px;left:16px;width:32px;height:32px;border-radius:10px;opacity:.16}
 .stat-card.blue::before{background:var(--blue)}
@@ -221,8 +219,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .filter-select{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px;padding:10px 12px;cursor:pointer}
 table{width:100%;border-collapse:collapse}
 thead tr{background:var(--bg3)}
-th{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:14px 16px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
-td{font-size:13px;color:var(--text);padding:15px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+th{font-size:11px;font-weight:600;color:var(--text3);padding:14px 16px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+td{font-size:13px;color:var(--text);padding:15px 16px;border-bottom:1px solid var(--border);vertical-align:middle;font-variant-numeric:tabular-nums}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:var(--bg3)}
 tbody tr{transition:background .12s}
@@ -319,6 +317,104 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .ext-tab.active[data-et="current"]{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-l)}
 .ext-tab.active[data-et="completed"]{background:var(--green-bg);border-color:var(--green);color:var(--green-l)}
 .ext-tab .ext-tab-count{font-size:11px;opacity:.85;margin-right:4px}
+
+/* ══════════════ طبقة التجميل بالتدرّجات (Gradient Makeover) ══════════════ */
+:root{
+  --grad-primary:linear-gradient(135deg,#3BA4F7 0%,#7B5CFF 100%);
+  --grad-primary-h:linear-gradient(135deg,#52B2FF 0%,#9079FF 100%);
+  --grad-green:linear-gradient(135deg,#22C55E 0%,#10B981 100%);
+  --grad-red:linear-gradient(135deg,#F43F5E 0%,#F97316 100%);
+  --grad-amber:linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);
+  --grad-purple:linear-gradient(135deg,#7B5CFF 0%,#3BA4F7 100%);
+  --glow-primary:0 6px 20px rgba(96,110,255,.34);
+}
+[data-theme="light"]{
+  --grad-primary:linear-gradient(135deg,#2563EB 0%,#7C3AED 100%);
+  --grad-primary-h:linear-gradient(135deg,#1D4ED8 0%,#6D28D9 100%);
+}
+
+/* أزرار أساسية بتدرّج + توهّج */
+.btn-primary{background:var(--grad-primary);border:none;color:#fff;box-shadow:0 4px 14px rgba(96,110,255,.28)}
+.btn-primary:hover{background:var(--grad-primary-h);box-shadow:var(--glow-primary);transform:translateY(-1px)}
+
+/* أفاتار + لوجو بتدرّج */
+.avatar{background:var(--grad-primary)!important;box-shadow:0 2px 8px rgba(96,110,255,.4)}
+.logo-icon{background:var(--grad-primary)!important;box-shadow:0 4px 14px rgba(96,110,255,.45)}
+
+/* عنصر القائمة النشط بتدرّج */
+.nav-item.active{background:linear-gradient(90deg,rgba(123,92,255,.20),rgba(59,164,247,.08))!important;color:var(--blue-l)}
+.nav-item.active::before{background:var(--grad-primary)!important}
+
+/* نقاط رؤوس اللوحات بتدرّج */
+.panel-title .dot{background-image:var(--grad-primary)}
+
+/* كروت الإحصائيات: شريط علوي متدرّج + شارة أيقونة متدرّجة + دخول متحرّك */
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad-primary)}
+.stat-card.green::after{background:var(--grad-green)}
+.stat-card.red::after{background:var(--grad-red)}
+.stat-card.amber::after{background:var(--grad-amber)}
+.stat-card.purple::after{background:var(--grad-purple)}
+.stat-card[style*="--red"]::after{background:var(--grad-red)}
+.stat-card.blue::before{background:var(--grad-primary);opacity:.20}
+.stat-card.green::before{background:var(--grad-green);opacity:.20}
+.stat-card.red::before{background:var(--grad-red);opacity:.20}
+.stat-card.amber::before{background:var(--grad-amber);opacity:.20}
+.stat-card.purple::before{background:var(--grad-purple);opacity:.20}
+.stat-card[style*="--red"]::before{background:var(--grad-red);opacity:.20}
+.stat-card{animation:cardIn .5s cubic-bezier(.2,.7,.2,1) both}
+.stat-card:nth-child(1){animation-delay:.03s}
+.stat-card:nth-child(2){animation-delay:.08s}
+.stat-card:nth-child(3){animation-delay:.13s}
+.stat-card:nth-child(4){animation-delay:.18s}
+.stat-card:nth-child(5){animation-delay:.23s}
+.stat-card:nth-child(6){animation-delay:.28s}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+/* دخول الصفحة بتأثير ناعم */
+.page.active{animation:pageIn .34s ease both}
+@keyframes pageIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* code-chip لمسة متدرّجة خفيفة */
+.code-chip{background:linear-gradient(135deg,var(--bg3),var(--bg4))}
+
+/* ── شارات بتدرّج خفيف (تظهر في كل الجداول: المخزون/الحركات/العهد/التقارير) ── */
+.badge-green{background:linear-gradient(135deg,rgba(34,197,94,.20),rgba(16,185,129,.10))}
+.badge-red{background:linear-gradient(135deg,rgba(244,63,94,.20),rgba(249,115,22,.10))}
+.badge-amber{background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(251,191,36,.10))}
+.badge-blue{background:linear-gradient(135deg,rgba(59,164,247,.20),rgba(123,92,255,.10))}
+.badge-purple{background:linear-gradient(135deg,rgba(123,92,255,.20),rgba(59,164,247,.10))}
+
+/* ── زر الترقيم النشط بتدرّج (كل الجداول المرقّمة) ── */
+.page-btn.active{background:var(--grad-primary);border-color:transparent;color:#fff}
+
+/* ── التبويبات النشطة بتدرّج خفيف (العهد / الطلبات الخارجية / إعادة الطباعة) ── */
+.cust-tab.active[data-ct="active"]{background:linear-gradient(135deg,rgba(245,158,11,.24),rgba(251,191,36,.10))}
+.cust-tab.active[data-ct="returned"]{background:linear-gradient(135deg,rgba(34,197,94,.22),rgba(16,185,129,.10))}
+.ext-tab.active[data-et="current"]{background:linear-gradient(135deg,rgba(245,158,11,.24),rgba(251,191,36,.10))}
+.ext-tab.active[data-et="completed"]{background:linear-gradient(135deg,rgba(34,197,94,.22),rgba(16,185,129,.10))}
+
+/* ── أزرار النجاح/الخطر: توهّج متدرّج عند المرور ── */
+.btn-success:hover{background:var(--grad-green);border-color:transparent;box-shadow:0 4px 14px rgba(34,197,94,.3)}
+.btn-danger:hover{background:var(--grad-red);border-color:transparent;box-shadow:0 4px 14px rgba(244,63,94,.3)}
+
+/* ── خط متدرّج أسفل الهيدر ── */
+.topbar{border-bottom:1.5px solid transparent;background-image:linear-gradient(var(--bg2),var(--bg2)),var(--grad-primary);background-origin:border-box;background-clip:padding-box,border-box}
+
+/* ── خط متدرّج أسفل رأس كل مودال (نافذة) ── */
+.modal-header{border-bottom:2px solid transparent;background-image:linear-gradient(var(--bg2),var(--bg2)),var(--grad-primary);background-origin:border-box;background-clip:padding-box,border-box}
+
+/* ── شريط التمرير بتدرّج ── */
+::-webkit-scrollbar-thumb{background:var(--grad-primary);border-radius:4px}
+
+/* ── تمرير صفوف الجداول: مسحة متدرّجة ناعمة ── */
+tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,110,255,.02))}
+
+/* ── التوست: إحساس زجاجي ── */
+.toast{background:color-mix(in srgb,var(--bg2) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+
+/* ── أيقونات القائمة الجانبية: SVG خطّي حديث موحّد ── */
+.nav-item .icon{display:inline-flex;align-items:center;justify-content:center}
+.nav-item .icon svg{width:18px;height:18px;display:block}
 </style>
 </head>
 <body>
@@ -358,39 +454,38 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   <nav class="nav">
     <div class="nav-section">
       <div class="nav-label">الرئيسية</div>
-      <button data-title="لوحة التحكم" class="nav-item active" onclick="navigate('dashboard')"><span class="icon">📊</span> <span class="nav-text">لوحة التحكم</span></button>
+      <button data-title="لوحة التحكم" class="nav-item active" onclick="navigate('dashboard')"><span class="icon" style="color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M7 20v-7"/><path d="M12 20V7"/><path d="M17 20v-4"/></svg></span> <span class="nav-text">لوحة التحكم</span></button>
     </div>
     <div class="nav-section">
       <div class="nav-label">المعاملات</div>
-      <button data-title="إدخال مواد" class="nav-item" onclick="navigate('receive')"><span class="icon">📥</span> <span class="nav-text">إدخال مواد</span></button>
-      <button data-title="صرف مواد" class="nav-item" onclick="navigate('dispatch')"><span class="icon">📤</span> <span class="nav-text">صرف مواد</span></button>
-      <button data-title="إرجاع إدخال" class="nav-item" onclick="navigate('return-receive')"><span class="icon">↩️</span> <span class="nav-text">إرجاع إدخال</span></button>
-      <button data-title="إرجاع صرف" class="nav-item" onclick="navigate('return-dispatch')"><span class="icon">↪️</span> <span class="nav-text">إرجاع صرف</span></button>
-      <button data-title="طلبات خارجية" class="nav-item" onclick="navigate('ext-requests')"><span class="icon">📨</span> <span class="nav-text">طلبات خارجية</span></button>
-      <button data-title="محوّل من الصانبي" class="nav-item" onclick="navigate('wot')"><span class="icon">🚚</span> <span class="nav-text">محوّل من الصانبي</span></button>
-      <button data-title="إدارة العهد" class="nav-item" onclick="navigate('custody')"><span class="icon">🔑</span> <span class="nav-text">إدارة العهد</span><span class="nav-badge" id="nav-custody-badge" style="display:none">0</span>
+      <button data-title="إدخال مواد" class="nav-item" onclick="navigate('receive')"><span class="icon" style="color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg></span> <span class="nav-text">إدخال مواد</span></button>
+      <button data-title="صرف مواد" class="nav-item" onclick="navigate('dispatch')"><span class="icon" style="color:var(--red)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M4 3h16"/></svg></span> <span class="nav-text">صرف مواد</span></button>
+      <button data-title="إرجاع إدخال" class="nav-item" onclick="navigate('return-receive')"><span class="icon" style="color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l-5-5 5-5"/><path d="M4 10h11a5 5 0 0 1 0 10h-3"/></svg></span> <span class="nav-text">إرجاع إدخال</span></button>
+      <button data-title="إرجاع صرف" class="nav-item" onclick="navigate('return-dispatch')"><span class="icon" style="color:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 15l5-5-5-5"/><path d="M20 10H9a5 5 0 0 0 0 10h3"/></svg></span> <span class="nav-text">إرجاع صرف</span></button>
+      <button data-title="طلبات خارجية" class="nav-item" onclick="navigate('ext-requests')"><span class="icon" style="color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span> <span class="nav-text">طلبات خارجية</span></button>
+      <button data-title="محوّل من الصانبي" class="nav-item" onclick="navigate('wot')"><span class="icon" style="color:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h12v9H2z"/><path d="M14 8h4l3 3v4h-7z"/><circle cx="6.5" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg></span> <span class="nav-text">محوّل من الصانبي</span></button>
+      <button data-title="إدارة العهد" class="nav-item" onclick="navigate('custody')"><span class="icon" style="color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="4.5"/><path d="M11.5 12.5L20 21"/><path d="M17 18l2-2"/></svg></span> <span class="nav-text">إدارة العهد</span><span class="nav-badge" id="nav-custody-badge" style="display:none">0</span>
       </button>
-      <button data-title="معلومات أوامر العمل" class="nav-item" onclick="navigate('workorders')"><span class="icon">🔧</span> <span class="nav-text">معلومات أوامر العمل</span></button>
-      <button data-title="إعادة طباعة السندات" class="nav-item" onclick="navigate('reprint')"><span class="icon">🖨️</span> <span class="nav-text">إعادة طباعة السندات</span></button>
+      <button data-title="معلومات أوامر العمل" class="nav-item" onclick="navigate('workorders')"><span class="icon" style="color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 0 0-5.2 5.2L4 17l3 3 5.3-5.3a4 4 0 0 0 5.2-5.2l-2.4 2.4-2.6-2.6z"/></svg></span> <span class="nav-text">معلومات أوامر العمل</span></button>
+      <button data-title="إعادة طباعة السندات" class="nav-item" onclick="navigate('reprint')"><span class="icon" style="color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg></span> <span class="nav-text">إعادة طباعة السندات</span></button>
     </div>
     <div class="nav-section">
       <div class="nav-label">التقارير</div>
-      <button data-title="المخزون الحالي" class="nav-item" onclick="navigate('stock')"><span class="icon">🗄</span> <span class="nav-text">المخزون الحالي</span></button>
-      <button data-title="المواد تحت الحد" class="nav-item" onclick="navigate('lowstock')" id="nav-lowstock"><span class="icon">⚠️</span> <span class="nav-text">المواد تحت الحد</span><span class="nav-badge" id="nav-low-badge" style="display:none">0</span>
+      <button data-title="المخزون الحالي" class="nav-item" onclick="navigate('stock')"><span class="icon" style="color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></svg></span> <span class="nav-text">المخزون الحالي</span></button>
+      <button data-title="المواد تحت الحد" class="nav-item" onclick="navigate('lowstock')" id="nav-lowstock"><span class="icon" style="color:var(--red)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg></span> <span class="nav-text">المواد تحت الحد</span><span class="nav-badge" id="nav-low-badge" style="display:none">0</span>
       </button>
-      <button data-title="سجل الحركات" class="nav-item" onclick="navigate('movements')"><span class="icon">📋</span> <span class="nav-text">سجل الحركات</span></button>
-      <button data-title="التقارير" class="nav-item" onclick="navigate('reports')"><span class="icon">📑</span> <span class="nav-text">التقارير</span></button>
+      <button data-title="سجل الحركات" class="nav-item" onclick="navigate('movements')"><span class="icon" style="color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v4H9z"/><path d="M8.5 11h7"/><path d="M8.5 15h7"/></svg></span> <span class="nav-text">سجل الحركات</span></button>
+      <button data-title="التقارير" class="nav-item" onclick="navigate('reports')"><span class="icon" style="color:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg></span> <span class="nav-text">التقارير</span></button>
     </div>
     <div class="nav-section" id="nav-admin-section" style="display:none">
       <div class="nav-label">المدير</div>
-      <button data-title="سجل المراقبة" class="nav-item" onclick="navigate('audit')"><span class="icon">🔐</span> <span class="nav-text">سجل المراقبة</span></button>
-      <button data-title="رقم سري الحذف" class="nav-item" onclick="openDeletePinSettings()"><span class="icon">🔑</span> <span class="nav-text">رقم سري الحذف</span></button>
+      <button data-title="سجل المراقبة" class="nav-item" onclick="navigate('audit')"><span class="icon" style="color:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8.2-8 9-4.5-.8-8-4-8-9V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg></span> <span class="nav-text">سجل المراقبة</span></button>
+      <button data-title="رقم سري الحذف" class="nav-item" onclick="openDeletePinSettings()"><span class="icon" style="color:var(--red)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="4.5"/><path d="M11.5 12.5L20 21"/><path d="M17 18l2-2"/></svg></span> <span class="nav-text">رقم سري الحذف</span></button>
     </div>
     <div class="nav-section">
       <div class="nav-label">الإعدادات</div>
-      <button data-title="المستخدمون" class="nav-item" onclick="navigate('users')"><span class="icon">👥</span> <span class="nav-text">المستخدمون</span></button>
-      <button data-title="كتالوج المواد" class="nav-item" onclick="navigate('catalog')"><span class="icon">📦</span> <span class="nav-text">كتالوج المواد</span></button>
-      <button data-title="إدارة المواد" class="nav-item" onclick="navigate('items')"><span class="icon">🏷</span> <span class="nav-text">إدارة المواد</span></button>
+      <button data-title="المستخدمون" class="nav-item" onclick="navigate('users')"><span class="icon" style="color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6.4"/><path d="M17.5 19.5a5.5 5.5 0 0 0-2.5-4.6"/></svg></span> <span class="nav-text">المستخدمون</span></button>
+      <button data-title="المواد" class="nav-item" onclick="navigate('items')"><span class="icon" style="color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span> <span class="nav-text">المواد</span></button>
     </div>
   </nav>
   <div class="sidebar-footer" id="sidebar-footer" style="display:none">
@@ -400,9 +495,6 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         <p id="sb-username" style="font-size:12px;font-weight:600">—</p>
         <span id="sb-role" style="font-size:10px">—</span>
       </div>
-      <button onclick="event.stopPropagation();openChangePassword()" title="تغيير كلمة المرور" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 4px">🔑</button>
-      <button onclick="event.stopPropagation();openEditProfile()" title="تعديل الملف الشخصي" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 4px">✏️</button>
-      <button onclick="event.stopPropagation();doLogout()" title="تسجيل خروج" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 4px">⏻</button>
     </div>
   </div>
 </aside>
@@ -423,11 +515,21 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
       <span style="font-size:17px;font-weight:800;letter-spacing:2.5px"><span style="color:var(--red)">AL</span><span style="color:var(--blue-l)">SANIBI</span></span>
     </div>
     <div class="topbar-actions">
-      <button class="btn btn-sm" onclick="resyncBalances()" title="إعادة حساب أرصدة كل المواد من السجلات وتصحيح أي رصيد متلخبط دفعة واحدة">🔄 إعادة ضبط كل الأرصدة</button>
-      <button class="btn btn-sm" id="btn-backup" onclick="exportBackupJSON()" title="تصدير نسخة احتياطية كاملة للبيانات" style="color:var(--amber-l);border-color:var(--amber);display:none">💾 نسخة احتياطية</button>
-      <button class="btn btn-sm" onclick="exportData()">⬇ تصدير Excel</button>
-      <button class="btn btn-sm" onclick="printPage()">🖨 طباعة</button>
+      <button class="btn btn-sm btn-icon" onclick="resyncBalances()" title="إعادة ضبط كل الأرصدة — إعادة حساب أرصدة كل المواد من السجلات">🔄</button>
+      <button class="btn btn-sm btn-icon" id="btn-backup" onclick="exportBackupJSON()" title="نسخة احتياطية كاملة للبيانات" style="color:var(--amber-l);border-color:var(--amber);display:none">💾</button>
+      <button class="btn btn-sm btn-icon" onclick="exportData()" title="تصدير Excel">⬇</button>
+      <button class="btn btn-sm btn-icon" onclick="printPage()" title="طباعة">🖨</button>
       <span style="font-size:12px;color:var(--text3)" id="clock"></span>
+      <span style="width:1px;height:22px;background:var(--border2);margin:0 4px"></span>
+      <div class="user-actions" id="account-wrap">
+        <div class="avatar" id="tb-avatar" onclick="toggleAccountMenu(event)" title="حسابي" style="cursor:pointer">م</div>
+        <div class="user-actions-menu" id="account-menu" style="left:auto;right:0">
+          <div class="uam-label" id="account-menu-name">حسابي</div>
+          <button class="uam-item" onclick="closeAccountMenu();openEditProfile()">✏️ تعديل الملف الشخصي</button>
+          <button class="uam-item" onclick="closeAccountMenu();openChangePassword()">🔑 تغيير كلمة المرور</button>
+        </div>
+      </div>
+      <button class="btn btn-sm" onclick="doLogout()" title="تسجيل خروج" style="color:var(--red-l);border-color:var(--red)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:middle;flex-shrink:0"><line x1="12" y1="3" x2="12" y2="11"/><path d="M6.6 7a8 8 0 1 0 10.8 0"/></svg> خروج</button>
     </div>
   </header>
 
@@ -442,37 +544,37 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
       </div>
       <div class="stats-grid">
-        <div class="stat-card blue">
+        <div class="stat-card blue" onclick="navigate('stock')" title="عرض المخزون الحالي">
           <div class="stat-ico">📦</div>
           <div class="stat-label">إجمالي الأصناف</div>
           <div class="stat-value" id="stat-items">0</div>
           <div class="stat-sub">صنف مسجل</div>
         </div>
-        <div class="stat-card green">
+        <div class="stat-card green" onclick="navigate('movements')" title="عرض سجل الحركات">
           <div class="stat-ico">📥</div>
           <div class="stat-label">إجمالي الواردات</div>
           <div class="stat-value" id="stat-in">0</div>
           <div class="stat-sub">معاملة إدخال</div>
         </div>
-        <div class="stat-card red">
+        <div class="stat-card red" onclick="navigate('movements')" title="عرض سجل الحركات">
           <div class="stat-ico">📤</div>
           <div class="stat-label">إجمالي الصرف</div>
           <div class="stat-value" id="stat-out">0</div>
           <div class="stat-sub">معاملة صرف</div>
         </div>
-        <div class="stat-card amber">
+        <div class="stat-card amber" onclick="navigate('movements')" title="عرض سجل الحركات">
           <div class="stat-ico">↩️</div>
           <div class="stat-label">الإرجاعات</div>
           <div class="stat-value" id="stat-ret">0</div>
           <div class="stat-sub">إرجاع إدخال + صرف</div>
         </div>
-        <div class="stat-card purple">
+        <div class="stat-card purple" onclick="navigate('movements')" title="عرض سجل الحركات">
           <div class="stat-ico">⚡</div>
           <div class="stat-label">حركات النهارده</div>
           <div class="stat-value" id="stat-today">0</div>
           <div class="stat-sub">إدخال + صرف اليوم</div>
         </div>
-        <div class="stat-card" style="border-color:var(--red)">
+        <div class="stat-card" style="border-color:var(--red)" onclick="navigate('lowstock')" title="عرض المواد تحت الحد">
           <div class="stat-ico">⚠️</div>
           <div class="stat-label">مواد تحت الحد</div>
           <div class="stat-value" id="stat-low">0</div>
@@ -1016,6 +1118,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           </select>
           <button class="btn btn-sm btn-success" onclick="navigate('receive')">+ إدخال</button>
           <button class="btn btn-sm btn-danger" onclick="navigate('dispatch')">- صرف</button>
+          <button class="btn btn-sm" onclick="exportStock()" title="تصدير المخزون الحالي Excel">⬇ تصدير</button>
         </div>
         <table id="stock-table">
           <thead><tr>
@@ -1080,11 +1183,15 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
           </select>
           <input type="date" class="filter-select" id="mov-date-filter" onchange="filterMovements('')" title="تصفية بالتاريخ">
           <input type="text" class="filter-select" id="mov-code-filter" placeholder="🔍 كود المادة" oninput="renderMovements()" style="width:130px">
-          <input type="text" class="filter-select" id="mov-serial-filter" placeholder="🔍 رقم المسلسل" oninput="renderMovements()" style="width:150px">
-          <input type="text" class="filter-select" id="mov-book-filter" placeholder="🔍 رقم الكتاب" oninput="renderMovements()" style="width:130px">
-          <input type="text" class="filter-select" id="mov-page-filter" placeholder="🔍 رقم الصفحة" oninput="renderMovements()" style="width:130px">
-          <input type="text" class="filter-select" id="mov-dept-filter" placeholder="🔍 الجهة/المورد" oninput="renderMovements()" style="width:140px">
+          <button class="btn btn-sm" id="mov-adv-toggle" onclick="toggleMovAdvanced()" title="فلاتر إضافية (مسلسل/كتاب/صفحة/جهة)">🎛 بحث متقدّم ▾</button>
           <button class="btn btn-sm" onclick="clearMovementsFilters()" style="color:var(--red-l);border-color:var(--red);white-space:nowrap">✕ مسح الفلاتر</button>
+          <span id="mov-count" style="font-size:12px;color:var(--text2);white-space:nowrap;font-weight:600;margin-right:auto">—</span>
+          <div id="mov-advanced" style="display:none;flex-basis:100%;flex-wrap:wrap;gap:8px;margin-top:2px">
+            <input type="text" class="filter-select" id="mov-serial-filter" placeholder="🔍 رقم المسلسل" oninput="renderMovements()" style="width:150px">
+            <input type="text" class="filter-select" id="mov-book-filter" placeholder="🔍 رقم الكتاب" oninput="renderMovements()" style="width:130px">
+            <input type="text" class="filter-select" id="mov-page-filter" placeholder="🔍 رقم الصفحة" oninput="renderMovements()" style="width:130px">
+            <input type="text" class="filter-select" id="mov-dept-filter" placeholder="🔍 الجهة/المورد" oninput="renderMovements()" style="width:140px">
+          </div>
         </div>
         <table>
           <thead><tr>
@@ -1210,16 +1317,18 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         </div>
       </div>
       <div class="table-wrap sticky-thead">
-        <div class="table-toolbar">
-          <div class="search-wrap">
+        <div class="table-toolbar" style="flex-wrap:wrap;gap:8px">
+          <div class="search-wrap" style="flex:1;min-width:200px">
             <span class="search-icon">🔍</span>
             <input type="text" placeholder="بحث في المواد..." oninput="filterItems(this.value)">
           </div>
+          <button class="btn btn-sm" onclick="exportCatalog()" title="تصدير قائمة المواد Excel">⬇ تصدير</button>
+          <button class="btn btn-sm" onclick="shareCatalog()" title="مشاركة القائمة">🔗 مشاركة</button>
         </div>
         <table>
           <thead><tr>
             <th>#</th><th>الكود</th><th>اسم المادة</th><th>الوحدة</th>
-            <th>أول مدة</th><th>الحد الأدنى</th><th>ملاحظات</th><th>الإجراءات</th>
+            <th>أول مدة</th><th>الحد الأدنى</th><th>الرصيد الحالي</th><th>ملاحظات</th><th>الإجراءات</th>
           </tr></thead>
           <tbody id="items-tbody"></tbody>
         </table>
@@ -1228,93 +1337,6 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
 
     <!-- ══ CATALOG PAGE ══ -->
-    <div class="page" id="page-catalog">
-      <div class="table-wrap sticky-thead">
-        <div class="table-toolbar" style="flex-wrap:wrap;gap:8px">
-          <div class="search-wrap" style="min-width:200px;flex:1">
-            <span class="search-icon">🔍</span>
-            <input type="text" placeholder="بحث بالكود أو اسم المادة..." oninput="filterCatalog(this.value)">
-          </div>
-          <select class="filter-select" onchange="filterCatalogUnit(this.value)" id="catalog-unit-filter">
-            <option value="">كل الوحدات</option>
-            <option value="متر">متر</option>
-            <option value="حبه">حبه</option>
-          </select>
-          <button class="btn btn-sm" onclick="exportCatalog()" title="تصدير القائمة Excel منسّق">⬇ تصدير</button>
-          <button class="btn btn-sm" onclick="shareCatalog()" title="مشاركة رابط">🔗 مشاركة</button>
-          <button class="btn btn-sm btn-primary" onclick="printCatalog()">🖨 طباعة</button>
-        </div>
-        <div style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <span class="page-info" id="catalog-info">—</span>
-          <div style="font-size:12px;color:var(--text3)" id="catalog-sort-label">مرتبة حسب: الكود ↑</div>
-        </div>
-        <table id="catalog-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th style="cursor:pointer;user-select:none" onclick="sortCatalog('code')">الكود ↕</th>
-              <th style="cursor:pointer;user-select:none" onclick="sortCatalog('name')">اسم المادة ↕</th>
-              <th>الوحدة</th>
-              <th>الكمية الحالية</th>
-              <th>الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody id="catalog-tbody"></tbody>
-        </table>
-        <div class="pagination">
-          <span class="page-info" id="catalog-page-info">—</span>
-          <div class="page-controls" id="catalog-pages"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Edit Item Modal -->
-    <div class="modal-overlay" id="edit-modal">
-      <div class="modal">
-        <div class="modal-header">
-          <span class="modal-title">✏️ تعديل المادة</span>
-          <button class="modal-close" onclick="closeEditModal()">✕</button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" id="edit-orig-code">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-            <div class="field">
-              <label>الكود</label>
-              <input type="text" id="edit-code">
-            </div>
-            <div class="field">
-              <label>الوحدة</label>
-              <select id="edit-unit">
-                <option>حبه</option><option>متر</option><option>كيلو</option>
-                <option>لتر</option><option>عبوة</option><option>كرتون</option>
-                <option>قطعة</option><option>صندوق</option>
-              </select>
-            </div>
-            <div class="field" style="grid-column:1/-1">
-              <label>اسم المادة</label>
-              <input type="text" id="edit-name">
-            </div>
-            <div class="field">
-              <label>الحد الأدنى</label>
-              <input type="number" id="edit-min" min="0">
-            </div>
-            <div class="field">
-              <label>كمية أول مدة</label>
-              <input type="number" id="edit-opening" min="0" step="0.01">
-            </div>
-            <div class="field" style="grid-column:1/-1">
-              <label>ملاحظات</label>
-              <input type="text" id="edit-notes">
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn" onclick="closeEditModal()">إلغاء</button>
-          <button class="btn btn-primary" onclick="saveEditItem()">✓ حفظ التعديل</button>
-        </div>
-      </div>
-    </div>
-
 
     <!-- ══ REPORTS PAGE ══ -->
     <div class="page" id="page-reports">
@@ -3334,6 +3356,7 @@ let pickerTarget = '';
 let movTypeFilter = '';
 
 function navigate(page) {
+  if(page==='catalog') page='items'; // تم دمج الكتالوج في شاشة المواد
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
@@ -3343,7 +3366,7 @@ function navigate(page) {
     dashboard:'لوحة التحكم', receive:'إدخال مواد', dispatch:'صرف مواد',
     'return-receive':'إرجاع إدخال', 'return-dispatch':'إرجاع صرف',
     stock:'المخزون الحالي', lowstock:'المواد تحت الحد الأدنى', movements:'سجل الحركات', reports:'التقارير',
-    items:'إدارة المواد', catalog:'كتالوج المواد', users:'المستخدمون والصلاحيات',
+    items:'المواد', catalog:'المواد', users:'المستخدمون والصلاحيات',
     audit:'سجل المراقبة — للمدير فقط', custody:'إدارة العهد', workorders:'أوامر العمل',
     reprint:'إعادة طباعة السندات',
     wot:'محوّل من الصانبي'
@@ -3368,7 +3391,6 @@ function navigate(page) {
   if(page==='workorders') { initWorkOrderPage(); renderWorkOrdersTable(); }
   if(page==='reprint') { initReprintPage(); }
   if(page==='audit') { if(!currentUser||currentUser.role!=='admin'){ toast('صفحة مخصصة للمدير فقط','error'); navigate('dashboard'); return; } _populateAuditUserFilter(); }
-  updateLowStockAlert();
 }
 
 // ── Clock ──
@@ -3800,23 +3822,6 @@ function getStatus(balance, min) {
   return 'ok';
 }
 
-// ── إشعار عائم بارز للمواد تحت الحد (يظهر في كل الشاشات) ──
-function updateLowStockAlert(){
-  const float = document.getElementById('low-stock-float');
-  if(!float) return;
-  const lowItems = (DB.items||[]).filter(it=>{
-    const s = getStock(it.code);
-    return it.min>0 && getStatus(s.balance, it.min)!=='ok';
-  });
-  if(lowItems.length>0){
-    const c = document.getElementById('low-stock-float-count');
-    if(c) c.textContent = lowItems.length;
-    float.style.display='flex';
-  } else {
-    float.style.display='none';
-  }
-}
-
 // ── Dashboard ──
 function renderDashboard() {
   document.getElementById('stat-items').textContent = DB.items.length;
@@ -3869,7 +3874,6 @@ function renderDashboard() {
   // رسوم تحليل المواد (بدلاً من جدول آخر الحركات)
   renderDashboardCharts();
   renderDashboardTrend();
-  updateLowStockAlert();
 }
 
 // ── رسم حركة آخر 7 أيام (أعمدة وارد/منصرف) ──
@@ -4013,6 +4017,25 @@ function _gsHide(clear){
 document.addEventListener('click', function(e){
   const wrap = document.getElementById('global-search-wrap');
   if(wrap && !wrap.contains(e.target)) _gsHide(false);
+});
+
+// ══ قائمة الحساب (الأفاتار العلوي) ══
+function toggleAccountMenu(ev){
+  ev.stopPropagation();
+  const menu = document.getElementById('account-menu');
+  if(!menu) return;
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.user-actions-menu.open').forEach(m=>m.classList.remove('open'));
+  if(!isOpen){
+    const nm = document.getElementById('account-menu-name');
+    if(nm && currentUser) nm.textContent = currentUser.fullname || currentUser.username || 'حسابي';
+    menu.classList.add('open');
+  }
+}
+function closeAccountMenu(){ const m=document.getElementById('account-menu'); if(m) m.classList.remove('open'); }
+document.addEventListener('click', function(e){
+  const wrap = document.getElementById('account-wrap');
+  if(wrap && !wrap.contains(e.target)) closeAccountMenu();
 });
 
 // ── Offline badge monitor (display only — does NOT disable save button) ──
@@ -6159,6 +6182,7 @@ function renderMovements(){
   const canEdit = currentUser && (currentUser.role==='admin' || currentUser.role==='supervisor');
   const canDel  = hasPerm('delete_txn');
   const tb = document.getElementById('mov-tbody');
+  const _mc = document.getElementById('mov-count'); if(_mc) _mc.textContent = 'ظاهر: ' + all.length.toLocaleString() + ' حركة';
   tb.innerHTML = all.map(m=>{
     const badge = MOV_TYPE_LABELS[m.type] || m.type;
 
@@ -6223,6 +6247,14 @@ function renderMovements(){
 function filterMovements(v){movFilter=v.toLowerCase();renderMovements();}
 function filterMovType(v){movTypeFilter=v;renderMovements();}
 function filterMovWo(v){renderMovements();}
+function toggleMovAdvanced(){
+  const adv = document.getElementById('mov-advanced');
+  const btn = document.getElementById('mov-adv-toggle');
+  if(!adv) return;
+  const show = adv.style.display === 'none';
+  adv.style.display = show ? 'flex' : 'none';
+  if(btn) btn.innerHTML = show ? '🎛 بحث متقدّم ▴' : '🎛 بحث متقدّم ▾';
+}
 
 // ══════════════════════════════════════════════════════════════
 // ██  AUDIT LOG PAGE FUNCTIONS  ██
@@ -6401,15 +6433,21 @@ function renderItems(){
   if(itemsFilter) data=data.filter(d=>d.code.toLowerCase().includes(itemsFilter)||d.name.includes(itemsFilter));
   const canManage = hasPerm('manage_items');
   const tb=document.getElementById('items-tbody');
-  tb.innerHTML=data.map((it,i)=>`<tr>
+  tb.innerHTML=data.map((it,i)=>{
+    const bal = getStock(it.code).balance;
+    const balColor = bal>0 ? 'var(--green-l)' : 'var(--red-l)';
+    const codeEsc = String(it.code).replace(/'/g,"\\'");
+    return `<tr>
     <td>${i+1}</td>
     <td><span class="code-chip">${esc(it.code)}</span></td>
     <td>${esc(it.name)}</td><td>${esc(it.unit)}</td>
     <td>${(it.opening||0).toLocaleString()}</td>
     <td>${it.min.toLocaleString()}</td>
+    <td><strong style="color:${balColor}">${bal.toLocaleString()}</strong></td>
     <td>${esc(it.notes)||'—'}</td>
-    <td>${canManage ? '<button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red)" onclick="deleteItem(\''+it.code+'\')">حذف</button>' : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
-  </tr>`).join('');
+    <td style="white-space:nowrap">${canManage ? '<button class="btn btn-sm" onclick="openEditModal(\''+codeEsc+'\')">✏️ تعديل</button> <button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red);margin-right:4px" onclick="deleteItem(\''+codeEsc+'\')">حذف</button>' : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+  </tr>`;
+  }).join('');
 }
 function filterItems(v){itemsFilter=v.toLowerCase();renderItems();}
 
@@ -7469,6 +7507,8 @@ function applyRoleUI() {
   document.getElementById('sb-username').textContent = currentUser.fullname;
   document.getElementById('sb-role').textContent = roleLabel(currentUser.role);
   document.getElementById('sb-avatar').textContent = currentUser.fullname.charAt(0);
+  const _tbAv = document.getElementById('tb-avatar');
+  if(_tbAv){ _tbAv.textContent = currentUser.fullname.charAt(0); _tbAv.title = currentUser.fullname + ' — ' + roleLabel(currentUser.role); }
 
   const canAdd     = hasPerm('add_txn');
   const canManageU = hasPerm('manage_users');
@@ -8909,20 +8949,9 @@ function exportAllCustodyPDF(){
 
 
 
-function sortCatalog(key) {
-  if(catalogSortKey === key) catalogSortDir *= -1;
-  else { catalogSortKey = key; catalogSortDir = 1; }
-  catalogPage = 1;
-  renderCatalog();
-  const labels = {code:'الكود', name:'الاسم', idx:'الرقم'};
-  document.getElementById('catalog-sort-label').textContent =
-    'مرتبة حسب: ' + (labels[key]||key) + (catalogSortDir===1?' ↑':' ↓');
-}
-
-function filterCatalog(v) { catalogFilter = v.toLowerCase(); catalogPage = 1; renderCatalog(); }
-function filterCatalogUnit(v) { catalogUnitFilter = v; catalogPage = 1; renderCatalog(); }
-
 function renderCatalog() {
+  // صفحة الكتالوج اندمجت في "المواد" — تأمين ضد عدم وجود العناصر
+  if(!document.getElementById('catalog-tbody')) return;
   let data = [...DB.items];
   if(catalogFilter) data = data.filter(d => d.code.toLowerCase().includes(catalogFilter) || d.name.includes(catalogFilter));
   if(catalogUnitFilter) data = data.filter(d => d.unit === catalogUnitFilter);
@@ -9048,6 +9077,23 @@ function _deleteCatalogItemCore(code) {
   toast('تم الحذف');
 }
 
+function exportStock() {
+  let data = [...DB.items].sort((a,b) => a.code.localeCompare(b.code));
+  const header = ['الكود','اسم المادة','الوحدة','إجمالي وارد','إجمالي صادر','الرصيد الحالي','الحد الأدنى','الحالة'];
+  const statusLabel = { ok:'متوفر', low:'تحت الحد', out:'نفد' };
+  const rows = data.map(it => {
+    const s = getStock(it.code);
+    return [it.code, it.name, it.unit, Number(s.totalIn)||0, Number(s.totalOut)||0, Number(s.balance)||0, Number(it.min)||0, statusLabel[getStatus(s.balance, it.min)] || ''];
+  });
+  const fname = 'المخزون_الحالي_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  _xlRunStyledExport(function(XL){
+    const wb = XL.utils.book_new();
+    XL.utils.book_append_sheet(wb, _xlStyledSheet(XL, {title:'المخزون الحالي', header, rows, fill:'1565C0'}), 'المخزون الحالي');
+    XL.writeFile(wb, fname);
+    toast('تم تصدير المخزون بصيغة Excel منسّق ✓');
+  }, function(){ _xlCsvDownload(header, rows, fname); toast('تم تصدير CSV (تعذر تحميل مكتبة Excel)'); });
+}
+
 function exportCatalog() {
   let data = [...DB.items].sort((a,b) => a.code.localeCompare(b.code));
   const header = ['الكود','اسم المادة','الوحدة','الكمية الحالية','الحد الأدنى','ملاحظات'];
@@ -9075,22 +9121,6 @@ function shareCatalog() {
     w.document.write('<pre dir="rtl" style="font-family:monospace;padding:20px;white-space:pre-wrap">'+text+'</pre>');
     w.document.close();
   }
-}
-
-function printCatalog() {
-  let data = [...DB.items].sort((a,b) => a.code.localeCompare(b.code));
-  let html = '<html dir="rtl"><head><meta charset="UTF-8"><title>قائمة المواد</title>';
-  html += '<style>body{font-family:Arial,sans-serif;direction:rtl}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:5px 8px;text-align:right}th{background:#eee;font-weight:bold}tr:nth-child(even){background:#f9f9f9}h2{margin-bottom:10px}</style></head><body>';
-  html += '<h2>قائمة المواد الكاملة — ' + new Date().toLocaleDateString('ar-SA') + '</h2>';
-  html += '<table><thead><tr><th>#</th><th>الكود</th><th>اسم المادة</th><th>الوحدة</th></tr></thead><tbody>';
-  data.forEach((it,i) => {
-    html += '<tr><td>'+(i+1)+'</td><td style="font-family:monospace">'+it.code+'</td><td>'+it.name+'</td><td>'+it.unit+'</td></tr>';
-  });
-  html += '</tbody></table>\n</body></html>';
-  const win = window.open('', '_blank', 'width=900,height=700');
-  if (win) { win.document.open(); win.document.write(html); win.document.close(); }
-  else { toast('يرجى السماح بالنوافذ المنبثقة', 'error'); return; }
-  toast('جاري فتح قائمة المواد للطباعة ✓');
 }
 
 // ── Multi-item return-receive list ──
@@ -10518,6 +10548,7 @@ function saveEditProfile() {
   // Update sidebar display
   document.getElementById('sb-username').textContent = newFullname;
   document.getElementById('sb-avatar').textContent = newFullname.charAt(0);
+  const _tbAv2 = document.getElementById('tb-avatar'); if(_tbAv2) _tbAv2.textContent = newFullname.charAt(0);
   closeEditProfile();
   toast('تم تحديث الملف الشخصي بنجاح ✓');
 }
