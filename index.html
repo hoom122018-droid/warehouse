@@ -415,6 +415,11 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
 /* ── أيقونات القائمة الجانبية: SVG خطّي حديث موحّد ── */
 .nav-item .icon{display:inline-flex;align-items:center;justify-content:center}
 .nav-item .icon svg{width:18px;height:18px;display:block}
+/* مربعات المواد في شاشة المقارنة */
+.cmp-code-box{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:13px;padding:11px 12px 11px 12px;padding-right:34px;width:100%;transition:border-color .15s,box-shadow .15s}
+.cmp-code-box:focus{outline:none;border-color:var(--blue);box-shadow:var(--ring)}
+.cmp-box-wrap{position:relative}
+.cmp-box-n{position:absolute;top:50%;right:9px;transform:translateY(-50%);width:19px;height:19px;border-radius:50%;background:var(--blue-bg);color:var(--blue-l);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;pointer-events:none}
 </style>
 </head>
 <body>
@@ -1406,6 +1411,7 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
         <div class="form-actions">
           <button class="btn btn-primary" onclick="generateReport()">📊 إنشاء التقرير</button>
           <button class="btn btn-success" onclick="exportReportPDF()">📄 تصدير PDF</button>
+          <select id="rpt-print-lang" class="filter-select" style="padding:8px 10px;font-size:12px" title="لغة طباعة التقرير"><option value="ar" selected>🖨 عربي</option><option value="en">🖨 English</option></select>
           <button class="btn" onclick="printReport()">🖨 طباعة التقرير</button>
           <button class="btn" onclick="exportReportCSV()">⬇ تصدير Excel</button>
           <button class="btn" onclick="clearReportFilters()" style="color:var(--red-l);border-color:var(--red);margin-right:auto">✕ مسح الفلاتر</button>
@@ -1496,6 +1502,7 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
             <button class="btn btn-sm btn-primary" onclick="searchCompare()">🔍 بحث</button>
             <button class="btn btn-sm" onclick="showAllCompare()">📋 عرض الكل</button>
             <button class="btn btn-sm" onclick="clearCompareFilters()" style="color:var(--red-l);border-color:var(--red)">✕ مسح</button>
+            <select id="cmp-print-lang" class="filter-select" style="padding:6px 10px;font-size:12px" title="لغة الطباعة"><option value="en" selected>🖨 English</option><option value="ar">🖨 عربي</option></select>
             <button class="btn btn-sm" onclick="printCompare()">🖨 طباعة PDF</button>
             <button class="btn btn-sm" onclick="exportCompare()">⬇ تصدير Excel (محوري)</button>
           </div>
@@ -1511,31 +1518,36 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
 
     <!-- Compare materials modal -->
     <div class="modal-overlay" id="cmp-materials-modal">
-      <div class="modal" style="width:460px">
+      <div class="modal" style="width:540px;max-width:96vw">
         <div class="modal-header">
-          <span class="modal-title">🏷️ تحديد المواد للبحث</span>
+          <span class="modal-title">🏷️ تحديد المواد للمقارنة</span>
           <button class="modal-close" onclick="closeCmpMaterials()">✕</button>
         </div>
         <div class="modal-body">
-          <label style="font-size:12px;font-weight:500;color:var(--text2)">أكواد المواد (حتى 9 مواد — كل كود في مربع)</label>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px" id="cmp-code-boxes">
-            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 1" style="font-family:monospace">
-            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 2" style="font-family:monospace">
-            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 3" style="font-family:monospace">
-            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 4" style="font-family:monospace">
-            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 5" style="font-family:monospace">
-            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 6" style="font-family:monospace">
-            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 7" style="font-family:monospace">
-            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 8" style="font-family:monospace">
-            <input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود 9" style="font-family:monospace">
+          <div style="display:flex;align-items:center;gap:11px;background:var(--blue-bg);border:1px solid var(--blue);border-radius:12px;padding:11px 14px;margin-bottom:16px">
+            <span style="font-size:20px">💡</span>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">اكتب حتى <b style="color:var(--blue-l)">9 أكواد</b> — هتظهر اقتراحات وانت بتكتب. سيبها فاضية للبحث في <b>كل المواد</b>.</div>
+          </div>
+          <div id="cmp-code-boxes" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-height:46vh;overflow-y:auto;padding:2px">
+            <div class="cmp-box-wrap"><span class="cmp-box-n">1</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">2</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">3</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">4</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">5</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">6</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">7</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">8</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">9</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
           </div>
           <datalist id="cmp-codes-dl"></datalist>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px">سيبها كلها فاضية للبحث في كل المواد. ابدأ تكتب الكود وهيقترحلك.</div>
-          <div id="cmp-codes-warn" style="display:none;margin-top:10px;padding:10px 12px;background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius);color:var(--red-l);font-size:12px;line-height:1.7"></div>
+          <div id="cmp-codes-warn" style="display:none;margin-top:14px;padding:11px 13px;background:var(--red-bg);border:1px solid var(--red);border-radius:12px;color:var(--red-l);font-size:12px;line-height:1.7"></div>
         </div>
-        <div class="modal-footer">
-          <button class="btn" onclick="closeCmpMaterials()">إلغاء</button>
-          <button class="btn btn-primary" onclick="applyCmpMaterials()">تطبيق وبحث</button>
+        <div class="modal-footer" style="justify-content:space-between">
+          <button class="btn btn-sm" onclick="_cmpClearBoxes()" style="color:var(--red-l);border-color:var(--red)">🗑 مسح الكل</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="closeCmpMaterials()">إلغاء</button>
+            <button class="btn btn-primary" onclick="applyCmpMaterials()">✓ تطبيق وبحث</button>
+          </div>
         </div>
       </div>
     </div>
@@ -8549,8 +8561,27 @@ function previewCustodyReturnPDF(custody){
   document.getElementById('cust-pdf-modal').classList.add('show');
 }
 
+function setCustodyLang(lang){
+  window._custodyLang = lang;
+  const c = _pdfPrintCustody || _pendingCustody;
+  if(!c) return;
+  let h = _buildCustodyPDFHTML(c, window._showAdminSig||false, window._custodyPdfMode||'delivery');
+  if(lang==='en') h = _custodyToEnglish(h);
+  document.getElementById('cust-pdf-content').innerHTML = h;
+}
+function _injectCustodyLangToggle(){
+  const act = document.getElementById('cust-pdf-modal-actions');
+  if(act && !act.querySelector('#cust-lang-wrap')){
+    const lw = document.createElement('div'); lw.id='cust-lang-wrap';
+    lw.style='display:flex;align-items:center;gap:5px';
+    lw.innerHTML='<select id="cust-pdf-lang" onchange="setCustodyLang(this.value)" style="padding:5px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px;font-family:var(--font)"><option value="ar">🖨️ عربي</option><option value="en">🖨️ English</option></select>';
+    act.prepend(lw);
+  }
+  const ls=document.getElementById('cust-pdf-lang'); if(ls) ls.value='ar';
+}
 function previewCustodyPDF(custody){
   window._custodyPdfMode = 'delivery'; // الوضع الافتراضي: سند التسليم
+  window._custodyLang = 'ar';
   _pdfPrintCustody = custody;
   _pendingCustody = null; // viewing existing, not pending
   document.getElementById('cust-pdf-modal-title').textContent = '📄 معاينة العهدة — ' + custody.id;
@@ -8582,6 +8613,7 @@ function previewCustodyPDF(custody){
     `;
     actEl2.prepend(photoWrap);
   }
+  _injectCustodyLangToggle();
   document.getElementById('cust-pdf-modal').classList.add('show');
 }
 
@@ -8589,7 +8621,9 @@ function toggleAdminSig(checked){
   window._showAdminSig = checked;
   const c = _pdfPrintCustody || _pendingCustody;
   if(!c) return;
-  document.getElementById('cust-pdf-content').innerHTML = _buildCustodyPDFHTML(c, checked, window._custodyPdfMode||'delivery');
+  let h = _buildCustodyPDFHTML(c, checked, window._custodyPdfMode||'delivery');
+  if(window._custodyLang==='en') h = _custodyToEnglish(h);
+  document.getElementById('cust-pdf-content').innerHTML = h;
 }
 
 function closeCustodyPDF(){
@@ -8634,6 +8668,21 @@ function _getCustodyLogo(){
   return '';
 }
 
+// ── ترجمة عناوين سند العهدة للإنجليزية (العناوين والحقول والأرقام فقط — النص الرسمي يبقى عربي) ──
+function _custodyToEnglish(html){
+  try{
+    const P=[
+      ['>م<','>#<'],['>كود المادة<','>Item Code<'],['>اسم المادة<','>Material<'],['>الوحدة<','>Unit<'],['>الكمية<','>Qty<'],['>الحالة<','>Status<'],['>الإجمالي<','>Total<'],['>الأصناف المسلّمة<','>Delivered Items<'],
+      ['>اسم المستلم<','>Receiver Name<'],['>اسم المُستلِم<','>Receiver Name<'],['>اسم المُسلِّم<','>Deliverer Name<'],['>توقيع المُستلِم<','>Receiver Signature<'],['>توقيع المُسلِّم<','>Deliverer Signature<'],['>التوقيعات<','>Signatures<'],['>التوقيع<','>Signature<'],
+      ['>التاريخ<','>Date<'],['>المهنة<','>Job<'],['>بعلم<','>Witnessed by<'],['>رقم العهدة<','>Custody No.<'],['>رقم الإقامة<','>Residency No.<'],['>رقم الجوال<','>Mobile No.<'],['>الشركة / الجهة<','>Company / Entity<'],['>صورة الهوية<','>ID Photo<'],['>ملاحظات<','>Notes<'],
+      ['وثيقة تسليم عهدة','Custody Delivery Voucher'],['سند إرجاع عهدة','Custody Return Voucher'],['إقرار المستلم','Receiver Acknowledgment'],['إقرار الإرجاع','Return Acknowledgment'],
+      ['اسم المستلم: ','Receiver: '],['رقم الإقامة: ','Residency No.: '],['رقم الجوال: ','Mobile No.: '],['تاريخ الإصدار: ','Issue Date: '],['تاريخ الإرجاع','Return Date'],['ملاحظات: ','Notes: '],['صفحة ','Page ']
+    ];
+    P.forEach(p=>{ html=html.split(p[0]).join(p[1]); });
+    html=html.replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-0x0660)).replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-0x06F0));
+    return html;
+  }catch(e){ return html; }
+}
 function printCustodyPDF(){
   const c = _pdfPrintCustody || _pendingCustody;
   if(!c) return;
@@ -8821,6 +8870,7 @@ function printCustodyPDF(){
     const chunk = allItems.slice(start, start + ITEMS_PER_PAGE);
     allPagesHTML += buildPage(chunk, p+1, start, p===0);
   }
+  if(window._custodyLang==='en') allPagesHTML = _custodyToEnglish(allPagesHTML);
 
   const win = window.open('','_blank','width=900,height=700');
   win.document.open();
@@ -9471,6 +9521,7 @@ function openCmpMaterials(){
   document.getElementById('cmp-materials-modal').classList.add('show');
 }
 function closeCmpMaterials(){ document.getElementById('cmp-materials-modal').classList.remove('show'); }
+function _cmpClearBoxes(){ document.querySelectorAll('.cmp-code-box').forEach(bx=>bx.value=''); const warn=document.getElementById('cmp-codes-warn'); if(warn) warn.style.display='none'; }
 function applyCmpMaterials(){
   const list=Array.from(document.querySelectorAll('.cmp-code-box')).map(bx=>bx.value.trim()).filter(Boolean);
   const warn=document.getElementById('cmp-codes-warn');
@@ -9616,7 +9667,43 @@ function exportCompare(){
     return [w,ser].concat(codesList.map(c=> (woMap[w][c]!=null)?woMap[w][c]:''));
   });
   const fname='WO_Comparison_Pivot_'+new Date().toISOString().slice(0,10)+'.xlsx';
-  _xlRunStyledExport(function(XL){const wb=XL.utils.book_new();XL.utils.book_append_sheet(wb,_xlStyledSheet(XL,{title:'WO Comparison (Pivot)',header,rows,fill:'1565C0'}),'Pivot');XL.writeFile(wb,fname);toast('تم تصدير الجدول المحوري (إنجليزي) ✓');},function(){_xlCsvDownload(header,rows,fname);toast('تم تصدير CSV');});
+  const aEN=(_CMP_METRICS_EN[a]||a);
+  const fromV=document.getElementById('cmp-from').value, toV=document.getElementById('cmp-to').value;
+  const regV=document.getElementById('cmp-region').value;
+  const info='Metric: '+aEN+(fromV?('   |   From: '+fromV):'')+(toV?('   |   To: '+toV):'')+(regV?('   |   Region: '+regV):'')+'   |   Generated: '+new Date().toLocaleString('en-GB');
+  const nCols=header.length;
+  _xlRunStyledExport(function(XL){
+    const aoa=[
+      ['ALSANIBI Contracting — Inventory Management System'],
+      ['Work Orders Comparison  (Pivot)'],
+      ['Designed by Mahmoud Hoom · System Designer · 0580344530'],
+      [info],
+      header,
+      ...rows
+    ];
+    const ws=XL.utils.aoa_to_sheet(aoa);
+    ws['!merges']=[0,1,2,3].map(r=>({s:{r:r,c:0},e:{r:r,c:nCols-1}}));
+    const bd={style:'thin',color:{rgb:'E2E8F0'}};
+    const allBd={top:bd,bottom:bd,left:bd,right:bd};
+    const S=(ref,s)=>{ if(ws[ref]) ws[ref].s=s; };
+    S('A1',{font:{bold:true,sz:15,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1565C0'}},alignment:{horizontal:'center',vertical:'center'}});
+    S('A2',{font:{bold:true,sz:12,color:{rgb:'1565C0'}},fill:{fgColor:{rgb:'E8F0FE'}},alignment:{horizontal:'center',vertical:'center'}});
+    S('A3',{font:{italic:true,bold:true,sz:10,color:{rgb:'7B5CFF'}},fill:{fgColor:{rgb:'F5F3FF'}},alignment:{horizontal:'center',vertical:'center'}});
+    S('A4',{font:{sz:9,color:{rgb:'64748B'}},fill:{fgColor:{rgb:'F8FAFC'}},alignment:{horizontal:'center',vertical:'center'}});
+    for(let c=0;c<nCols;c++){ S(XL.utils.encode_cell({r:4,c}),{font:{bold:true,sz:11,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1E293B'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:allBd}); }
+    // خريطة حرارية: تلوين خلايا القيم حسب الكمية (نظام عرض بصري)
+    const _hx=h=>[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
+    const _lerp=(c1,c2,t)=>{const a=_hx(c1),b=_hx(c2);return a.map((x,i)=>Math.round(x+(b[i]-x)*t)).map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();};
+    let maxV=0; rows.forEach(rw=>{ for(let c=2;c<rw.length;c++){ const v=Number(rw[c]); if(!isNaN(v)&&v>maxV) maxV=v; } });
+    for(let r=5;r<aoa.length;r++){ const dr=aoa[r]; for(let c=0;c<nCols;c++){ const ref=XL.utils.encode_cell({r,c}); if(!ws[ref]) continue; let fl; if(c<2){ fl=((r%2)?'FFFFFF':'F4F8FF'); } else { const v=Number(dr[c]); fl=(!isNaN(v)&&v>0&&maxV>0)?_lerp('FFFFFF','7FB2EE',Math.min(1,v/maxV)):'FFFFFF'; } ws[ref].s={font:{sz:10,color:{rgb:'1E293B'}},alignment:{horizontal:'center',vertical:'center'},border:allBd,fill:{fgColor:{rgb:fl}}}; } }
+    ws['!cols']=[{wch:15},{wch:12}].concat(codesList.map(()=>({wch:17})));
+    ws['!rows']=[{hpt:28},{hpt:22},{hpt:18},{hpt:16},{hpt:22}];
+    ws['!autofilter']={ref:XL.utils.encode_range({s:{r:4,c:0},e:{r:aoa.length-1,c:nCols-1}})};
+    const wb=XL.utils.book_new();
+    XL.utils.book_append_sheet(wb,ws,'Pivot');
+    XL.writeFile(wb,fname);
+    toast('تم تصدير الجدول المحوري ✓');
+  },function(){ _xlCsvDownload(header,rows,fname); toast('تم تصدير CSV'); });
 }
 
 // طباعة PDF — نافذة إنجليزية مستقلة (لهذه الصفحة فقط) بنفس شكل العرض الحالي
@@ -9624,8 +9711,15 @@ const _CMP_METRICS_EN = {
   planned:'Planned', received:'Received', retReceived:'Return-In',
   netIn:'Net In', dispatched:'Dispatched', retDispatched:'Return-Out', netOut:'Net Out'
 };
-function printCompare(){
+function printCompare(lang){
   if(!_compareSearched){ toast('اضغط 🔍 بحث أو 📋 عرض الكل أولاً','info'); return; }
+  const sel=document.getElementById('cmp-print-lang');
+  lang = lang || (sel?sel.value:'ar');
+  const en = lang==='en';
+  const M = en ? _CMP_METRICS_EN : _CMP_METRICS;
+  const T = en
+    ? {title:'Work Orders Comparison — Variances',co:'ALSANIBI Contracting — Inventory Management System',gen:'Generated',rows:'Rows',compare:'Compare',range:'Date Range',all:'All dates',from:'From',to:'To',wo:'Work Order',serial:'Serial',nowo:'No Work Order',hash:'#',code:'Code',mat:'Material',unit:'Unit',diff:'Difference',by:'Designed by Mahmoud Hoom — System Designer'}
+    : {title:'مقارنة أوامر العمل — الفروقات',co:'مؤسسة الصانبي للمقاولات — نظام إدارة المخزون',gen:'تاريخ الإصدار',rows:'عدد الصفوف',compare:'المقارنة',range:'نطاق التاريخ',all:'كل التواريخ',from:'من',to:'إلى',wo:'أمر العمل',serial:'مسلسل',nowo:'بدون أمر عمل',hash:'#',code:'الكود',mat:'المادة',unit:'الوحدة',diff:'الفرق',by:'تصميم: محمود حوم — مصمم النظام'};
   const a=document.getElementById('cmp-a').value;
   const b=document.getElementById('cmp-b').value;
   const hasB=!!b;
@@ -9634,39 +9728,66 @@ function printCompare(){
   arr.sort((x,y)=>{ const w=String(x.workorder||'').localeCompare(String(y.workorder||''),'ar'); if(w!==0) return w; return hasB?(Math.abs(y._diff)-Math.abs(x._diff)):((Number(y[a])||0)-(Number(x[a])||0)); });
   if(!arr.length){ toast('لا توجد بيانات للطباعة','error'); return; }
   const cols=hasB?7:5;
-  let head='<tr><th>#</th><th>Code</th><th>Material</th><th>Unit</th><th>'+(_CMP_METRICS_EN[a]||a)+'</th>';
-  if(hasB) head+='<th>'+(_CMP_METRICS_EN[b]||b)+'</th><th>Difference</th>';
+  const numLoc = en?'en-US':'ar-EG';
+  let head='<tr><th>'+T.hash+'</th><th>'+T.code+'</th><th>'+T.mat+'</th><th>'+T.unit+'</th><th>'+(M[a]||a)+'</th>';
+  if(hasB) head+='<th>'+(M[b]||b)+'</th><th>'+T.diff+'</th>';
   head+='</tr>';
-  let bdy=''; let curWo=null; let idx=0;
+  let bdy=''; let curWo=null; let idx=0; let groupOpen=false;
   arr.forEach(m=>{
-    if(m.workorder!==curWo){ curWo=m.workorder; idx=0;
-      const ser=_cmpWoSerials[curWo]?Object.keys(_cmpWoSerials[curWo]).join(', '):'';
-      const lbl=(curWo?('Work Order: '+esc(curWo)):'No Work Order')+(ser?('  •  Serial: '+esc(ser)):'');
-      bdy+='<tr><td colspan="'+cols+'" class="grp">'+lbl+'</td></tr>';
+    if(m.workorder!==curWo){
+      if(groupOpen) bdy+='</tbody>';
+      curWo=m.workorder; idx=0;
+      const ser=_cmpWoSerials[curWo]?Object.keys(_cmpWoSerials[curWo]).join(en?', ':'، '):'';
+      const lbl=(curWo?(T.wo+': '+esc(curWo)):T.nowo)+(ser?('  •  '+T.serial+': '+esc(ser)):'');
+      bdy+='<tbody class="grp-body"><tr><td colspan="'+cols+'" class="grp">'+lbl+'</td></tr>';
+      groupOpen=true;
     }
     idx++;
     const va=Number(m[a])||0;
-    let r='<tr><td>'+idx+'</td><td class="mono">'+esc(m.code)+'</td><td class="ar">'+esc(m.name)+'</td><td class="ar">'+esc(m.unit)+'</td><td>'+va.toLocaleString('en-US')+'</td>';
-    if(hasB){ const vb=Number(m[b])||0; const diff=m._diff; const col=diff<0?'#c62828':(diff>0?'#f57f17':'#2E7D32'); r+='<td>'+vb.toLocaleString('en-US')+'</td><td style="font-weight:700;color:'+col+'">'+(diff>0?'+':'')+diff.toLocaleString('en-US')+'</td>'; }
+    let r='<tr><td>'+idx+'</td><td class="mono">'+esc(m.code)+'</td><td class="nm">'+esc(m.name)+'</td><td class="nm">'+esc(m.unit)+'</td><td>'+va.toLocaleString(numLoc)+'</td>';
+    if(hasB){ const vb=Number(m[b])||0; const diff=m._diff; const col=diff<0?'#c62828':(diff>0?'#f57f17':'#2E7D32'); r+='<td>'+vb.toLocaleString(numLoc)+'</td><td style="font-weight:700;color:'+col+'">'+(diff>0?'+':'')+diff.toLocaleString(numLoc)+'</td>'; }
     bdy+=r+'</tr>';
   });
-  const cmpLabel=(_CMP_METRICS_EN[a]||a)+(hasB?(' − '+(_CMP_METRICS_EN[b]||b)):'');
-  const today=new Date().toLocaleString('en-GB');
-  const html='<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charset="UTF-8"><title>Work Orders Comparison</title>'
-    +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,Tahoma,sans-serif;padding:20px;color:#111}'
-    +'.hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1F6FEB;padding-bottom:10px;margin-bottom:14px}'
-    +'.tt{font-size:18px;font-weight:700;color:#1F6FEB}.mt{font-size:11px;color:#555;text-align:right;line-height:1.7}'
-    +'table{width:100%;border-collapse:collapse;font-size:12px}'
-    +'th{background:#1F6FEB;color:#fff;padding:8px 10px;text-align:left;border:1px solid #1a5ecc}'
-    +'td{padding:7px 10px;border:1px solid #ddd;text-align:left}'
-    +'.mono{font-family:monospace}.ar{direction:rtl;text-align:right}.grp{background:#e8f0fe;font-weight:700;color:#1F6FEB}'
-    +'@media print{body{padding:6px}}</style></head><body>'
-    +'<div class="hd"><div class="tt">Work Orders Comparison — Variances</div>'
-    +'<div class="mt">Compare: '+cmpLabel+'<br>Date: '+today+'<br>Rows: '+arr.length+'</div></div>'
-    +'<table><thead>'+head+'</thead><tbody>'+bdy+'</tbody></table>'
-    +'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},250);};<\/scr'+'ipt>'
+  if(groupOpen) bdy+='</tbody>';
+  const cmpLabel=(M[a]||a)+(hasB?(' − '+(M[b]||b)):'');
+  const fromV=document.getElementById('cmp-from').value, toV=document.getElementById('cmp-to').value;
+  const dateRange=(fromV||toV)?(T.from+' '+(fromV||'…')+'  '+T.to+' '+(toV||'…')):T.all;
+  const now=new Date();
+  const genStr=now.toLocaleDateString(en?'en-GB':'ar-EG')+'  '+now.toLocaleTimeString(en?'en-GB':'ar-EG');
+  const logo=(typeof _getSanibiLogo==='function')?(_getSanibiLogo()||''):'';
+  const logoImg=logo?('<img src="'+logo+'" style="height:50px;border-radius:8px;background:#fff;padding:3px">'):'';
+  const dir=en?'ltr':'rtl', align=en?'left':'right';
+  const font=en?'Inter,Arial,sans-serif':"'IBM Plex Sans Arabic',Tahoma,sans-serif";
+  const fontLink=en
+    ? '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">'
+    : '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700;800&display=swap" rel="stylesheet">';
+  const html='<!DOCTYPE html><html lang="'+(en?'en':'ar')+'" dir="'+dir+'"><head><meta charset="UTF-8"><title>'+T.title+'</title>'+fontLink
+    +'<style>*{margin:0;padding:0;box-sizing:border-box}'
+    +'body{font-family:'+font+';color:#1e293b;padding:18px 24px 6px;background:#fff}'
+    +'.brand{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 22px;border-radius:14px;background:linear-gradient(135deg,#1565C0,#7B5CFF);color:#fff}'
+    +'.brand .l{display:flex;align-items:center;gap:14px}.brand h1{font-size:18px;font-weight:800}'
+    +'.brand .co{font-size:11px;opacity:.9;margin-top:3px}.brand .r{text-align:'+(en?'right':'left')+';font-size:11px;line-height:1.9;opacity:.95}'
+    +'.meta{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 16px}'
+    +'.chip{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:9px;padding:7px 13px;font-size:12px;color:#334155}.chip b{color:#1565C0}'
+    +'table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}'
+    +'th{background:#1e293b;color:#fff;padding:10px 12px;text-align:'+align+';font-weight:600;font-size:11.5px}'
+    +'td{padding:9px 12px;border-top:1px solid #eef2f7;text-align:'+align+'}'
+    +'tbody tr:nth-child(even) td{background:#f8fafc}'
+    +'.mono{font-family:"Courier New",monospace;font-weight:700;color:#1565C0}'
+    +'.nm{'+(en?'direction:rtl;text-align:right;':'')+'font-family:Tahoma,Arial}'
+    +'.grp td{background:linear-gradient(90deg,#e8f0fe,#f3eaff)!important;font-weight:800;color:#1565C0;font-size:13px;padding:11px 14px;border-top:2px solid #c7d2fe}'
+    +'tbody.grp-body{break-inside:avoid;page-break-inside:avoid}tr{break-inside:avoid;page-break-inside:avoid}'
+    +'tfoot{display:table-footer-group}tfoot td.ftrow{background:#f8fafc;color:#64748b;font-size:9.5px;text-align:center;padding:7px 8px;border-top:2px solid #cbd5e1;white-space:nowrap}tfoot td.ftrow b{color:#1565C0}'
+    +'@page{margin:8mm 7mm 8mm}'
+    +'@media print{.brand,th,.grp td,tbody tr:nth-child(even) td{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'
+    +'</style></head><body>'
+    +'<div class="brand"><div class="l">'+logoImg+'<div><h1>'+T.title+'</h1><div class="co">'+T.co+'</div></div></div>'
+    +'<div class="r">'+T.gen+': '+genStr+'<br>'+T.rows+': '+arr.length+'</div></div>'
+    +'<div class="meta"><span class="chip">'+T.compare+': <b>'+cmpLabel+'</b></span><span class="chip">'+T.range+': <b>'+dateRange+'</b></span></div>'
+    +'<table><thead>'+head+'</thead><tfoot><tr><td colspan="'+cols+'" class="ftrow"><b>'+T.by+'</b>  •  📞 0580344530  •  ALSANIBI © '+now.getFullYear()+'</td></tr></tfoot>'+bdy+'</table>'
+    +'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},300);};<\/scr'+'ipt>'
     +'</body></html>';
-  const w=window.open('','_blank','width=1000,height=720');
+  const w=window.open('','_blank','width=1050,height=760');
   if(!w){ toast('يرجى السماح بالنوافذ المنبثقة','error'); return; }
   w.document.open(); w.document.write(html); w.document.close();
 }
@@ -10632,6 +10753,21 @@ function exportReportPDF(){
   toast('جاري فتح نافذة تصدير التقرير ✓');
 }
 
+// ── ترجمة عناوين تقرير الطباعة للإنجليزية (لا تمس البيانات/العربي) ──
+function _reportToEnglish(html){
+  try{
+    const TH={'الكود':'Code','المادة':'Material','الوحدة':'Unit','أمر العمل':'Work Order','إرجاع إدخال':'Return-In','إرجاع صرف':'Return-Out','اسم الجهة':'Party Name','التاريخ':'Date','الجهة/المورد':'Party/Supplier','الحالة':'Status','الحد الأدنى':'Min','الرصيد':'Balance','الرقم التسلسلي':'Serial No.','الكمية':'Quantity','المسؤول':'User','المنطقة':'Region','النوع':'Type','رقم الصفحة':'Page No.','رقم العملية':'Op. No.','رقم الكتاب':'Book No.','صادر':'Out','ملاحظات':'Notes','وارد':'In','كمية الإدخال':'Received Qty','صافي الإدخال':'Net In','كمية الصرف':'Dispatched Qty','صافي المسحوب':'Net Out','المخطط له':'Planned','الفرق (المخطط − الصرف)':'Diff (Planned − Out)'};
+    Object.keys(TH).forEach(ar=>{ html=html.split('>'+ar+'</th>').join('>'+TH[ar]+'</th>'); });
+    const LBL={'عدد المواد':'Items','إجمالي الإدخال':'Total In','صافي الإدخال':'Net In','إجمالي الصرف':'Total Out','صافي المسحوب':'Net Out','إجمالي السجلات':'Total Records','إجمالي الكميات':'Total Qty','إدخال':'In','إرجاعات':'Returns','صرف':'Out','نفد':'Out of Stock','إجمالي الأصناف':'Total Items','متوفر':'Available','تحت الحد':'Low'};
+    Object.keys(LBL).forEach(ar=>{ html=html.split('>'+ar+'</div>').join('>'+LBL[ar]+'</div>'); });
+    html=html.split('>الإجمالي</td>').join('>Total</td>');
+    html=html.split('📥 إدخال').join('📥 In').split('📤 صرف').join('📤 Out').split('↩ إرجاع إدخال').join('↩ Return-In').split('↪ إرجاع صرف').join('↪ Return-Out');
+    html=html.split('طباعة: ').join('Printed: ').split('— المسؤول: ').join(' — By: ').split('نظام إدارة المخزون — IMS Pro').join('Inventory Management System — IMS Pro').split('تصميم: محمود حوم').join('Designed by: Mahmoud Hoom');
+    // تحويل الأرقام العربية/الفارسية إلى إنجليزية
+    html=html.replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-0x0660)).replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-0x06F0));
+    return html;
+  }catch(e){ return html; }
+}
 function printReport(){
   if(!_reportData || !_reportData.length){
     toast('يرجى إنشاء التقرير أولاً','error');
@@ -10835,11 +10971,14 @@ td{padding:6px 8px;border:1px solid #ddd;text-align:right;vertical-align:middle}
 
 </body></html>`;
 
+  const _rptLangSel = document.getElementById('rpt-print-lang');
+  const _rptLang = _rptLangSel ? _rptLangSel.value : 'ar';
+  const finalHtml = (_rptLang==='en') ? _reportToEnglish(html) : html;
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none';
   document.body.appendChild(iframe);
   iframe.contentDocument.open();
-  iframe.contentDocument.write(html);
+  iframe.contentDocument.write(finalHtml);
   iframe.contentDocument.close();
   iframe.onload = function(){
     setTimeout(function(){
