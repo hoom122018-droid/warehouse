@@ -234,7 +234,7 @@ tbody tr{transition:background .12s}
 .badge-purple{background:var(--purple-bg);color:var(--purple-l);border:1px solid rgba(59,164,247,.3)}
 
 /* ── Code chip ── */
-.code-chip{font-family:monospace;font-size:12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:1px 6px;color:var(--blue-l)}
+.code-chip{font-family:monospace;font-size:13.5px;font-weight:600;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:2px 7px;color:var(--blue-l)}
 
 /* ── Alert ── */
 .alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:14px;display:none}
@@ -406,8 +406,10 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 /* ── شريط التمرير بتدرّج ── */
 ::-webkit-scrollbar-thumb{background:var(--grad-primary);border-radius:4px}
 
-/* ── تمرير صفوف الجداول: مسحة متدرّجة ناعمة ── */
-tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,110,255,.02))}
+/* ── تمرير صفوف الجداول: إبراز واضح ── */
+tbody tr:hover td{background:rgba(59,164,247,.16)!important}
+tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
+[data-theme="light"] tbody tr:hover td{background:rgba(37,99,235,.12)!important}
 
 /* ── التوست: إحساس زجاجي ── */
 .toast{background:color-mix(in srgb,var(--bg2) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
@@ -649,7 +651,10 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
             </div>
             <div class="field">
               <label>رقم المسلسل</label>
-              <input type="text" id="rcv-serial" placeholder="اختياري">
+              <div style="display:flex;gap:6px">
+                <select id="rcv-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <input type="text" id="rcv-serial" placeholder="اختياري" style="flex:1">
+              </div>
             </div>
             <div class="field">
               <label>المنطقة</label>
@@ -775,7 +780,10 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
             </div>
             <div class="field">
               <label>رقم المسلسل</label>
-              <input type="text" id="dsp-serial" placeholder="اختياري">
+              <div style="display:flex;gap:6px">
+                <select id="dsp-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <input type="text" id="dsp-serial" placeholder="اختياري" style="flex:1">
+              </div>
             </div>
             <div class="field">
               <label>المنطقة</label>
@@ -894,7 +902,10 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
             </div>
             <div class="field">
               <label>رقم المسلسل</label>
-              <input type="text" id="rrcv-serial" placeholder="اختياري">
+              <div style="display:flex;gap:6px">
+                <select id="rrcv-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <input type="text" id="rrcv-serial" placeholder="اختياري" style="flex:1">
+              </div>
             </div>
             <div class="field">
               <label>المنطقة</label>
@@ -1009,7 +1020,10 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
             </div>
             <div class="field">
               <label>رقم المسلسل</label>
-              <input type="text" id="rdsp-serial" placeholder="اختياري">
+              <div style="display:flex;gap:6px">
+                <select id="rdsp-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <input type="text" id="rdsp-serial" placeholder="اختياري" style="flex:1">
+              </div>
             </div>
             <div class="field">
               <label>المنطقة</label>
@@ -1194,6 +1208,7 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
           <span id="mov-count" style="font-size:12px;color:var(--text2);white-space:nowrap;font-weight:600;margin-right:auto">—</span>
           <div id="mov-advanced" style="display:none;flex-basis:100%;flex-wrap:wrap;gap:8px;margin-top:2px">
             <input type="text" class="filter-select" id="mov-serial-filter" placeholder="🔍 رقم المسلسل" oninput="renderMovements()" style="width:150px">
+            <select class="filter-select" id="mov-region-filter" onchange="renderMovements()" style="width:130px"><option value="">📍 كل المناطق</option><option value="جنوب">جنوب</option><option value="شرق">شرق</option></select>
             <input type="text" class="filter-select" id="mov-book-filter" placeholder="🔍 رقم الكتاب" oninput="renderMovements()" style="width:130px">
             <input type="text" class="filter-select" id="mov-page-filter" placeholder="🔍 رقم الصفحة" oninput="renderMovements()" style="width:130px">
             <input type="text" class="filter-select" id="mov-dept-filter" placeholder="🔍 الجهة/المورد" oninput="renderMovements()" style="width:140px">
@@ -1202,7 +1217,7 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
         <table>
           <thead><tr>
             <th>رقم العملية</th><th>النوع</th><th>التاريخ</th><th>الكود</th>
-            <th>المادة</th><th>الكمية</th><th>أمر العمل</th><th>رقم المسلسل</th><th>رقم الصفحة</th><th>الجهة/المورد</th><th>المستخدم</th><th>إجراءات</th>
+            <th>المادة</th><th>الكمية</th><th>أمر العمل</th><th>رقم المسلسل</th><th>المنطقة</th><th>رقم الكتاب</th><th>رقم الصفحة</th><th>الجهة/المورد</th><th>المستخدم</th><th>إجراءات</th>
           </tr></thead>
           <tbody id="mov-tbody"></tbody>
         </table>
@@ -2252,7 +2267,14 @@ tbody tr:hover td{background:linear-gradient(90deg,rgba(96,110,255,.09),rgba(96,
             </div>
             <div class="field">
               <label>رقم المسلسل</label>
-              <input type="text" id="txn-edit-serial" placeholder="رقم المسلسل">
+              <div style="display:flex;gap:6px">
+                <select id="txn-edit-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <input type="text" id="txn-edit-serial" placeholder="رقم المسلسل" style="flex:1">
+              </div>
+            </div>
+            <div class="field">
+              <label>المنطقة</label>
+              <select id="txn-edit-region"><option value="">— اختر المنطقة —</option><option value="جنوب">جنوب</option><option value="شرق">شرق</option></select>
             </div>
             <div class="field">
               <label>المستودع</label>
@@ -2586,6 +2608,26 @@ function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
+}
+
+// ── المسلسل مع حرف (E/S): يدمج الحرف المختار مع الرقم، وينذر لو الرقم موجود بدون حرف ──
+// يُرجع السلسلة المدموجة، أو '' لو فاضي، أو null لو فشل التحقق (رقم بدون حرف)
+function _serialWithLetter(idBase){
+  const numEl = document.getElementById(idBase);
+  const letEl = document.getElementById(idBase+'-letter');
+  const num = numEl ? String(numEl.value||'').trim() : '';
+  const lt  = letEl ? letEl.value : '';
+  if(num && letEl && !lt){ toast('اختر حرف المسلسل (E أو S) أولاً','error'); try{letEl.focus();}catch(e){} return null; }
+  return num ? (lt + num) : '';
+}
+// تقسيم مسلسل محفوظ (مثل E123) إلى حرف + رقم وملء الخانتين (لشاشة التعديل)
+function _setSerialFields(idBase, serial){
+  const numEl = document.getElementById(idBase);
+  const letEl = document.getElementById(idBase+'-letter');
+  const s = String(serial||'');
+  const m = s.match(/^([ES])(.*)$/);
+  if(letEl) letEl.value = m ? m[1] : '';
+  if(numEl) numEl.value = m ? m[2] : s;
 }
 
 // Firebase SDK (loaded via CDN in <head>)
@@ -4524,7 +4566,9 @@ function loadWotIdPhoto(input) {
     // أعد بناء المعاينة بالصورة (سواء قبل الحفظ أو بعده)
     const target = _pendingWot || window._wotPrintTarget;
     if(target){
-      document.getElementById('cust-pdf-content').innerHTML = _buildWotVoucherHTML(target);
+      let _h = _buildWotVoucherHTML(target);
+      if(window._wotLang==='en' && typeof _wotToEnglish==='function') _h = _wotToEnglish(_h);
+      document.getElementById('cust-pdf-content').innerHTML = _h;
     }
   };
   reader.readAsDataURL(file);
@@ -4643,8 +4687,10 @@ async function confirmSaveWot() {
     if(typeof renderDashboard==='function') renderDashboard();
     // أعد بناء المعاينة وأزرارها
     document.getElementById('cust-pdf-modal-title').textContent = '✓ تم الحفظ — ' + t.company;
+    window._wotLang = 'ar';
     document.getElementById('cust-pdf-content').innerHTML = _buildWotVoucherHTML(window._wotPrintTarget);
     document.getElementById('cust-pdf-modal-actions').innerHTML = `
+      <select id="wot-pdf-lang" onchange="setWotLang(this.value)" style="padding:6px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px;font-family:var(--font)"><option value="ar">🖨️ عربي</option><option value="en">🖨️ English</option></select>
       <input type="file" id="wot-id-photo-input" accept="image/*" style="display:none" onchange="loadWotIdPhoto(this)">
       <button class="btn btn-sm" onclick="document.getElementById('wot-id-photo-input').click()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2)">📷 <span id="wot-id-photo-label">${window._wotIdPhoto?'✓ تم تحميل الصورة':'رفع صورة الهوية'}</span></button>
       <button class="btn btn-success" onclick="_printWotVoucher(window._wotPrintTarget)" style="font-size:14px;padding:8px 24px">🖨️ طباعة / حفظ PDF</button>
@@ -4808,9 +4854,34 @@ function _buildWotPageHTML(t, wo, idx, totalPages, chunkItems, partNo, partTotal
   </div>
   </div>`;
 }
+// ── ترجمة عناوين سند المحوّل للإنجليزية (العناوين والأرقام فقط) ──
+function _wotToEnglish(html){
+  try{
+    const P=[
+      ['>م<','>#<'],['>كود المادة<','>Item Code<'],['>اسم المادة<','>Material<'],['>الوحدة<','>Unit<'],['>الكمية<','>Qty<'],['>الإجمالي<','>Total<'],
+      ['>المواد المحوّلة<','>Transferred Items<'],['>الشركة المحوّل إليها<','>Transferred To<'],['>سند مواد محوّلة<','>Transferred Materials Voucher<'],
+      ['>اسم المندوب<','>Representative<'],['>اسم وتوقيع المُستلِم<','>Receiver Name & Signature<'],['>اسم وتوقيع المُسلِّم<','>Deliverer Name & Signature<'],
+      ['>التوقيعات<','>Signatures<'],['>التوقيع<','>Signature<'],['>التاريخ<','>Date<'],['>المهنة<','>Job<'],['>رقم أمر العمل<','>Work Order No.<'],['>رقم الإقامة<','>Residency No.<'],['>صورة الهوية<','>ID Photo<'],['>مكتب خدمات<','>Services Office<'],['>إقرار المستلم<','>Receiver Acknowledgment<'],
+      ['تاريخ الإصدار: ','Issue Date: ']
+    ];
+    P.forEach(p=>{ html=html.split(p[0]).join(p[1]); });
+    html=html.replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-0x0660)).replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-0x06F0));
+    return html;
+  }catch(e){ return html; }
+}
+function setWotLang(lang){
+  window._wotLang = lang;
+  const t = window._wotPrintTarget || _pendingWot;
+  if(!t) return;
+  let h = _buildWotVoucherHTML(t);
+  if(lang==='en') h = _wotToEnglish(h);
+  document.getElementById('cust-pdf-content').innerHTML = h;
+}
 function _printWotVoucher(t) {
   const win = window.open('','_blank','width=900,height=700');
   if(!win){toast('من فضلك اسمح بالنوافذ المنبثقة للطباعة','error');return;}
+  let _wotBody = _buildWotVoucherHTML(t);
+  if(window._wotLang==='en') _wotBody = _wotToEnglish(_wotBody);
   // اسم ملف الـ PDF: اسم الشركة + رقم/أرقام أوامر العمل
   const woNums = (t.workOrders||[]).map(w=>w.woNum).filter(Boolean).join('-');
   const docTitle = ('سند محوّل - ' + (t.company||'') + (woNums ? ' - أمر عمل ' + woNums : '')).trim();
@@ -4818,7 +4889,7 @@ function _printWotVoucher(t) {
   win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head>
     <meta charset="UTF-8"><title>${esc(docTitle)}</title>
     <style>*{margin:0;padding:0;box-sizing:border-box}@page{size:A4 portrait;margin:10mm}body{font-family:Arial,sans-serif;direction:rtl;padding:10mm;color:#111}@media print{html,body{padding:0;margin:0}.no-print{display:none!important}}</style>
-  </head><body>${_buildWotVoucherHTML(t)}
+  </head><body>${_wotBody}
   <div class="no-print" style="text-align:center;padding:24px">
     <button onclick="window.print()" style="padding:10px 32px;font-size:15px;background:#1A1A2E;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ طباعة / حفظ PDF</button>
     <button onclick="window.close()" style="padding:10px 22px;font-size:14px;background:#eee;color:#333;border:1px solid #ccc;border-radius:6px;cursor:pointer;margin-right:10px">إغلاق</button>
@@ -5511,7 +5582,7 @@ async function saveAllReceive(){
   const supplier  = document.getElementById('rcv-supplier').value;
   const warehouse = document.getElementById('rcv-warehouse').value;
   const receiver  = document.getElementById('rcv-receiver').value||'المستودعي';
-  const serial    = document.getElementById('rcv-serial').value;
+  const serial    = _serialWithLetter('rcv-serial'); if(serial===null) return;
   const region    = document.getElementById('rcv-region').value;
   const booknum   = document.getElementById('rcv-booknum').value;
   const pagenum   = document.getElementById('rcv-pagenum').value;
@@ -5736,7 +5807,7 @@ async function saveAllDispatch(){
   const dept = document.getElementById('dsp-dept').value;
   const warehouse = document.getElementById('dsp-warehouse').value;
   const receiver = document.getElementById('dsp-receiver').value||'المستودعي';
-  const serial = document.getElementById('dsp-serial').value;
+  const serial = _serialWithLetter('dsp-serial'); if(serial===null) return;
   const region = document.getElementById('dsp-region').value;
   const booknum = document.getElementById('dsp-booknum').value;
   const pagenum = document.getElementById('dsp-pagenum').value;
@@ -6204,6 +6275,9 @@ function clearMovementsFilters(){
   const deptFilter = document.getElementById('mov-dept-filter');
   if(deptFilter){ deptFilter.value=''; }
 
+  const regionFilter = document.getElementById('mov-region-filter');
+  if(regionFilter){ regionFilter.value=''; }
+
   renderMovements();
   toast('تم مسح جميع الفلاتر');
 }
@@ -6252,6 +6326,7 @@ function renderMovements(){
   const bookF   = (document.getElementById('mov-book-filter')   ? document.getElementById('mov-book-filter').value.trim()   : '').toLowerCase();
   const pageF   = (document.getElementById('mov-page-filter')   ? document.getElementById('mov-page-filter').value.trim()   : '').toLowerCase();
   const deptF   = (document.getElementById('mov-dept-filter')   ? document.getElementById('mov-dept-filter').value.trim()   : '').toLowerCase();
+  const regionF = (document.getElementById('mov-region-filter') ? document.getElementById('mov-region-filter').value : '');
 
   // ── بناء قائمة الحركات العادية ──
   let all = [
@@ -6293,6 +6368,7 @@ function renderMovements(){
   if(bookF)   all=all.filter(m=>(m.booknum||'').toLowerCase().includes(bookF));
   if(pageF)   all=all.filter(m=>(m.pagenum||'').toLowerCase().includes(pageF));
   if(deptF)   all=all.filter(m=>(m.supplier||m.dept||m._displayCompany||'').toLowerCase().includes(deptF));
+  if(regionF) all=all.filter(m=>(m.region||'')===regionF);
 
   const isAdmin = currentUser && currentUser.role === 'admin';
   const canEdit = currentUser && (currentUser.role==='admin' || currentUser.role==='supervisor');
@@ -6353,6 +6429,8 @@ function renderMovements(){
       <td><strong>${(m.qty||0).toLocaleString()}</strong> ${esc(m.unit||'')}</td>
       <td>${esc(m.workorder)||'—'}</td>
       <td style="font-size:12px;color:var(--text3)">${esc(m.serial)||'—'}</td>
+      <td style="font-size:12px;color:var(--text3)">${esc(m.region)||'—'}</td>
+      <td style="font-size:12px;color:var(--text3)">${esc(m.booknum)||'—'}</td>
       <td style="font-size:12px;color:var(--text3)">${esc(m.pagenum)||'—'}</td>
       <td>${partyDisplay}</td>
       <td>${esc(m.user)||'—'}</td>
@@ -6700,7 +6778,7 @@ async function resyncBalances(){
 // ██  EXCEL تصدير منسّق احترافي — أدوات عامة مشتركة  ██
 // ══════════════════════════════════════════════
 // تُستخدم في كل أماكن التصدير بالنظام لضمان شكل موحّد ومنسّق.
-const XL_COMPANY = 'مؤسسة الصانبي للمقاولات — نظام إدارة المخزون';
+const XL_COMPANY = 'شركة الصانبي للمقاولات — نظام إدارة المخزون';
 
 // يبني ورقة Excel منسّقة بالكامل:
 // opts = { title, header:[], rows:[[]], fill:'RRGGBB', qtyColIndex?, rightAlignCols?:[names], wideCols?:{name:width} }
@@ -6757,10 +6835,10 @@ function _xlStyledSheet(XL, opts){
       if(!ws[ref]) ws[ref] = { t:'s', v:'' };
       const isLong = rightCols.indexOf(header[c])>=0;
       ws[ref].s = {
-        font:{ sz:10, color:{rgb:'212121'} },
+        font:{ sz:10, color:{rgb:'1E293B'} },
         alignment:{ horizontal: isLong?'right':'center', vertical:'center', wrapText:true },
         border: allBd,
-        fill:{ fgColor:{rgb: (r%2===0)?'F5F7FA':'FFFFFF' } }
+        fill:{ fgColor:{rgb: (r%2===0)?'EEF4FF':'FFFFFF' } }
       };
     }
   }
@@ -7885,7 +7963,8 @@ function openTxnEdit(type, id) {
   document.getElementById('txn-edit-notes').value   = txn.notes||'';
   document.getElementById('txn-edit-booknum').value = txn.booknum||'';
   document.getElementById('txn-edit-pagenum').value = txn.pagenum||'';
-  document.getElementById('txn-edit-serial').value  = txn.serial||'';
+  _setSerialFields('txn-edit-serial', txn.serial);
+  document.getElementById('txn-edit-region').value  = txn.region||'';
   if(type==='in') {
     document.getElementById('txn-modal-title').textContent = '✏️ تعديل سند إدخال — ' + id;
     document.getElementById('txn-ref-label').textContent   = 'رقم الإذن / الفاتورة';
@@ -7919,7 +7998,8 @@ function openReturnEdit(type, id) {
   document.getElementById('txn-edit-notes').value    = txn.notes||'';
   document.getElementById('txn-edit-booknum').value  = txn.booknum||'';
   document.getElementById('txn-edit-pagenum').value  = txn.pagenum||'';
-  document.getElementById('txn-edit-serial').value   = txn.serial||'';
+  _setSerialFields('txn-edit-serial', txn.serial);
+  document.getElementById('txn-edit-region').value   = txn.region||'';
   document.getElementById('txn-edit-party').value    = txn.supplier||txn.dept||txn.user||'';
   const label = type==='ret-in' ? 'إرجاع إدخال' : 'إرجاع صرف';
   document.getElementById('txn-modal-title').textContent = '✏️ تعديل ' + label + ' — ' + id;
@@ -7932,6 +8012,7 @@ function openReturnEdit(type, id) {
 const _origSaveTxnEdit = window.saveTxnEdit;
 function saveTxnEdit() {
   const type = document.getElementById('txn-edit-type').value;
+  const _serCombined = _serialWithLetter('txn-edit-serial'); if(_serCombined===null) return;
   // إذا كان نوع إرجاع، نستخدم منطق خاص
   if(type === 'ret-in' || type === 'ret-out'){
     if(!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'supervisor')){ toast('التعديل متاح للمدير والمشرف فقط','error'); return; }
@@ -7951,7 +8032,8 @@ function saveTxnEdit() {
       notes:     document.getElementById('txn-edit-notes').value,
       booknum:   document.getElementById('txn-edit-booknum').value,
       pagenum:   document.getElementById('txn-edit-pagenum').value,
-      serial:    document.getElementById('txn-edit-serial').value,
+      serial:    _serCombined,
+      region:    document.getElementById('txn-edit-region').value,
       user:      document.getElementById('txn-edit-party').value,
     };
     saveLocal();
@@ -7992,7 +8074,8 @@ function saveTxnEdit() {
     notes:     document.getElementById('txn-edit-notes').value,
     booknum:   document.getElementById('txn-edit-booknum').value,
     pagenum:   document.getElementById('txn-edit-pagenum').value,
-    serial:    document.getElementById('txn-edit-serial').value,
+    serial:    _serCombined,
+    region:    document.getElementById('txn-edit-region').value,
     [type==='in'?'supplier':'dept']: document.getElementById('txn-edit-party').value,
   };
   if(firebaseDB && initialSyncCompleted && fbKey) {
@@ -9364,7 +9447,7 @@ async function saveAllReturnReceive(){
   const date=document.getElementById('rrcv-date').value;
   const warehouse=document.getElementById('rrcv-warehouse').value;
   const user=document.getElementById('rrcv-receiver').value||currentUser.fullname;
-  const serial=document.getElementById('rrcv-serial').value;
+  const serial=_serialWithLetter('rrcv-serial'); if(serial===null) return;
   const region=document.getElementById('rrcv-region').value;
   const booknum=document.getElementById('rrcv-booknum').value;
   const pagenum=document.getElementById('rrcv-pagenum').value;
@@ -9506,6 +9589,7 @@ const _CMP_METRICS = {
 let _cmpCodes = [];
 let _compareSearched = false;
 let _cmpWoSerials = {};
+let _cmpWoRegions = {};
 
 function openCmpMaterials(){
   // ملء قائمة الاقتراح بالأكواد الموجودة (مرة واحدة)
@@ -9549,7 +9633,7 @@ function _compareData(){
   const optype=document.getElementById('cmp-optype').value;
   const fromF=document.getElementById('cmp-from').value;
   const toF=document.getElementById('cmp-to').value;
-  _cmpWoSerials={};
+  _cmpWoSerials={}; _cmpWoRegions={};
   function pass(rec){
     const wo=norm(rec.workorder);
     if(womode==='with' && !wo) return false;
@@ -9563,15 +9647,15 @@ function _compareData(){
   }
   const map={};
   function ens(wo,code,name,unit){ const c=norm(code); if(!c) return null; const k=norm(wo)+'||'+c; if(!map[k]) map[k]={workorder:norm(wo),code:c,name:name||c,unit:unit||'',received:0,retReceived:0,dispatched:0,retDispatched:0,planned:0}; return map[k]; }
-  function addSerial(wo,serial){ const w=norm(wo),s=norm(serial); if(!s) return; if(!_cmpWoSerials[w]) _cmpWoSerials[w]={}; _cmpWoSerials[w][s]=1; }
+  function addSerial(wo,serial,region){ const w=norm(wo),s=norm(serial),rg=norm(region); if(s){ if(!_cmpWoSerials[w]) _cmpWoSerials[w]={}; _cmpWoSerials[w][s]=1; } if(rg){ if(!_cmpWoRegions[w]) _cmpWoRegions[w]={}; _cmpWoRegions[w][rg]=1; } }
   const incIn=optype==='all'||optype==='in';
   const incRetIn=optype==='all'||optype==='ret-in';
   const incOut=optype==='all'||optype==='out';
   const incRetOut=optype==='all'||optype==='ret-out';
-  if(incIn) DB.receives.forEach(r=>{ if(pass(r)){ const m=ens(r.workorder,r.code,r.name,r.unit); if(m){ m.received+=Number(r.qty)||0; addSerial(r.workorder,r.serial);} }});
-  if(incRetIn) DB.returnReceives.forEach(r=>{ if(pass(r)){ const m=ens(r.workorder,r.code,r.name,r.unit); if(m){ m.retReceived+=Number(r.qty)||0; addSerial(r.workorder,r.serial);} }});
-  if(incOut) DB.dispatches.forEach(d=>{ if(pass(d)){ const m=ens(d.workorder,d.code,d.name,d.unit); if(m){ m.dispatched+=Number(d.qty)||0; addSerial(d.workorder,d.serial);} }});
-  if(incRetOut) DB.returnDispatches.forEach(r=>{ if(pass(r)){ const m=ens(r.workorder,r.code,r.name,r.unit); if(m){ m.retDispatched+=Number(r.qty)||0; addSerial(r.workorder,r.serial);} }});
+  if(incIn) DB.receives.forEach(r=>{ if(pass(r)){ const m=ens(r.workorder,r.code,r.name,r.unit); if(m){ m.received+=Number(r.qty)||0; addSerial(r.workorder,r.serial,r.region);} }});
+  if(incRetIn) DB.returnReceives.forEach(r=>{ if(pass(r)){ const m=ens(r.workorder,r.code,r.name,r.unit); if(m){ m.retReceived+=Number(r.qty)||0; addSerial(r.workorder,r.serial,r.region);} }});
+  if(incOut) DB.dispatches.forEach(d=>{ if(pass(d)){ const m=ens(d.workorder,d.code,d.name,d.unit); if(m){ m.dispatched+=Number(d.qty)||0; addSerial(d.workorder,d.serial,d.region);} }});
+  if(incRetOut) DB.returnDispatches.forEach(r=>{ if(pass(r)){ const m=ens(r.workorder,r.code,r.name,r.unit); if(m){ m.retDispatched+=Number(r.qty)||0; addSerial(r.workorder,r.serial,r.region);} }});
   if(womode!=='without'){
     (DB.workOrders||[]).forEach(w=>{
       const wn=norm(w.workorder);
@@ -9617,9 +9701,11 @@ function renderCompare(){
     if(m.workorder!==curWo){
       curWo=m.workorder; idx=0;
       const ser=_cmpWoSerials[curWo]?Object.keys(_cmpWoSerials[curWo]).join('، '):'';
+      const reg=_cmpWoRegions[curWo]?Object.keys(_cmpWoRegions[curWo]).join('، '):'';
       const woLabel=curWo?('🔧 أمر العمل: '+esc(curWo)):'— بدون أمر عمل —';
       const serLabel=ser?('  •  مسلسل: '+esc(ser)):'';
-      html+='<tr style="background:var(--bg3)"><td colspan="'+cols+'" style="font-weight:700;color:var(--blue-l);padding:11px 16px">'+woLabel+serLabel+'</td></tr>';
+      const regLabel=reg?('  •  المنطقة: '+esc(reg)):'';
+      html+='<tr style="background:var(--bg3)"><td colspan="'+cols+'" style="font-weight:700;color:var(--blue-l);padding:11px 16px">'+woLabel+serLabel+regLabel+'</td></tr>';
     }
     idx++;
     const va=Number(m[a])||0;
@@ -9661,10 +9747,11 @@ function exportCompare(){
   const woMap={};
   arr.forEach(m=>{ const w=m.workorder||'—'; if(!woMap[w]) woMap[w]={}; woMap[w][m.code]=Number(m[a])||0; });
   const wos=Object.keys(woMap).sort((x,y)=>String(x).localeCompare(String(y),'ar'));
-  const header=['Work Order','Serial'].concat(codesList.map(c=> (matMap[c]&&matMap[c]!==c)?(c+' - '+matMap[c]):c));
+  const header=['Work Order','Serial','Region'].concat(codesList.map(c=> (matMap[c]&&matMap[c]!==c)?(c+' - '+matMap[c]):c));
   const rows=wos.map(w=>{
     const ser=_cmpWoSerials[w]?Object.keys(_cmpWoSerials[w]).join(', '):'';
-    return [w,ser].concat(codesList.map(c=> (woMap[w][c]!=null)?woMap[w][c]:''));
+    const reg=_cmpWoRegions[w]?Object.keys(_cmpWoRegions[w]).join(', '):'';
+    return [w,ser,reg].concat(codesList.map(c=> (woMap[w][c]!=null)?woMap[w][c]:''));
   });
   const fname='WO_Comparison_Pivot_'+new Date().toISOString().slice(0,10)+'.xlsx';
   const aEN=(_CMP_METRICS_EN[a]||a);
@@ -9694,9 +9781,9 @@ function exportCompare(){
     // خريطة حرارية: تلوين خلايا القيم حسب الكمية (نظام عرض بصري)
     const _hx=h=>[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
     const _lerp=(c1,c2,t)=>{const a=_hx(c1),b=_hx(c2);return a.map((x,i)=>Math.round(x+(b[i]-x)*t)).map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();};
-    let maxV=0; rows.forEach(rw=>{ for(let c=2;c<rw.length;c++){ const v=Number(rw[c]); if(!isNaN(v)&&v>maxV) maxV=v; } });
-    for(let r=5;r<aoa.length;r++){ const dr=aoa[r]; for(let c=0;c<nCols;c++){ const ref=XL.utils.encode_cell({r,c}); if(!ws[ref]) continue; let fl; if(c<2){ fl=((r%2)?'FFFFFF':'F4F8FF'); } else { const v=Number(dr[c]); fl=(!isNaN(v)&&v>0&&maxV>0)?_lerp('FFFFFF','7FB2EE',Math.min(1,v/maxV)):'FFFFFF'; } ws[ref].s={font:{sz:10,color:{rgb:'1E293B'}},alignment:{horizontal:'center',vertical:'center'},border:allBd,fill:{fgColor:{rgb:fl}}}; } }
-    ws['!cols']=[{wch:15},{wch:12}].concat(codesList.map(()=>({wch:17})));
+    let maxV=0; rows.forEach(rw=>{ for(let c=3;c<rw.length;c++){ const v=Number(rw[c]); if(!isNaN(v)&&v>maxV) maxV=v; } });
+    for(let r=5;r<aoa.length;r++){ const dr=aoa[r]; for(let c=0;c<nCols;c++){ const ref=XL.utils.encode_cell({r,c}); if(!ws[ref]) continue; let fl; if(c<3){ fl=((r%2)?'FFFFFF':'F4F8FF'); } else { const v=Number(dr[c]); fl=(!isNaN(v)&&v>0&&maxV>0)?_lerp('FFFFFF','7FB2EE',Math.min(1,v/maxV)):'FFFFFF'; } ws[ref].s={font:{sz:10,color:{rgb:'1E293B'}},alignment:{horizontal:'center',vertical:'center'},border:allBd,fill:{fgColor:{rgb:fl}}}; } }
+    ws['!cols']=[{wch:15},{wch:12},{wch:12}].concat(codesList.map(()=>({wch:17})));
     ws['!rows']=[{hpt:28},{hpt:22},{hpt:18},{hpt:16},{hpt:22}];
     ws['!autofilter']={ref:XL.utils.encode_range({s:{r:4,c:0},e:{r:aoa.length-1,c:nCols-1}})};
     const wb=XL.utils.book_new();
@@ -9718,8 +9805,8 @@ function printCompare(lang){
   const en = lang==='en';
   const M = en ? _CMP_METRICS_EN : _CMP_METRICS;
   const T = en
-    ? {title:'Work Orders Comparison — Variances',co:'ALSANIBI Contracting — Inventory Management System',gen:'Generated',rows:'Rows',compare:'Compare',range:'Date Range',all:'All dates',from:'From',to:'To',wo:'Work Order',serial:'Serial',nowo:'No Work Order',hash:'#',code:'Code',mat:'Material',unit:'Unit',diff:'Difference',by:'Designed by Mahmoud Hoom — System Designer'}
-    : {title:'مقارنة أوامر العمل — الفروقات',co:'مؤسسة الصانبي للمقاولات — نظام إدارة المخزون',gen:'تاريخ الإصدار',rows:'عدد الصفوف',compare:'المقارنة',range:'نطاق التاريخ',all:'كل التواريخ',from:'من',to:'إلى',wo:'أمر العمل',serial:'مسلسل',nowo:'بدون أمر عمل',hash:'#',code:'الكود',mat:'المادة',unit:'الوحدة',diff:'الفرق',by:'تصميم: محمود حوم — مصمم النظام'};
+    ? {title:'Work Orders Comparison — Variances',co:'ALSANIBI Contracting — Inventory Management System',gen:'Generated',rows:'Rows',compare:'Compare',range:'Date Range',all:'All dates',from:'From',to:'To',wo:'Work Order',serial:'Serial',region:'Region',nowo:'No Work Order',hash:'#',code:'Code',mat:'Material',unit:'Unit',diff:'Difference',by:'Designed by Mahmoud Hoom — System Designer'}
+    : {title:'مقارنة أوامر العمل — الفروقات',co:'شركة الصانبي للمقاولات — نظام إدارة المخزون',gen:'تاريخ الإصدار',rows:'عدد الصفوف',compare:'المقارنة',range:'نطاق التاريخ',all:'كل التواريخ',from:'من',to:'إلى',wo:'أمر العمل',serial:'مسلسل',region:'المنطقة',nowo:'بدون أمر عمل',hash:'#',code:'الكود',mat:'المادة',unit:'الوحدة',diff:'الفرق',by:'تصميم: محمود حوم — مصمم النظام'};
   const a=document.getElementById('cmp-a').value;
   const b=document.getElementById('cmp-b').value;
   const hasB=!!b;
@@ -9738,7 +9825,8 @@ function printCompare(lang){
       if(groupOpen) bdy+='</tbody>';
       curWo=m.workorder; idx=0;
       const ser=_cmpWoSerials[curWo]?Object.keys(_cmpWoSerials[curWo]).join(en?', ':'، '):'';
-      const lbl=(curWo?(T.wo+': '+esc(curWo)):T.nowo)+(ser?('  •  '+T.serial+': '+esc(ser)):'');
+      const reg=_cmpWoRegions[curWo]?Object.keys(_cmpWoRegions[curWo]).join(en?', ':'، '):'';
+      const lbl=(curWo?(T.wo+': '+esc(curWo)):T.nowo)+(ser?('  •  '+T.serial+': '+esc(ser)):'')+(reg?('  •  '+T.region+': '+esc(reg)):'');
       bdy+='<tbody class="grp-body"><tr><td colspan="'+cols+'" class="grp">'+lbl+'</td></tr>';
       groupOpen=true;
     }
@@ -9956,7 +10044,7 @@ async function _finishReturnDispatch(wo, isOverride){
   const date=document.getElementById('rdsp-date').value;
   const warehouse=document.getElementById('rdsp-warehouse').value;
   const user=document.getElementById('rdsp-receiver').value||currentUser.fullname;
-  const serial=document.getElementById('rdsp-serial').value;
+  const serial=_serialWithLetter('rdsp-serial'); if(serial===null) return;
   const region=document.getElementById('rdsp-region').value;
   const booknum=document.getElementById('rdsp-booknum').value;
   const pagenum=document.getElementById('rdsp-pagenum').value;
@@ -10413,7 +10501,12 @@ function generateReport(){
     </tr>`;
 
     document.getElementById('rpt-count').textContent=grouped.length+' مادة';
-    document.getElementById('rpt-title').innerHTML='<span class="dot dot-blue" style="width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--blue);margin-left:8px"></span>ملخص مواد أمر العمل: <span class="code-chip">'+wo+'</span>';
+    // المسلسل والمنطقة المسجّلين على أمر العمل (من السجلات)
+    const _woRecs=[].concat(DB.receives||[],DB.dispatches||[],DB.returnReceives||[],DB.returnDispatches||[]).filter(r=>String(r.workorder||'').trim()===String(wo).trim());
+    const _woSer=[...new Set(_woRecs.map(r=>String(r.serial||'').trim()).filter(Boolean))].join('، ');
+    const _woReg=[...new Set(_woRecs.map(r=>String(r.region||'').trim()).filter(Boolean))].join('، ');
+    const _woMeta=(_woSer?(' • مسلسل: '+esc(_woSer)):'')+(_woReg?(' • المنطقة: '+esc(_woReg)):'');
+    document.getElementById('rpt-title').innerHTML='<span class="dot dot-blue" style="width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--blue);margin-left:8px"></span>ملخص مواد أمر العمل: <span class="code-chip">'+wo+'</span>'+(_woMeta?'<span style="font-size:12px;color:var(--text2);font-weight:500">'+_woMeta+'</span>':'');
 
     // ── قسم أوامر العمل المعلوماتية لنفس الرقم ──
     const woRecs = (DB.workOrders||[]).filter(w=>(w.workorder||'').trim()===wo.trim()||(w.workorder||'').trim().includes(wo.trim()));
@@ -10474,7 +10567,7 @@ function generateReport(){
     // ── تقرير عادي بدون أمر عمل: اعرض تفاصيل السجلات ──
     _reportWoMode = false;
     document.getElementById('report-thead').innerHTML=`<tr>
-      <th>رقم العملية</th><th>النوع</th><th>التاريخ</th><th>أمر العمل</th><th>الرقم التسلسلي</th>
+      <th>رقم العملية</th><th>النوع</th><th>التاريخ</th><th>أمر العمل</th><th>الرقم التسلسلي</th><th>المنطقة</th>
       <th>رقم الكتاب</th><th>رقم الصفحة</th><th>اسم الجهة/المورد</th>
       <th>الكود</th><th>المادة</th><th>الكمية</th><th>الوحدة</th><th>المسؤول</th><th>ملاحظات</th>
     </tr>`;
@@ -10485,6 +10578,7 @@ function generateReport(){
       <td>${r.date}</td>
       <td>${esc(r.workorder)||'—'}</td>
       <td>${esc(r.serial)||'—'}</td>
+      <td>${esc(r.region)||'—'}</td>
       <td>${esc(r.booknum)||'—'}</td>
       <td>${esc(r.pagenum)||'—'}</td>
       <td>${esc(r.dept||r.supplier||'—')}</td>
@@ -10575,15 +10669,26 @@ function exportReportCSV(){
     title='ملخص مواد أمر العمل '+(_reportGroupedMeta.wo||''); fill='1565C0'; qtyCol=undefined;
     fname='تقرير_أمر_عمل_'+(_reportGroupedMeta.wo||'')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
   } else {
-    headers=['رقم العملية','النوع','التاريخ','أمر العمل','الرقم التسلسلي','رقم الكتاب','رقم الصفحة','اسم الجهة/المورد','الكود','المادة','الكمية','الوحدة','المسؤول','ملاحظات'];
-    rows=_reportData.map(r=>[r.id,r._type,r.date,r.workorder||'',r.serial||'',r.booknum||'',r.pagenum||'',r.dept||r.supplier||'',r.code,r.name,Number(r.qty)||0,r.unit,r.user||'',r.notes||'']);
-    title='تقرير الحركات'; fill='37474F'; qtyCol=10;
+    headers=['رقم العملية','النوع','التاريخ','أمر العمل','الرقم التسلسلي','المنطقة','رقم الكتاب','رقم الصفحة','اسم الجهة/المورد','الكود','المادة','الكمية','الوحدة','المسؤول','ملاحظات'];
+    rows=_reportData.map(r=>[r.id,r._type,r.date,r.workorder||'',r.serial||'',r.region||'',r.booknum||'',r.pagenum||'',r.dept||r.supplier||'',r.code,r.name,Number(r.qty)||0,r.unit,r.user||'',r.notes||'']);
+    title='تقرير الحركات'; fill='37474F'; qtyCol=11;
     fname='تقرير_'+new Date().toISOString().slice(0,10)+'.xlsx';
   }
 
+  // ترجمة اختيارية (نفس زر لغة طباعة التقرير)
+  const _rxLang = (document.getElementById('rpt-print-lang') && document.getElementById('rpt-print-lang').value) || 'ar';
+  let sheetName = 'التقرير';
+  if(_rxLang==='en'){
+    const D={'رقم أمر العمل':'Work Order No.','الوصف':'Description','مخطط له':'Planned','إدخال':'In','صرف':'Out','إرجاع إدخال':'Return-In','إرجاع صرف':'Return-Out','الكود':'Code','المادة':'Material','الوحدة':'Unit','إجمالي وارد':'Total In','إجمالي صرف':'Total Out','الرصيد':'Balance','الحالة':'Status','كمية الإدخال':'Received Qty','منها طلب خارجي':'Of which External','صافي الإدخال':'Net In','كمية الصرف':'Dispatched Qty','منها محوّل':'Of which Transferred','صافي المسحوب':'Net Out','الكمية المخططة':'Planned Qty','رقم العملية':'Op. No.','النوع':'Type','التاريخ':'Date','أمر العمل':'Work Order','الرقم التسلسلي':'Serial No.','المنطقة':'Region','رقم الكتاب':'Book No.','رقم الصفحة':'Page No.','اسم الجهة/المورد':'Party/Supplier','الكمية':'Quantity','المسؤول':'User','ملاحظات':'Notes'};
+    headers = headers.map(h=> D[h]||h);
+    title = title.replace('ملخص أوامر العمل','Work Orders Summary').replace('تقرير المخزون','Stock Report').replace('تقرير الحركات','Movements Report').replace('ملخص مواد أمر العمل','WO Materials Summary');
+    sheetName = 'Report';
+    if(type==='stock'){ const ST={'متوفر':'Available','تحت الحد':'Low','نفد':'Out of Stock'}; rows=rows.map(r=>{ const x=r.slice(); x[8]=ST[x[8]]||x[8]; return x; }); }
+    else if(type!=='wo-summary' && !(_reportWoMode && _reportGrouped.length)){ const TY={'📥 إدخال':'📥 In','📤 صرف':'📤 Out','↩ إرجاع إدخال':'↩ Return-In','↪ إرجاع صرف':'↪ Return-Out','📨 استلام طلب خارجي':'📨 External Receipt','🚚 محوّل من الصانبي':'🚚 Transfer'}; rows=rows.map(r=>{ const x=r.slice(); x[1]=TY[x[1]]||x[1]; return x; }); }
+  }
   _xlRunStyledExport(function(XL){
     const wb = XL.utils.book_new();
-    XL.utils.book_append_sheet(wb, _xlStyledSheet(XL, {title, header:headers, rows, fill, qtyColIndex:qtyCol}), 'التقرير');
+    XL.utils.book_append_sheet(wb, _xlStyledSheet(XL, {title, header:headers, rows, fill, qtyColIndex:qtyCol}), sheetName);
     XL.writeFile(wb, fname);
     toast('تم تصدير التقرير بصيغة Excel منسّق ✓');
   }, function(){ _xlCsvDownload(headers, rows, fname); toast('تم تصدير CSV (تعذر تحميل مكتبة Excel)'); });
@@ -11797,7 +11902,7 @@ body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif;background:#fff;color:#
   const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl"><head>
 <meta charset="UTF-8">
-<title>خطاب طلب مواد — ${r.company}</title>
+<title>خطاب طلب مواد — ${r.company}${(()=>{const n=(r.workOrders||[]).map(w=>w.woNum).filter(Boolean);return n.length?(' — أمر عمل '+n.join('-')):'';})()}</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 <style>${CSS}</style>
 </head><body>
@@ -12296,7 +12401,7 @@ function saveWorkOrder() {
   const id = 'WO-' + String(n).padStart(4,'0');
   const wo = { id, workorder:woNum, desc, date,
     items: JSON.parse(JSON.stringify(_woItems)),
-    createdBy: currentUser ? currentUser.username : '—',
+    createdBy: currentUser ? (currentUser.fullname || currentUser.username) : '—',
     createdAt: new Date().toISOString() };
   if(!DB.workOrders) DB.workOrders=[];
   DB.workOrders.unshift(wo);
@@ -12375,6 +12480,12 @@ function printSingleWorkOrder() {
   w.document.write(h); w.document.close(); w.focus(); w.print();
 }
 
+// حوّل اسم مخزّن (قد يكون username مختصر) إلى الاسم الكامل لو موجود في المستخدمين
+function _resolveUserName(name){
+  if(!name) return '—';
+  const u = (DB.users||[]).find(x=>x.username===name);
+  return u ? (u.fullname||name) : name;
+}
 function renderWorkOrdersTable() {
   const tb=document.getElementById('wo-tbody'); if(!tb) return;
   const s=(document.getElementById('wo-search')||{}).value||'';
@@ -12391,7 +12502,7 @@ function renderWorkOrdersTable() {
   if(bts){ let b=''; for(let p=1;p<=pages;p++) b+='<button class="page-btn'+(p===_woPage?' active':'')+'" onclick="_woPage='+p+';renderWorkOrdersTable()">'+p+'</button>'; bts.innerHTML=b; }
   if(!sl.length){ tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">لا توجد أوامر عمل</td></tr>'; return; }
   tb.innerHTML=sl.map(wo=>
-    '<tr><td><strong style="color:var(--blue-l)">'+wo.workorder+'</strong></td><td>'+(wo.desc||'—')+'</td><td>'+(wo.date||'—')+'</td><td><span class="badge badge-blue">'+((wo.items||[]).length)+' مادة</span></td><td style="font-size:12px;color:var(--text3)">'+(wo.createdBy||'—')+'</td><td><button class="btn btn-sm" onclick="viewWorkOrder(\''+wo.id+'\')">👁 عرض</button> <button class="btn btn-sm" onclick="editWorkOrder(\''+wo.id+'\')" style="color:var(--blue-l);border-color:var(--blue)">✏ تعديل</button> <button class="btn btn-danger btn-sm" onclick="deleteWorkOrder(\''+wo.id+'\')">🗑</button></td></tr>'
+    '<tr><td><strong style="color:var(--blue-l)">'+wo.workorder+'</strong></td><td>'+(wo.desc||'—')+'</td><td>'+(wo.date||'—')+'</td><td><span class="badge badge-blue">'+((wo.items||[]).length)+' مادة</span></td><td style="font-size:12px;color:var(--text3)">'+esc(_resolveUserName(wo.createdBy))+'</td><td><button class="btn btn-sm" onclick="viewWorkOrder(\''+wo.id+'\')">👁 عرض</button> <button class="btn btn-sm" onclick="editWorkOrder(\''+wo.id+'\')" style="color:var(--blue-l);border-color:var(--blue)">✏ تعديل</button> <button class="btn btn-danger btn-sm" onclick="deleteWorkOrder(\''+wo.id+'\')">🗑</button></td></tr>'
   ).join('');
 }
 
@@ -12404,7 +12515,7 @@ function viewWorkOrder(id) {
   const m=document.getElementById('wo-view-modal'); if(!m) return;
   document.getElementById('wo-view-title').textContent='أمر العمل: '+wo.workorder+(wo.desc?' — '+wo.desc:'');
   document.getElementById('wo-view-tbody').innerHTML=rows;
-  document.getElementById('wo-view-date').textContent='التاريخ: '+(wo.date||'—')+'  |  المستخدم: '+(wo.createdBy||'—');
+  document.getElementById('wo-view-date').textContent='التاريخ: '+(wo.date||'—')+'  |  المستخدم: '+_resolveUserName(wo.createdBy);
   m.classList.add('show');
 }
 
