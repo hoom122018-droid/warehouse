@@ -4599,7 +4599,7 @@ function loadWotIdPhoto(input) {
   const reader = new FileReader();
   reader.onload = function(e){
     window._wotIdPhoto = e.target.result;
-    const lbl = document.getElementById('wot-id-photo-label');
+    const lbl = document.getElementById('wot-id-photo-label') || document.getElementById('wot-id-photo-label-2');
     if(lbl) lbl.textContent = '✓ تم تحميل الصورة';
     // أعد بناء المعاينة بالصورة (سواء قبل الحفظ أو بعده)
     const target = _pendingWot || window._wotPrintTarget;
@@ -4729,8 +4729,8 @@ async function confirmSaveWot() {
     document.getElementById('cust-pdf-content').innerHTML = _buildWotVoucherHTML(window._wotPrintTarget);
     document.getElementById('cust-pdf-modal-actions').innerHTML = `
       <select id="wot-pdf-lang" onchange="setWotLang(this.value)" style="padding:6px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px;font-family:var(--font)"><option value="ar">🖨️ عربي</option><option value="en">🖨️ English</option></select>
-      <input type="file" id="wot-id-photo-input" accept="image/*" style="display:none" onchange="loadWotIdPhoto(this)">
-      <button class="btn btn-sm" onclick="document.getElementById('wot-id-photo-input').click()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2)">📷 <span id="wot-id-photo-label">${window._wotIdPhoto?'✓ تم تحميل الصورة':'رفع صورة الهوية'}</span></button>
+      <input type="file" id="wot-id-photo-input-2" accept="image/*" style="display:none" onchange="loadWotIdPhoto(this)">
+      <button class="btn btn-sm" onclick="document.getElementById('wot-id-photo-input-2').click()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2)">📷 <span id="wot-id-photo-label-2">${window._wotIdPhoto?'✓ تم تحميل الصورة':'رفع صورة الهوية'}</span></button>
       <button class="btn btn-success" onclick="_printWotVoucher(window._wotPrintTarget)" style="font-size:14px;padding:8px 24px">🖨️ طباعة / حفظ PDF</button>
       <button class="btn btn-sm" onclick="closeCustodyPDF();window._wotIdPhoto=null;window._wotPrintTarget=null">✕ إغلاق</button>
     `;
@@ -5543,24 +5543,37 @@ function generateReturnDispatchPDF(records, woName, serial) {
 
 
 // ── توليد رقم سند آمن (atomic counter في Firebase) ──
+// عدّاد تصاعدي بحت: الرقم لا يقل أبداً ولا يُعاد استخدام رقم محذوف.
+// HWM = أعلى رقم مُصدَر محفوظ في localStorage لكل بادئة (حماية إضافية للوضع بدون Firebase).
+function _serialHWMKey(prefix){ return '_serialHWM_'+prefix; }
+function _getSerialHWM(prefix){ return parseInt(localStorage.getItem(_serialHWMKey(prefix))||'0')||0; }
+function _bumpSerialHWM(prefix, n){ if(n > _getSerialHWM(prefix)) try{ localStorage.setItem(_serialHWMKey(prefix), String(n)); }catch(e){} }
 async function _getNextSerial(prefix) {
   // أمثلة: prefix='RCV' → 'RCV-0001', prefix='DSP' → 'DSP-0001'
+  const localArr = prefix==='RCV' ? DB.receives : prefix==='DSP' ? DB.dispatches : prefix==='RRCV' ? DB.returnReceives : prefix==='RDSP' ? DB.returnDispatches : prefix==='CST' ? (DB.custodies||[]) : DB.returnDispatches;
+  const _maxExisting = () => localArr.reduce((mx,r)=>{const n=parseInt(String(r.id||'').split('-').pop())||0;return n>mx?n:mx;},0);
+  const _fallback = () => {
+    const next = Math.max(_getSerialHWM(prefix), _maxExisting()) + 1;
+    _bumpSerialHWM(prefix, next);
+    return prefix + '-' + String(next).padStart(4, '0');
+  };
   if (!firebaseDB || !initialSyncCompleted) {
-    // fallback محلي إذا لم يكن Firebase متاحاً
-    const localArr = prefix==='RCV' ? DB.receives : prefix==='DSP' ? DB.dispatches : prefix==='RRCV' ? DB.returnReceives : DB.returnDispatches;
-    return prefix + '-' + String(localArr.length + 1).padStart(4, '0');
+    return _fallback();
   }
   const counterRef = firebaseDB.ref('counters/' + prefix);
   return new Promise((resolve) => {
     counterRef.transaction(
-      (current) => (current === null ? 1 : current + 1),
+      (current) => {
+        // العدّاد لا يقل أبداً عن أعلى رقم مُصدَر أو موجود — يمنع إعادة استخدام رقم محذوف
+        const floor = Math.max(_getSerialHWM(prefix), _maxExisting());
+        return Math.max((current===null?0:current), floor) + 1;
+      },
       (error, committed, snapshot) => {
         if (error || !committed) {
-          // fallback محلي عند الخطأ
-          const localArr = prefix==='RCV' ? DB.receives : prefix==='DSP' ? DB.dispatches : prefix==='RRCV' ? DB.returnReceives : DB.returnDispatches;
-          resolve(prefix + '-' + String(localArr.length + 1).padStart(4, '0'));
+          resolve(_fallback());
         } else {
           const n = snapshot.val();
+          _bumpSerialHWM(prefix, n);
           resolve(prefix + '-' + String(n).padStart(4, '0'));
         }
       },
@@ -6410,7 +6423,8 @@ function renderMovements(){
   if(deptF)   all=all.filter(m=>(m.supplier||m.dept||m._displayCompany||'').toLowerCase().includes(deptF));
   if(regionF) all=all.filter(m=>(m.region||'')===regionF);
 
-  const isAdmin = currentUser && currentUser.role === 'admin';
+  // المشرف يُعامل كالمدير في تعديل/حذف الحركات (المراقبة والمستخدمين بصفحات منفصلة تبقى للمدير فقط)
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
   const canEdit = currentUser && (currentUser.role==='admin' || currentUser.role==='supervisor');
   const canDel  = hasPerm('delete_txn');
   const tb = document.getElementById('mov-tbody');
@@ -6430,13 +6444,13 @@ function renderMovements(){
     if (m.type==='in' || m.type==='out' || m.type==='ext-recv') {
       if (canEdit) {
         const t = (m.type==='out')?'out':'in';
-        btns = `<button class="btn btn-sm" onclick="openTxnEdit('${t}','${m.id}')">✏️</button>
+        btns = `<button class="btn btn-sm" onclick="openTxnEdit('${t}','${m.id}','${m._fbKey||''}')">✏️</button>
          <button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red);margin-right:4px" onclick="deleteTxn('${t}','${m.id}')">🗑</button>`;
       }
     } else if (m.type==='ret-in' || m.type==='ret-out') {
       if (isAdmin) {
         const delFn = m.type==='ret-in' ? 'deleteReturnRcv' : 'deleteReturnDsp';
-        btns = `<button class="btn btn-sm" onclick="openReturnEdit('${m.type}','${m.id}')">✏️</button>
+        btns = `<button class="btn btn-sm" onclick="openReturnEdit('${m.type}','${m.id}','${m._fbKey||''}')">✏️</button>
          <button class="btn btn-sm" style="color:var(--red-l);border-color:var(--red);margin-right:4px" onclick="${delFn}('${m.id}')">🗑</button>`;
       }
     } else if (m.type==='custody') {
@@ -7987,10 +8001,11 @@ async function resetPassword(username) {
 }
 
 // ── Transaction Edit / Delete ──
-function openTxnEdit(type, id) {
+function openTxnEdit(type, id, fbKey) {
   if(!hasPerm('edit_txn')){ toast('ليس لديك صلاحية التعديل','error'); return; }
   const arr = type==='in' ? DB.receives : DB.dispatches;
-  const txn = arr.find(t=>t.id===id);
+  // الأولوية للمفتاح الفريد _fbKey (يمنع فتح سجل خاطئ عند تكرار الـ id)، ثم الرجوع للـ id
+  const txn = (fbKey ? arr.find(t=>t._fbKey===fbKey) : null) || arr.find(t=>t.id===id);
   if(!txn) return;
   document.getElementById('txn-edit-id').value   = id;
   document.getElementById('txn-edit-type').value = type;
@@ -8022,10 +8037,11 @@ function openTxnEdit(type, id) {
 function closeTxnModal() { document.getElementById('txn-edit-modal').classList.remove('show'); }
 
 /* ── تعديل إرجاع إدخال أو إرجاع صرف (للمدير فقط من سجل الحركات) ── */
-function openReturnEdit(type, id) {
+function openReturnEdit(type, id, fbKey) {
   if(!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'supervisor')){ toast('التعديل متاح للمدير والمشرف فقط','error'); return; }
   const arr = type==='ret-in' ? DB.returnReceives : DB.returnDispatches;
-  const txn = arr.find(t=>t.id===id);
+  // الأولوية للمفتاح الفريد _fbKey (يمنع فتح سجل خاطئ عند تكرار الـ id)، ثم الرجوع للـ id
+  const txn = (fbKey ? arr.find(t=>t._fbKey===fbKey) : null) || arr.find(t=>t.id===id);
   if(!txn){ toast('السجل غير موجود','error'); return; }
   document.getElementById('txn-edit-id').value       = id;
   document.getElementById('txn-edit-type').value     = type;
@@ -8063,6 +8079,8 @@ function saveTxnEdit() {
     const idx = arr.findIndex(t=>t.id===id);
     if(idx===-1){ toast('السجل غير موجود','error'); return; }
     const fbKey = arr[idx]._fbKey || null;
+    // لقطة لمفاتيح التجميع بالقيم الأصلية (قبل التعديل) — للعثور على باقي مواد نفس السند
+    const _grp = { ref:arr[idx].operationRef, bk:String(arr[idx].booknum||'').trim(), pg:String(arr[idx].pagenum||'').trim(), dt:String(arr[idx].date||''), wo:String(arr[idx].workorder||'') };
     arr[idx] = {
       ...arr[idx],
       qty,
@@ -8076,18 +8094,30 @@ function saveTxnEdit() {
       region:    document.getElementById('txn-edit-region').value,
       user:      document.getElementById('txn-edit-party').value,
     };
+    // ── نشر الحقول المشتركة على كل مواد نفس السند — ماعدا الكمية والكود ──
+    const _shared = { date:arr[idx].date, ref:arr[idx].ref, warehouse:arr[idx].warehouse, booknum:arr[idx].booknum, pagenum:arr[idx].pagenum, serial:arr[idx].serial, region:arr[idx].region, user:arr[idx].user };
+    const _affected = [arr[idx]];
+    if(_grp.ref){
+      // الحركات الجديدة: تجميع بـ operationRef
+      arr.forEach((r,j)=>{ if(j!==idx && r.operationRef===_grp.ref){ Object.assign(r, _shared); _affected.push(r); } });
+    } else if(_grp.bk || _grp.pg){
+      // الحركات القديمة (بلا operationRef): نفس الكتاب+الصفحة+التاريخ+أمر العمل
+      arr.forEach((r,j)=>{ if(j!==idx && !r.operationRef && String(r.booknum||'').trim()===_grp.bk && String(r.pagenum||'').trim()===_grp.pg && String(r.date||'')===_grp.dt && String(r.workorder||'')===_grp.wo){ Object.assign(r, _shared); _affected.push(r); } });
+    }
     saveLocal();
-    _syncBalancesFromRecords([arr[idx].code]);
+    _syncBalancesFromRecords(_affected.map(r=>r.code));
     if(firebaseDB && initialSyncCompleted){
-      const fbPath = type==='ret-in' ? 'erpdata/returnReceives/' : 'erpdata/returnDispatches/';
-      if(fbKey){
-        const{_fbKey,...clean} = arr[idx];
-        firebaseDB.ref(fbPath + fbKey).set(clean).catch(e=>console.warn('saveReturnEdit Firebase error:',e));
+      const fbBase = type==='ret-in' ? 'erpdata/returnReceives' : 'erpdata/returnDispatches';
+      const _withKey = _affected.filter(r=>r._fbKey);
+      if(_withKey.length){
+        const updates={};
+        _withKey.forEach(r=>{ const{_fbKey,...clean}=r; updates[r._fbKey]=clean; });
+        firebaseDB.ref(fbBase).update(updates).catch(e=>console.warn('saveReturnEdit Firebase error:',e));
       } else {
         // fallback: أعد كتابة الكل كـ object
         const obj={};
         arr.forEach(r=>{ const k=r._fbKey||(type==='ret-in'?'rrcv_':'rdsp_')+r.id; const{_fbKey,...cl}=r; obj[k]=cl; });
-        firebaseDB.ref(type==='ret-in'?'erpdata/returnReceives':'erpdata/returnDispatches').set(obj)
+        firebaseDB.ref(fbBase).set(obj)
           .catch(e=>console.warn('saveReturnEdit fallback error:',e));
       }
     }
@@ -8105,6 +8135,8 @@ function saveTxnEdit() {
   const arr = type==='in' ? DB.receives : DB.dispatches;
   const idx = arr.findIndex(t=>t.id===id);
   if(idx===-1) return;
+  // لقطة لمفاتيح التجميع بالقيم الأصلية (قبل التعديل)
+  const _grp = { ref:arr[idx].operationRef, bk:String(arr[idx].booknum||'').trim(), pg:String(arr[idx].pagenum||'').trim(), dt:String(arr[idx].date||''), wo:String(arr[idx].workorder||'') };
   arr[idx] = {
     ...arr[idx],
     qty,
@@ -8122,10 +8154,13 @@ function saveTxnEdit() {
   const _partyKey = type==='in' ? 'supplier' : 'dept';
   const _shared = { date:arr[idx].date, ref:arr[idx].ref, warehouse:arr[idx].warehouse, booknum:arr[idx].booknum, pagenum:arr[idx].pagenum, serial:arr[idx].serial, region:arr[idx].region };
   _shared[_partyKey] = arr[idx][_partyKey];
-  const _opRef = arr[idx].operationRef;
   const _affected = [arr[idx]];
-  if(_opRef){
-    arr.forEach((r,j)=>{ if(j!==idx && r.operationRef===_opRef){ Object.assign(r, _shared); _affected.push(r); } });
+  if(_grp.ref){
+    // الحركات الجديدة: تجميع بـ operationRef
+    arr.forEach((r,j)=>{ if(j!==idx && r.operationRef===_grp.ref){ Object.assign(r, _shared); _affected.push(r); } });
+  } else if(_grp.bk || _grp.pg){
+    // الحركات القديمة (بلا operationRef): نفس الكتاب+الصفحة+التاريخ+أمر العمل
+    arr.forEach((r,j)=>{ if(j!==idx && !r.operationRef && String(r.booknum||'').trim()===_grp.bk && String(r.pagenum||'').trim()===_grp.pg && String(r.date||'')===_grp.dt && String(r.workorder||'')===_grp.wo){ Object.assign(r, _shared); _affected.push(r); } });
   }
   if(firebaseDB && initialSyncCompleted){
     const path = type==='in' ? 'erpdata/receives/' : 'erpdata/dispatches/';
@@ -8333,9 +8368,8 @@ async function saveCustody() {
     if (it.qty>s.balance){toast('رصيد '+it.name+' غير كافٍ ('+s.balance+' متاح)','error');return;}
   }
 
-  const nums=(DB.custodies||[]).map(c=>parseInt((c.id||'').split('-')[1]||0)).filter(n=>!isNaN(n));
-  const nextN=nums.length?Math.max(...nums)+1:1;
-  const custodyId='CST-'+String(nextN).padStart(4,'0');
+  // عدّاد تصاعدي للعهدة (CST) — لا يعيد استخدام رقم محذوف، زي باقي السندات
+  const custodyId = await _getNextSerial('CST');
 
   _pendingCustody = {
     id:custodyId, date:date||new Date().toISOString().slice(0,10),
@@ -8742,9 +8776,9 @@ function previewCustodyPDF(custody){
     photoWrap.id = 'id-photo-wrap';
     photoWrap.style = 'display:flex;align-items:center;gap:6px;';
     photoWrap.innerHTML = `
-      <input type="file" id="id-photo-input" accept="image/*" style="display:none" onchange="loadIdPhoto(this)">
-      <button onclick="document.getElementById('id-photo-input').click()" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-family:var(--font)">📷 صورة الهوية</button>
-      <span id="id-photo-status" style="font-size:11px;color:var(--text3)"></span>
+      <input type="file" id="id-photo-input-2" accept="image/*" style="display:none" onchange="loadIdPhoto(this)">
+      <button onclick="document.getElementById('id-photo-input-2').click()" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-family:var(--font)">📷 صورة الهوية</button>
+      <span id="id-photo-status-2" style="font-size:11px;color:var(--text3)"></span>
     `;
     actEl2.prepend(photoWrap);
   }
@@ -8777,7 +8811,7 @@ function loadIdPhoto(input){
   const reader = new FileReader();
   reader.onload = function(e){
     window._custodyIdPhoto = e.target.result; // base64, not saved anywhere
-    const st = document.getElementById('id-photo-status');
+    const st = document.getElementById('id-photo-status') || document.getElementById('id-photo-status-2');
     if(st) st.textContent = '✓ تم التحميل';
     // re-render preview with photo (نحافظ على الوضع الحالي: تسليم/إرجاع)
     const c = _pdfPrintCustody || _pendingCustody;
@@ -10256,7 +10290,8 @@ function clearReturnReceive(){
 }
 function renderReturnRcvRecent(){
   const tb=document.getElementById('rrcv-recent');
-  const isAdmin = currentUser && currentUser.role === 'admin';
+  // المشرف يُعامل كالمدير في تعديل/حذف الإرجاعات
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
   const canDel  = hasPerm('delete_txn');
   tb.innerHTML=[...DB.returnReceives].reverse().slice(0,15).map(r=>{
     let btns = '—';
@@ -10361,7 +10396,8 @@ function _fullClearAfterSave(prefix){
 
 function renderReturnDspRecent(){
   const tb=document.getElementById('rdsp-recent');
-  const isAdmin  = currentUser && currentUser.role === 'admin';
+  // المشرف يُعامل كالمدير في تعديل/حذف الإرجاعات
+  const isAdmin  = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
   const canDelDsp = hasPerm('delete_txn');
   tb.innerHTML=[...DB.returnDispatches].reverse().slice(0,15).map(d=>{
     let btns = '—';
