@@ -652,7 +652,7 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
             <div class="field">
               <label>رقم المسلسل</label>
               <div style="display:flex;gap:6px">
-                <select id="rcv-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <select id="rcv-serial-letter" style="width:64px;flex-shrink:0" onchange="_syncSerialRegion('rcv-serial-letter','rcv-region')"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
                 <input type="text" id="rcv-serial" placeholder="اختياري" style="flex:1">
               </div>
             </div>
@@ -781,7 +781,7 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
             <div class="field">
               <label>رقم المسلسل</label>
               <div style="display:flex;gap:6px">
-                <select id="dsp-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <select id="dsp-serial-letter" style="width:64px;flex-shrink:0" onchange="_syncSerialRegion('dsp-serial-letter','dsp-region')"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
                 <input type="text" id="dsp-serial" placeholder="اختياري" style="flex:1">
               </div>
             </div>
@@ -903,7 +903,7 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
             <div class="field">
               <label>رقم المسلسل</label>
               <div style="display:flex;gap:6px">
-                <select id="rrcv-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <select id="rrcv-serial-letter" style="width:64px;flex-shrink:0" onchange="_syncSerialRegion('rrcv-serial-letter','rrcv-region')"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
                 <input type="text" id="rrcv-serial" placeholder="اختياري" style="flex:1">
               </div>
             </div>
@@ -1021,7 +1021,7 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
             <div class="field">
               <label>رقم المسلسل</label>
               <div style="display:flex;gap:6px">
-                <select id="rdsp-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <select id="rdsp-serial-letter" style="width:64px;flex-shrink:0" onchange="_syncSerialRegion('rdsp-serial-letter','rdsp-region')"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
                 <input type="text" id="rdsp-serial" placeholder="اختياري" style="flex:1">
               </div>
             </div>
@@ -1378,6 +1378,7 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
                 <option value="ret-in">إرجاع الإدخال فقط</option>
                 <option value="ret-out">إرجاع الصرف فقط</option>
                 <option value="stock">تقرير المخزون الحالي</option>
+                <option value="wo-list">قائمة أوامر العمل (مسلسل + منطقة)</option>
                 <option value="workorders">أوامر العمل (معلوماتي)</option>
                 <option value="planned">المواد المخططة لكل أمر عمل</option>
                 <option value="wo-summary">ملخص أوامر العمل (عدّاد المواد لكل نوع)</option>
@@ -1434,7 +1435,7 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
       </div>
       <!-- Report Result -->
       <div id="report-result" style="display:none">
-        <div class="table-wrap">
+        <div class="table-wrap sticky-thead">
           <div class="panel-header" style="padding:14px 18px;flex-wrap:wrap;gap:8px">
             <span class="panel-title" id="rpt-title"><span class="dot dot-blue"></span>نتائج التقرير</span>
             <div style="display:flex;gap:8px;align-items:center">
@@ -1472,6 +1473,7 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
               <label>اعرض / قارِن (القيمة الأولى)</label>
               <select id="cmp-a" onchange="renderCompare()">
                 <option value="planned" selected>المخطط له</option>
+                <option value="allOps">كل العمليات</option>
                 <option value="received">الإدخال</option>
                 <option value="retReceived">إرجاع إدخال</option>
                 <option value="netIn">صافي الإدخال</option>
@@ -1518,7 +1520,8 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
             <button class="btn btn-sm" onclick="showAllCompare()">📋 عرض الكل</button>
             <button class="btn btn-sm" onclick="clearCompareFilters()" style="color:var(--red-l);border-color:var(--red)">✕ مسح</button>
             <select id="cmp-print-lang" class="filter-select" style="padding:6px 10px;font-size:12px" title="لغة الطباعة"><option value="en" selected>🖨 English</option><option value="ar">🖨 عربي</option></select>
-            <button class="btn btn-sm" onclick="printCompare()">🖨 طباعة PDF</button>
+            <button class="btn btn-sm" onclick="printCompare()">🖨 طباعة الكل</button>
+            <button class="btn btn-sm btn-primary" id="cmp-print-sel-btn" onclick="_toggleCmpPrintDropdown(this)">📋 طباعة مختارة ▾</button>
             <button class="btn btn-sm" onclick="exportCompare()">⬇ تصدير Excel (محوري)</button>
           </div>
         </div>
@@ -1541,7 +1544,7 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
         <div class="modal-body">
           <div style="display:flex;align-items:center;gap:11px;background:var(--blue-bg);border:1px solid var(--blue);border-radius:12px;padding:11px 14px;margin-bottom:16px">
             <span style="font-size:20px">💡</span>
-            <div style="font-size:12px;color:var(--text2);line-height:1.6">اكتب حتى <b style="color:var(--blue-l)">9 أكواد</b> — هتظهر اقتراحات وانت بتكتب. سيبها فاضية للبحث في <b>كل المواد</b>.</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">اكتب حتى <b style="color:var(--blue-l)">12 كود</b> — هتظهر اقتراحات وانت بتكتب. سيبها فاضية للبحث في <b>كل المواد</b>.</div>
           </div>
           <div id="cmp-code-boxes" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-height:46vh;overflow-y:auto;padding:2px">
             <div class="cmp-box-wrap"><span class="cmp-box-n">1</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
@@ -1553,6 +1556,9 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
             <div class="cmp-box-wrap"><span class="cmp-box-n">7</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
             <div class="cmp-box-wrap"><span class="cmp-box-n">8</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
             <div class="cmp-box-wrap"><span class="cmp-box-n">9</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">10</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">11</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
+            <div class="cmp-box-wrap"><span class="cmp-box-n">12</span><input type="text" class="cmp-code-box" list="cmp-codes-dl" placeholder="كود"></div>
           </div>
           <datalist id="cmp-codes-dl"></datalist>
           <div id="cmp-codes-warn" style="display:none;margin-top:14px;padding:11px 13px;background:var(--red-bg);border:1px solid var(--red);border-radius:12px;color:var(--red-l);font-size:12px;line-height:1.7"></div>
@@ -2268,7 +2274,7 @@ tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
             <div class="field">
               <label>رقم المسلسل</label>
               <div style="display:flex;gap:6px">
-                <select id="txn-edit-serial-letter" style="width:64px;flex-shrink:0"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
+                <select id="txn-edit-serial-letter" style="width:64px;flex-shrink:0" onchange="_syncSerialRegion('txn-edit-serial-letter','txn-edit-region')"><option value="">—</option><option value="E">E</option><option value="S">S</option></select>
                 <input type="text" id="txn-edit-serial" placeholder="رقم المسلسل" style="flex:1">
               </div>
             </div>
@@ -2619,6 +2625,14 @@ function _serialWithLetter(idBase){
   const lt  = letEl ? letEl.value : '';
   if(num && letEl && !lt){ toast('اختر حرف المسلسل (E أو S) أولاً','error'); try{letEl.focus();}catch(e){} return null; }
   return num ? (lt + num) : '';
+}
+// ربط حرف المسلسل بالمنطقة: S=جنوب، E=شرق (يضبط المنطقة تلقائيًا عند اختيار الحرف)
+function _syncSerialRegion(letterId, regionId){
+  const lt = document.getElementById(letterId);
+  const rg = document.getElementById(regionId);
+  if(!lt || !rg) return;
+  if(lt.value==='S') rg.value='جنوب';
+  else if(lt.value==='E') rg.value='شرق';
 }
 // تقسيم مسلسل محفوظ (مثل E123) إلى حرف + رقم وملء الخانتين (لشاشة التعديل)
 function _setSerialFields(idBase, serial){
@@ -8037,6 +8051,7 @@ function saveTxnEdit() {
       user:      document.getElementById('txn-edit-party').value,
     };
     saveLocal();
+    _syncBalancesFromRecords([arr[idx].code]);
     if(firebaseDB && initialSyncCompleted){
       const fbPath = type==='ret-in' ? 'erpdata/returnReceives/' : 'erpdata/returnDispatches/';
       if(fbKey){
@@ -8064,7 +8079,6 @@ function saveTxnEdit() {
   const arr = type==='in' ? DB.receives : DB.dispatches;
   const idx = arr.findIndex(t=>t.id===id);
   if(idx===-1) return;
-  const fbKey = arr[idx]._fbKey || null;
   arr[idx] = {
     ...arr[idx],
     qty,
@@ -8078,15 +8092,27 @@ function saveTxnEdit() {
     region:    document.getElementById('txn-edit-region').value,
     [type==='in'?'supplier':'dept']: document.getElementById('txn-edit-party').value,
   };
-  if(firebaseDB && initialSyncCompleted && fbKey) {
+  // ── تعميم الحقول المشتركة للعملية على كل أصناف نفس السند (الكمية تبقى لكل صنف) ──
+  const _partyKey = type==='in' ? 'supplier' : 'dept';
+  const _shared = { date:arr[idx].date, ref:arr[idx].ref, warehouse:arr[idx].warehouse, booknum:arr[idx].booknum, pagenum:arr[idx].pagenum, serial:arr[idx].serial, region:arr[idx].region };
+  _shared[_partyKey] = arr[idx][_partyKey];
+  const _opRef = arr[idx].operationRef;
+  const _affected = [arr[idx]];
+  if(_opRef){
+    arr.forEach((r,j)=>{ if(j!==idx && r.operationRef===_opRef){ Object.assign(r, _shared); _affected.push(r); } });
+  }
+  if(firebaseDB && initialSyncCompleted){
     const path = type==='in' ? 'erpdata/receives/' : 'erpdata/dispatches/';
-    const { _fbKey, ...clean } = arr[idx];
-    firebaseDB.ref(path + fbKey).set(clean).catch(e => console.warn('saveTxnEdit Firebase error:', e));
-  } else if(firebaseDB && initialSyncCompleted) {
-    if(type==='in') _migrateReceivesToFirebase();
-    else _migrateDispatchesToFirebase();
+    const updates = {};
+    _affected.forEach(r=>{ if(r._fbKey){ const { _fbKey, ...clean } = r; updates[r._fbKey] = clean; } });
+    if(Object.keys(updates).length){
+      firebaseDB.ref(path).update(updates).catch(e => console.warn('saveTxnEdit Firebase error:', e));
+    } else {
+      if(type==='in') _migrateReceivesToFirebase(); else _migrateDispatchesToFirebase();
+    }
   }
   saveLocal();
+  _syncBalancesFromRecords(_affected.map(r=>r.code));
   _writeAuditLog('edit', [{...arr[idx], id, wo: arr[idx].workorder}]);
   closeTxnModal();
   if(type==='in') renderRcvRecent(); else renderDspRecent();
@@ -9583,13 +9609,71 @@ function clearRdspList(){ _rdspList=[]; renderRdspList(); }
 // ══ صفحة مقارنة أوامر العمل (الفروقات) ══
 // ══════════════════════════════════════════════
 const _CMP_METRICS = {
-  planned:'المخطط له', received:'الإدخال', retReceived:'إرجاع إدخال',
+  planned:'المخطط له', allOps:'كل العمليات', received:'الإدخال', retReceived:'إرجاع إدخال',
   netIn:'صافي الإدخال', dispatched:'الصرف', retDispatched:'إرجاع صرف', netOut:'صافي الصرف'
 };
 let _cmpCodes = [];
 let _compareSearched = false;
 let _cmpWoSerials = {};
 let _cmpWoRegions = {};
+let _cmpExcludedWos = {};   // أوامر العمل المستثناة من الطباعة/التصدير
+function _toggleCmpWo(wo, included){ if(included) delete _cmpExcludedWos[wo]; else _cmpExcludedWos[wo]=1; }
+
+function _toggleCmpPrintDropdown(btn){
+  const d=document.getElementById('cmp-print-dropdown');
+  if(!d) return;
+  if(d.style.display==='none'||d.style.display===''){
+    if(!_compareSearched){ toast('اضغط 🔍 بحث أولاً','info'); return; }
+    _buildCmpPrintDropList();
+    const r=(btn||document.getElementById('cmp-print-sel-btn')).getBoundingClientRect();
+    d.style.top=(r.bottom+6)+'px';
+    d.style.left=r.left+'px';
+    d.style.display='block';
+    setTimeout(()=>document.addEventListener('click',_closeCmpDropOutside),100);
+  } else {
+    d.style.display='none';
+    document.removeEventListener('click',_closeCmpDropOutside);
+  }
+}
+function _closeCmpDropOutside(e){
+  const d=document.getElementById('cmp-print-dropdown');
+  const btn=document.getElementById('cmp-print-sel-btn');
+  if(!d) return;
+  if(!d.contains(e.target)&&e.target!==btn){
+    d.style.display='none';
+    document.removeEventListener('click',_closeCmpDropOutside);
+  }
+}
+function _buildCmpPrintDropList(){
+  const arr=_compareData(); const seen={},wos=[];
+  arr.forEach(m=>{ const w=m.workorder||''; if(!seen[w]){seen[w]=1;wos.push(w);} });
+  const list=document.getElementById('cmp-print-drop-list');
+  if(!list) return;
+  list.innerHTML=wos.map(w=>{
+    const chk=!_cmpExcludedWos[w]?'checked':'';
+    const ser=_cmpWoSerials[w]?Object.keys(_cmpWoSerials[w]).join('، '):'';
+    const reg=_cmpWoRegions[w]?Object.keys(_cmpWoRegions[w]).join('، '):'';
+    const wSafe=(w||'').replace(/\\/g,'\\\\').replace(/\x27/g,"\\\x27");
+    const sub=ser||reg?'<span style="font-size:10px;color:var(--text3)"> '+(ser||'')+(ser&&reg?' • ':'')+( reg||'')+'</span>':'';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:9px;cursor:pointer;font-size:12px">'
+      +'<input type="checkbox" '+chk+' onchange="_toggleCmpWo(\''+wSafe+'\',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--blue);flex-shrink:0">'
+      +'<span style="font-weight:700;color:var(--blue-l)">'+(w||'— بدون أمر عمل —')+'</span>'+sub
+      +'</label>';
+  }).join('');
+}
+function _cmpDropSelectAll(v){
+  const arr=_compareData(); const seen={},wos=[];
+  arr.forEach(m=>{ const w=m.workorder||''; if(!seen[w]){seen[w]=1;wos.push(w);} });
+  document.querySelectorAll('#cmp-print-drop-list input').forEach((b,i)=>{
+    b.checked=v;
+    if(v) delete _cmpExcludedWos[wos[i]||'']; else _cmpExcludedWos[wos[i]||'']=1;
+  });
+}
+function _printDropSelected(){
+  const lang=(document.getElementById('cmp-drop-lang')||{}).value||'en';
+  document.getElementById('cmp-print-dropdown').style.display='none';
+  printCompare(lang);
+}
 
 function openCmpMaterials(){
   // ملء قائمة الاقتراح بالأكواد الموجودة (مرة واحدة)
@@ -9666,7 +9750,7 @@ function _compareData(){
   }
   let arr=Object.values(map);
   if(codes.length) arr=arr.filter(m=>codes.some(c=>m.code.toUpperCase().indexOf(c)!==-1));
-  arr.forEach(m=>{ m.netIn=m.received-m.retReceived; m.netOut=m.dispatched-m.retDispatched; });
+  arr.forEach(m=>{ m.netIn=m.received-m.retReceived; m.netOut=m.dispatched-m.retDispatched; m.allOps=m.received+m.retReceived+m.dispatched+m.retDispatched; });
   return arr;
 }
 
@@ -9717,7 +9801,7 @@ function renderCompare(){
   if(cnt) cnt.textContent='النتائج: '+arr.length.toLocaleString()+' صف';
 }
 
-function searchCompare(){ _compareSearched=true; renderCompare(); }
+function searchCompare(){ _cmpExcludedWos={}; _compareSearched=true; renderCompare(); }
 function showAllCompare(){
   document.getElementById('cmp-wo').value='';
   _cmpCodes=[]; var d0=document.getElementById('cmp-codes-display'); if(d0) d0.value='';
@@ -9725,7 +9809,7 @@ function showAllCompare(){
   document.getElementById('cmp-womode').value='all';
   document.getElementById('cmp-optype').value='all';
   document.getElementById('cmp-from').value=''; document.getElementById('cmp-to').value='';
-  _compareSearched=true; renderCompare();
+  _cmpExcludedWos={}; _compareSearched=true; renderCompare();
 }
 function clearCompareFilters(){
   document.getElementById('cmp-wo').value='';
@@ -9734,7 +9818,7 @@ function clearCompareFilters(){
   document.getElementById('cmp-womode').value='all';
   document.getElementById('cmp-optype').value='all';
   document.getElementById('cmp-from').value=''; document.getElementById('cmp-to').value='';
-  _compareSearched=false; renderCompare();
+  _cmpExcludedWos={}; _compareSearched=false; renderCompare();
 }
 // تصدير Excel — جدول محوري (Pivot): صفوف = أوامر العمل + المسلسل، أعمدة = المواد، الخلية = القيمة المختارة
 function exportCompare(){
@@ -9745,7 +9829,7 @@ function exportCompare(){
   const matMap={}; arr.forEach(m=>{ matMap[m.code]=m.name||m.code; });
   const codesList=Object.keys(matMap).sort();
   const woMap={};
-  arr.forEach(m=>{ const w=m.workorder||'—'; if(!woMap[w]) woMap[w]={}; woMap[w][m.code]=Number(m[a])||0; });
+  arr.forEach(m=>{ const w=m.workorder||'—'; if(_cmpExcludedWos[m.workorder||'']) return; if(!woMap[w]) woMap[w]={}; woMap[w][m.code]=Number(m[a])||0; });
   const wos=Object.keys(woMap).sort((x,y)=>String(x).localeCompare(String(y),'ar'));
   const header=['Work Order','Serial','Region'].concat(codesList.map(c=> (matMap[c]&&matMap[c]!==c)?(c+' - '+matMap[c]):c));
   const rows=wos.map(w=>{
@@ -9795,7 +9879,7 @@ function exportCompare(){
 
 // طباعة PDF — نافذة إنجليزية مستقلة (لهذه الصفحة فقط) بنفس شكل العرض الحالي
 const _CMP_METRICS_EN = {
-  planned:'Planned', received:'Received', retReceived:'Return-In',
+  planned:'Planned', allOps:'All Operations', received:'Received', retReceived:'Return-In',
   netIn:'Net In', dispatched:'Dispatched', retDispatched:'Return-Out', netOut:'Net Out'
 };
 function printCompare(lang){
@@ -9813,7 +9897,8 @@ function printCompare(lang){
   let arr=_compareData();
   if(hasB) arr.forEach(m=>m._diff=(Number(m[a])||0)-(Number(m[b])||0));
   arr.sort((x,y)=>{ const w=String(x.workorder||'').localeCompare(String(y.workorder||''),'ar'); if(w!==0) return w; return hasB?(Math.abs(y._diff)-Math.abs(x._diff)):((Number(y[a])||0)-(Number(x[a])||0)); });
-  if(!arr.length){ toast('لا توجد بيانات للطباعة','error'); return; }
+  arr=arr.filter(m=>!_cmpExcludedWos[m.workorder||'']);
+  if(!arr.length){ toast('لا توجد بيانات للطباعة — تحقق من تحديد أوامر العمل','error'); return; }
   const cols=hasB?7:5;
   const numLoc = en?'en-US':'ar-EG';
   let head='<tr><th>'+T.hash+'</th><th>'+T.code+'</th><th>'+T.mat+'</th><th>'+T.unit+'</th><th>'+(M[a]||a)+'</th>';
@@ -10353,6 +10438,11 @@ function generateReport(){
   if(type==='all'||type==='ret-out') data=data.concat(applyFilters(DB.returnDispatches,'↪ إرجاع صرف'));
 
   // planned type
+  if(type==='wo-list'){
+    generateWoListReport(wo);
+    return;
+  }
+
   if(type==='planned'){
     generatePlannedReport(wo);
     return;
@@ -12560,6 +12650,86 @@ function printWoReport() {
 }
 
 
+function generateWoListReport(filterWo){
+  const norm=v=>String(v==null?'':v).trim();
+  // خرائط: مسلسل + منطقة + وجود أمر العمل في كل نوع عملية
+  const serMap={}, regMap={}, presence={}, descMap={}, dateMap={};
+  // المفاتيح: in=إدخال، out=صرف، retIn=إرجاع إدخال، retOut=إرجاع صرف، planned=مخطط له، wot=محوّل، ext=طلب خارجي
+  function touch(wo){ const w=norm(wo); if(!w) return null; if(!presence[w]) presence[w]={in:0,out:0,retIn:0,retOut:0,planned:0,wot:0,ext:0}; return w; }
+  function addSerReg(wo,serial,region){ const w=norm(wo); if(!w) return; const s=norm(serial), rg=norm(region); if(s){ if(!serMap[w]) serMap[w]=new Set(); serMap[w].add(s); } if(rg){ if(!regMap[w]) regMap[w]=new Set(); regMap[w].add(rg); } }
+
+  // الإدخال (بدون الطلبات الخارجية) + الطلبات الخارجية
+  (DB.receives||[]).forEach(r=>{ const w=touch(r.workorder); if(!w) return; const isExt=String(r.id||'').startsWith('RCV-EXT-'); if(isExt) presence[w].ext++; else presence[w].in++; addSerReg(r.workorder,r.serial,r.region); });
+  // الصرف (بدون المحوّل) + المحوّل من الصانبي
+  (DB.dispatches||[]).forEach(d=>{ const w=touch(d.workorder); if(!w) return; if(d._wotRef) presence[w].wot++; else presence[w].out++; addSerReg(d.workorder,d.serial,d.region); });
+  // إرجاع إدخال
+  (DB.returnReceives||[]).forEach(r=>{ const w=touch(r.workorder); if(!w) return; presence[w].retIn++; addSerReg(r.workorder,r.serial,r.region); });
+  // إرجاع صرف
+  (DB.returnDispatches||[]).forEach(r=>{ const w=touch(r.workorder); if(!w) return; presence[w].retOut++; addSerReg(r.workorder,r.serial,r.region); });
+  // المخطط له (من صفحة أوامر العمل)
+  (DB.workOrders||[]).forEach(w=>{ const k=touch(w.workorder); if(!k) return; presence[k].planned++; if(w.desc) descMap[k]=w.desc; if(w.date) dateMap[k]=w.date; });
+
+  // قائمة أوامر العمل (كل ما ظهر في أي مصدر) مع الفلتر
+  let keys=Object.keys(presence).filter(w=>!filterWo||w.includes(filterWo));
+  keys.sort((x,y)=>x.localeCompare(y,'ar',{numeric:true}));
+  if(!keys.length){ toast('لا توجد أوامر عمل مطابقة','error'); return; }
+
+  const rptTitle=document.getElementById('rpt-title');
+  const rptCount=document.getElementById('rpt-count');
+  const rptGenAt=document.getElementById('rpt-generated-at');
+  const rptResult=document.getElementById('report-result');
+  const rptSummary=document.getElementById('rpt-summary');
+
+  if(rptTitle) rptTitle.innerHTML='<span class="dot dot-blue"></span>قائمة أوامر العمل — أين ظهر كل أمر'+(filterWo?' — '+filterWo:'');
+  if(rptCount) rptCount.textContent=keys.length+' أمر عمل';
+  if(rptGenAt) rptGenAt.textContent=new Date().toLocaleString('ar-SA');
+  if(rptResult) rptResult.style.display='block';
+  if(rptSummary) rptSummary.innerHTML=
+    '<div style="background:var(--blue-bg);border:1px solid var(--blue);border-radius:var(--radius);padding:10px 16px;min-width:120px;text-align:center">'
+    +'<div style="font-size:11px;color:var(--blue-l)">إجمالي أوامر العمل</div>'
+    +'<div style="font-size:22px;font-weight:800;color:var(--blue-l)">'+keys.length+'</div></div>';
+
+  document.getElementById('report-thead').innerHTML=
+    '<tr><th>#</th><th>رقم أمر العمل</th><th>المسلسل</th><th>المنطقة</th>'
+    +'<th>إدخال</th><th>صرف</th><th>إرجاع إدخال</th><th>إرجاع صرف</th><th>مخطط له</th><th>محوّل من الصانبي</th><th>طلبات خارجية</th></tr>';
+
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const mark=n=>n>0?'<span style="color:var(--green-l);font-weight:800" title="'+n+'">✓</span>':'<span style="color:var(--text3)">—</span>';
+  document.getElementById('report-tbody').innerHTML=keys.map((w,i)=>{
+    const p=presence[w];
+    const ser=serMap[w]?[...serMap[w]].join('، '):'—';
+    const reg=regMap[w]?[...regMap[w]].join('، '):'—';
+    return '<tr>'
+      +'<td style="color:var(--text3)">'+(i+1)+'</td>'
+      +'<td><strong style="color:var(--blue-l)">'+esc(w)+'</strong></td>'
+      +'<td><span style="font-family:monospace;color:var(--amber-l);font-weight:700">'+esc(ser)+'</span></td>'
+      +'<td><span style="color:var(--green-l);font-weight:600">'+esc(reg)+'</span></td>'
+      +'<td style="text-align:center">'+mark(p.in)+'</td>'
+      +'<td style="text-align:center">'+mark(p.out)+'</td>'
+      +'<td style="text-align:center">'+mark(p.retIn)+'</td>'
+      +'<td style="text-align:center">'+mark(p.retOut)+'</td>'
+      +'<td style="text-align:center">'+mark(p.planned)+'</td>'
+      +'<td style="text-align:center">'+mark(p.wot)+'</td>'
+      +'<td style="text-align:center">'+mark(p.ext)+'</td>'
+      +'</tr>';
+  }).join('');
+
+  // بيانات للتصدير/الطباعة — نص واضح لكل عمود وجود
+  const yn=n=>n>0?'نعم':'';
+  _reportData=keys.map(w=>{
+    const p=presence[w];
+    const loc=[ p.in?'إدخال':'', p.out?'صرف':'', p.retIn?'إرجاع إدخال':'', p.retOut?'إرجاع صرف':'', p.planned?'مخطط له':'', p.wot?'محوّل من الصانبي':'', p.ext?'طلب خارجي':'' ].filter(Boolean).join('، ');
+    return {
+      _type:'📋 قائمة أوامر العمل',
+      workorder:w,
+      date:dateMap[w]||'',
+      serial:serMap[w]?[...serMap[w]].join(', '):'',
+      region:regMap[w]?[...regMap[w]].join(', '):'',
+      notes:'ظهر في: '+(loc||'—')+(descMap[w]?(' | '+descMap[w]):'')
+    };
+  });
+}
+
 function generateWorkOrdersReport(filterWo) {
   const list = (DB.workOrders||[]).filter(wo=>!filterWo||(wo.workorder||'').includes(filterWo));
   if(!list.length){ toast('لا توجد أوامر عمل','error'); return; }
@@ -13150,6 +13320,22 @@ function _hideDesignerFooter(){
       <button class="btn btn-primary" style="background:var(--amber);border-color:var(--amber)" onclick="confirmOverridePin()">✓ موافقة وتجاوز</button>
       <button class="btn" onclick="cancelOverridePin()">إلغاء</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ COMPARE PRINT DROPDOWN (fixed position) ══ -->
+<div id="cmp-print-dropdown" style="display:none;position:fixed;z-index:99999;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.45);width:300px;padding:16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <span style="font-size:13px;font-weight:700;color:var(--text)">📋 اختر أوامر العمل</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="_cmpDropSelectAll(true)" style="font-size:11px;padding:3px 9px">✓ الكل</button>
+      <button class="btn btn-sm" onclick="_cmpDropSelectAll(false)" style="font-size:11px;padding:3px 9px;color:var(--red-l);border-color:var(--red)">✕ لا شيء</button>
+    </div>
+  </div>
+  <div id="cmp-print-drop-list" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border2);padding-top:10px">
+    <select id="cmp-drop-lang" style="padding:5px 9px;font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font)"><option value="en" selected>English</option><option value="ar">عربي</option></select>
+    <button class="btn btn-sm btn-primary" onclick="_printDropSelected()">🖨 طباعة</button>
   </div>
 </div>
 
