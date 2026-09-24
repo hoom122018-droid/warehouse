@@ -2706,19 +2706,81 @@ let _localStorageWarningShown = false;
 let _firebaseDisconnectAlertShown = false;
 let _backupInProgress = false;
 
-// ── حفظ محلي محسّن مع معالجة امتلاء المساحة ──
-function saveLocal() {
+// ══════════════════════════════════════════════════════════════
+// 🗄️ طبقة IndexedDB — بديل localStorage للبيانات الكبيرة (erpdata_*)
+// المساحة أكبر بكثير من localStorage (عادة مئات الميجابايت بدل 5-10 ميجا)
+// erpdata_* فقط انتقلت هنا — بقية المفاتيح الصغيرة (theme, session...) باقية في localStorage
+// ══════════════════════════════════════════════════════════════
+const IDB_NAME = 'warehouse_local_cache';
+const IDB_VERSION = 1;
+const IDB_STORE = 'erpdata';
+const LOCAL_RETENTION_DAYS = 14; // الاحتفاظ محلياً بحركات آخر 14 يوم فقط — الباقي مصدره Firebase
+let _idbInstance = null;
+
+function _idbOpen() {
+  if (_idbInstance) return Promise.resolve(_idbInstance);
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB not supported')); return; }
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = (e) => { _idbInstance = e.target.result; resolve(_idbInstance); };
+    req.onerror = (e) => reject(e.target.error || new Error('IndexedDB open failed'));
+  });
+}
+async function idbSet(key, value) {
+  const db = await _idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = (e) => reject(e.target.error);
+  });
+}
+async function idbGet(key) {
+  const db = await _idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+async function idbRemove(key) {
+  const db = await _idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = (e) => reject(e.target.error);
+  });
+}
+
+// ── تقليم الحركات المحفوظة محلياً لآخر 14 يوم فقط (لا يمسّ DB في الذاكرة، فقط نسخة التخزين المحلي) ──
+function _pruneForLocalCache(arr) {
+  if (!Array.isArray(arr)) return arr || [];
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - LOCAL_RETENTION_DAYS);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  // نُبقي أي سجل بدون تاريخ واضح (تحوطاً) + أي سجل أحدث من أو يساوي حد الـ 14 يوم
+  return arr.filter(r => !r || !r.date || r.date >= cutoffStr);
+}
+
+// ── حفظ محلي عبر IndexedDB مع تقليم البيانات الأقدم من 14 يوم ──
+async function saveLocal() {
   try {
-    localStorage.setItem('erpdata_items',           JSON.stringify(DB.items));
-    localStorage.setItem('erpdata_receives',        JSON.stringify(DB.receives));
-    localStorage.setItem('erpdata_dispatches',      JSON.stringify(DB.dispatches));
-    localStorage.setItem('erpdata_returnReceives',  JSON.stringify(DB.returnReceives));
-    localStorage.setItem('erpdata_returnDispatches',JSON.stringify(DB.returnDispatches));
-    localStorage.setItem('erpdata_extRequests',    JSON.stringify(DB.extRequests||[]));
-    localStorage.setItem('erpdata_custodies',      JSON.stringify(DB.custodies||[]));
-    localStorage.setItem('erpdata_workOrders',     JSON.stringify(DB.workOrders||[]));
-    localStorage.setItem('erpdata_users',           JSON.stringify(DB.users));
-    localStorage.setItem('erpdata_ts',              Date.now().toString());
+    await idbSet('erpdata_items',            DB.items);
+    await idbSet('erpdata_receives',         _pruneForLocalCache(DB.receives));
+    await idbSet('erpdata_dispatches',       _pruneForLocalCache(DB.dispatches));
+    await idbSet('erpdata_returnReceives',   _pruneForLocalCache(DB.returnReceives));
+    await idbSet('erpdata_returnDispatches', _pruneForLocalCache(DB.returnDispatches));
+    await idbSet('erpdata_extRequests',      DB.extRequests || []);
+    await idbSet('erpdata_custodies',        DB.custodies || []);
+    await idbSet('erpdata_workOrders',       DB.workOrders || []);
+    await idbSet('erpdata_users',            DB.users);
+    await idbSet('erpdata_ts',               Date.now());
     // ✅ نجح الحفظ — أعد تعيين التحذير إذا كان ظاهراً
     if (_localStorageWarningShown) {
       _localStorageWarningShown = false;
@@ -2727,40 +2789,68 @@ function saveLocal() {
     }
   } catch(e) {
     console.warn('saveLocal failed:', e);
-    // 🔴 QuotaExceededError — المساحة امتلأت
-    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || (e.code === 22)) {
-      if (!_localStorageWarningShown) {
-        _localStorageWarningShown = true;
-        _showCriticalBanner(
-          '⚠️ تحذير خطير: المساحة المحلية امتلأت — البيانات الجديدة لن تُحفظ محلياً!',
-          'اضغط هنا لتصدير نسخة احتياطية الآن',
-          () => exportBackupJSON(),
-          '#D29922'
-        );
-        // محاولة حذف أقدم السجلات للتوفير في المساحة
-        _freeLocalStorageSpace();
-      }
+    // نادراً ما يحدث مع IndexedDB (مساحته كبيرة جداً)، لكن نتعامل معه احتياطاً
+    if (!_localStorageWarningShown) {
+      _localStorageWarningShown = true;
+      _showCriticalBanner(
+        '⚠️ تحذير: تعذّر الحفظ المحلي للبيانات — يُفضّل تصدير نسخة احتياطية الآن',
+        'اضغط هنا لتصدير نسخة احتياطية الآن',
+        () => exportBackupJSON(),
+        '#D29922'
+      );
     }
   }
 }
 
-// ── تحرير مساحة localStorage عند الامتلاء ──
-function _freeLocalStorageSpace() {
+// ── فحص دوري لنسبة امتلاء مساحة التخزين المحلي — تنبيه مبكر قبل الامتلاء الكامل ──
+async function _checkLocalStorageUsage() {
   try {
-    // احتفظ بأحدث 200 حركة فقط
-    const maxTxn = 200;
-    if (DB.receives.length > maxTxn) {
-      console.warn('saveLocal: trimming receives to last', maxTxn);
-      // لا نحذف من DB — نحذف فقط من localStorage
-      localStorage.setItem('erpdata_receives', JSON.stringify(DB.receives.slice(-maxTxn)));
+    if (!navigator.storage || !navigator.storage.estimate) return;
+    const est = await navigator.storage.estimate();
+    if (!est || !est.quota) return;
+    const pct = (est.usage / est.quota) * 100;
+    if (pct >= 80 && !_localStorageWarningShown) {
+      _localStorageWarningShown = true;
+      _showCriticalBanner(
+        `⚠️ تنبيه مبكر: مساحة التخزين المحلي وصلت ${Math.round(pct)}% من الحد الأقصى — يُفضّل تصدير نسخة احتياطية`,
+        'تصدير نسخة احتياطية الآن',
+        () => exportBackupJSON(),
+        '#D29922'
+      );
+    } else if (pct < 80 && _localStorageWarningShown) {
+      _localStorageWarningShown = false;
+      const warn = document.getElementById('_ls_warning_banner');
+      if (warn) warn.remove();
     }
-    if (DB.dispatches.length > maxTxn) {
-      localStorage.setItem('erpdata_dispatches', JSON.stringify(DB.dispatches.slice(-maxTxn)));
+  } catch(e) { console.warn('_checkLocalStorageUsage failed:', e); }
+}
+
+// ── ترحيل تلقائي لمرة واحدة: نقل أي بيانات erpdata_* قديمة من localStorage إلى IndexedDB ثم تفريغها ──
+// هذا هو ما يحل مشكلة "المساحة المحلية امتلأت" فوراً عند أول تشغيل بعد التحديث
+async function _migrateLocalStorageToIndexedDB() {
+  try {
+    if (localStorage.getItem('_idb_migration_done') === '1') return;
+    const keys = ['erpdata_items','erpdata_receives','erpdata_dispatches','erpdata_returnReceives',
+                  'erpdata_returnDispatches','erpdata_extRequests','erpdata_custodies','erpdata_workOrders',
+                  'erpdata_users','erpdata_ts'];
+    let migratedAny = false;
+    for (const k of keys) {
+      const raw = localStorage.getItem(k);
+      if (raw === null) continue;
+      try {
+        const parsed = k === 'erpdata_ts' ? (parseInt(raw,10) || Date.now()) : JSON.parse(raw);
+        await idbSet(k, parsed);
+        migratedAny = true;
+      } catch(parseErr) {
+        console.warn('_migrateLocalStorageToIndexedDB: skipped unparsable key', k, parseErr);
+      }
+      // نفرّغ المفتاح من localStorage فوراً سواء نجح النقل أو فشل — هو سبب امتلاء المساحة أصلاً
+      try { localStorage.removeItem(k); } catch(e){}
     }
-    localStorage.setItem('erpdata_ts', Date.now().toString());
-    console.log('saveLocal: freed space by trimming old transactions from localStorage');
-  } catch(e2) {
-    console.error('saveLocal: even trimming failed — localStorage critically full', e2);
+    localStorage.setItem('_idb_migration_done', '1');
+    if (migratedAny) console.log('_migrateLocalStorageToIndexedDB: ✅ تم نقل البيانات المحلية إلى IndexedDB وتفريغ localStorage');
+  } catch(e) {
+    console.warn('_migrateLocalStorageToIndexedDB failed:', e);
   }
 }
 
@@ -2935,25 +3025,23 @@ function _startFirebaseConnectionMonitor() {
   });
 }
 
-// ── تحميل من localStorage عند الحاجة ──
-function loadLocal() {
+// ── تحميل من IndexedDB عند الحاجة (بديل localStorage القديم) ──
+async function loadLocal() {
   try {
-    const it  = localStorage.getItem('erpdata_items');
-    const r   = localStorage.getItem('erpdata_receives');
-    const d   = localStorage.getItem('erpdata_dispatches');
-    const rr  = localStorage.getItem('erpdata_returnReceives');
-    const rd  = localStorage.getItem('erpdata_returnDispatches');
-    const u   = localStorage.getItem('erpdata_users');
-    if(it) { const p=JSON.parse(it);  if(Array.isArray(p))  DB.items            = p; }
-    if(r)  { const p=JSON.parse(r);   if(Array.isArray(p))  DB.receives         = p; }
-    if(d)  { const p=JSON.parse(d);   if(Array.isArray(p))  DB.dispatches       = p; }
-    if(rr) { const p=JSON.parse(rr);  if(Array.isArray(p))  DB.returnReceives   = p; }
-    if(rd) { const p=JSON.parse(rd);  if(Array.isArray(p))  DB.returnDispatches = p; }
-    if(u)  { const p=JSON.parse(u);   if(Array.isArray(p))  DB.users            = p; }
-    const cust = localStorage.getItem('erpdata_custodies');
-    if(cust) { const p=JSON.parse(cust); if(Array.isArray(p)) DB.custodies = p; }
-    const wo = localStorage.getItem('erpdata_workOrders');
-    if(wo) { const p=JSON.parse(wo); if(Array.isArray(p)) DB.workOrders = p; }
+    const [it, r, d, rr, rd, u, ext, cust, wo] = await Promise.all([
+      idbGet('erpdata_items'), idbGet('erpdata_receives'), idbGet('erpdata_dispatches'),
+      idbGet('erpdata_returnReceives'), idbGet('erpdata_returnDispatches'), idbGet('erpdata_users'),
+      idbGet('erpdata_extRequests'), idbGet('erpdata_custodies'), idbGet('erpdata_workOrders')
+    ]);
+    if(Array.isArray(it))  DB.items            = it;
+    if(Array.isArray(r))   DB.receives         = r;
+    if(Array.isArray(d))   DB.dispatches       = d;
+    if(Array.isArray(rr))  DB.returnReceives   = rr;
+    if(Array.isArray(rd))  DB.returnDispatches = rd;
+    if(Array.isArray(u))   DB.users            = u;
+    if(Array.isArray(ext)) DB.extRequests      = ext;
+    if(Array.isArray(cust))DB.custodies        = cust;
+    if(Array.isArray(wo))  DB.workOrders       = wo;
     return !!(it || r || d || rr || rd);
   } catch(e) { console.warn('loadLocal failed:', e); return false; }
 }
@@ -3403,8 +3491,11 @@ async function loadSavedData() {
   // 4) تحديث الواجهة
   // 5) بعدها فقط: السماح بالحفظ (initialSyncCompleted = true)
 
-  // خطوة 1: localStorage كبيانات احتياطية مؤقتة فقط — لا يكتب فوق Firebase
-  loadLocal();
+  // خطوة 0: نقل بيانات localStorage القديمة (إن وُجدت) إلى IndexedDB مرة واحدة — يحل مشكلة الامتلاء فوراً
+  await _migrateLocalStorageToIndexedDB();
+
+  // خطوة 1: IndexedDB كبيانات احتياطية مؤقتة فقط — لا يكتب فوق Firebase
+  await loadLocal();
 
   try {
     if (!firebaseDB) {
@@ -3530,6 +3621,11 @@ async function loadSavedData() {
     setTimeout(() => _maybeRunLogsPrune(), 5000);
     // 📶 خطوة 7d: بدء مراقبة حالة الاتصال بـ Firebase
     setTimeout(() => _startFirebaseConnectionMonitor(), 1000);
+    // 🗄️ خطوة 7f: فحص نسبة امتلاء التخزين المحلي (IndexedDB) — تنبيه مبكر + فحص دوري كل 15 دقيقة
+    setTimeout(() => _checkLocalStorageUsage(), 4000);
+    if (!window._lsUsageInterval) {
+      window._lsUsageInterval = setInterval(() => _checkLocalStorageUsage(), 15 * 60 * 1000);
+    }
 
     // خطوة 8: migration receives/dispatches إذا لم تُحوَّل بعد
     const rcvNeedsMigration  = DB.receives.length > 0  && !DB.receives[0]._fbKey;
